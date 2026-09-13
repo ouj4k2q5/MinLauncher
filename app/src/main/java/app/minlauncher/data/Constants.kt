@@ -33,22 +33,12 @@ object Constants {
         const val NOTIFICATIONS = 2
     }
 
-    object CharacterIndicator {
-        const val SHOW = 102
-        const val HIDE = 101
-    }
-
     val CLOCK_APP_PACKAGES = arrayOf(
         "com.google.android.deskclock", //Google Clock
         "com.sec.android.app.clockpackage", //Samsung Clock
         "com.oneplus.deskclock", //OnePlus Clock
         "com.miui.clock", //Xiaomi Clock
     )
-
-
-//    const val THEME_MODE_DARK = 0
-//    const val THEME_MODE_LIGHT = 1
-//    const val THEME_MODE_SYSTEM = 2
 
     const val FLAG_LAUNCH_APP = 100
     const val FLAG_HIDDEN_APPS = 101
