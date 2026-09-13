@@ -36,6 +36,7 @@ import app.minlauncher.helper.showLauncherSelector
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlin.time.Duration.Companion.milliseconds
 
 class MainActivity : AppCompatActivity() {
 
@@ -276,7 +277,7 @@ class MainActivity : AppCompatActivity() {
     private fun checkTheme() {
         timerJob?.cancel()
         timerJob = lifecycleScope.launch {
-            delay(200)
+            delay(200.milliseconds)
             if ((prefs.appTheme == AppCompatDelegate.MODE_NIGHT_YES && getColorFromAttr(R.attr.primaryColor) != getColor(R.color.white))
                 || (prefs.appTheme == AppCompatDelegate.MODE_NIGHT_NO && getColorFromAttr(R.attr.primaryColor) != getColor(R.color.black))
             )

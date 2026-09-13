@@ -14,6 +14,7 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlin.math.abs
+import kotlin.time.Duration.Companion.milliseconds
 
 internal open class ViewSwipeTouchListener(c: Context?, v: View) : OnTouchListener {
     private var longPressOn = false
@@ -48,7 +49,7 @@ internal open class ViewSwipeTouchListener(c: Context?, v: View) : OnTouchListen
         override fun onLongPress(e: MotionEvent) {
             longPressOn = true
             GlobalScope.launch {
-                delay(Constants.LONG_PRESS_DELAY_MS)
+                delay(Constants.LONG_PRESS_DELAY_MS.milliseconds)
                 withContext(Dispatchers.Main) {
                     if (isActive && longPressOn)
                         onLongClick(view)
