@@ -116,7 +116,7 @@ private fun isOnyxDevice(): Boolean {
         // Onyx firmware ships its e-ink SDK classes in the boot classpath
         Class.forName("android.onyx.ViewUpdateHelper")
         true
-    } catch (ignored: Throwable) {
+    } catch (_: Throwable) {
         false
     }
 }
