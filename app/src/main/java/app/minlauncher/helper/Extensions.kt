@@ -14,15 +14,12 @@ import android.content.res.Resources
 import android.os.Build
 import android.os.UserHandle
 import android.provider.Settings
-import android.telephony.TelephonyManager
 import android.view.View
 import android.view.WindowManager
 import android.view.inputmethod.InputMethodManager
 import app.minlauncher.BuildConfig
 import app.minlauncher.R
 import app.minlauncher.data.Constants
-import java.util.Calendar
-import java.util.Locale
 
 fun View.hideKeyboard() {
     this.clearFocus()
@@ -152,15 +149,6 @@ fun Context.isPackageInstalled(packageName: String, userHandle: UserHandle = and
     return activityInfo.isNotEmpty()
 }
 
-fun Context.isCountryIn(): Boolean {
-    val country = runCatching {
-        val telephonyManager = getSystemService(Context.TELEPHONY_SERVICE) as? TelephonyManager
-        telephonyManager?.simCountryIso?.takeIf { it.isNotBlank() }
-            ?: telephonyManager?.networkCountryIso?.takeIf { it.isNotBlank() }
-    }.getOrNull() ?: Locale.getDefault().country
-    return country.equals("IN", ignoreCase = true)
-}
-
 fun Context.appUsagePermissionGranted(): Boolean {
     val appOpsManager = getSystemService(Context.APP_OPS_SERVICE) as AppOpsManager
     return appOpsManager.unsafeCheckOpNoThrow(
@@ -191,22 +179,6 @@ fun Context.formattedTimeSpent(timeSpent: Long): String {
         else -> "<1m"
     }
 }
-
-fun Long.convertEpochToMidnight(): Long {
-    val calendar = Calendar.getInstance()
-    calendar.timeInMillis = this
-    calendar.set(Calendar.HOUR_OF_DAY, 0)
-    calendar.set(Calendar.MINUTE, 0)
-    calendar.set(Calendar.SECOND, 0)
-    calendar.set(Calendar.MILLISECOND, 0)
-    return calendar.timeInMillis
-}
-
-fun Long.isDaySince(): Int = ((System.currentTimeMillis().convertEpochToMidnight() - this.convertEpochToMidnight())
-        / Constants.ONE_DAY_IN_MILLIS).toInt()
-
-fun Long.hasBeenDays(days: Int): Boolean =
-    ((System.currentTimeMillis() - this) / Constants.ONE_DAY_IN_MILLIS) >= days
 
 fun Long.hasBeenHours(hours: Int): Boolean =
     ((System.currentTimeMillis() - this) / Constants.ONE_HOUR_IN_MILLIS) >= hours

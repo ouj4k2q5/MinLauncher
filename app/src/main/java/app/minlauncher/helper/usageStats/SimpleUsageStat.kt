@@ -26,14 +26,6 @@ data class SimpleUsageStat(
     )
 
     companion object {
-        /**
-         * Converts a list of system [UsageStats] to a list of [SimpleUsageStat].
-         * This function is kept for direct compatibility with the original Java static method.
-         */
-        @JvmStatic
-        fun asSimpleStats(usageStats: List<UsageStats>): List<SimpleUsageStat> {
-            return usageStats.map { SimpleUsageStat(it) }
-        }
 
         /**
          * Calculates the epoch day from a timestamp in milliseconds, compatible with API 24+.
