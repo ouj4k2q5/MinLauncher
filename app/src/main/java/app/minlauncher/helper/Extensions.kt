@@ -15,25 +15,29 @@ import android.os.Build
 import android.os.UserHandle
 import android.provider.Settings
 import android.view.View
-import android.view.WindowManager
+import android.view.WindowInsets
 import android.view.inputmethod.InputMethodManager
 import app.minlauncher.BuildConfig
 import app.minlauncher.R
 import app.minlauncher.data.Constants
 
 fun View.hideKeyboard() {
-    this.clearFocus()
-    val imm = context.getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
-    imm.hideSoftInputFromWindow(windowToken, 0)
+    clearFocus()
+    windowInsetsController?.hide(WindowInsets.Type.ime())
+    val imm = context.getSystemService(Context.INPUT_METHOD_SERVICE) as? InputMethodManager
+    imm?.hideSoftInputFromWindow(windowToken, 0)
 }
 
 fun View.showKeyboard(show: Boolean = true) {
     if (show.not()) return
-    if (this.requestFocus())
+    if (requestFocus()) {
         postDelayed({
-            val imm = context.getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
-            imm.toggleSoftInput(InputMethodManager.SHOW_FORCED, InputMethodManager.HIDE_IMPLICIT_ONLY)
+            val targetView = findFocus() ?: this
+            targetView.windowInsetsController?.show(WindowInsets.Type.ime())
+            val imm = context.getSystemService(Context.INPUT_METHOD_SERVICE) as? InputMethodManager
+            imm?.showSoftInput(targetView, InputMethodManager.SHOW_IMPLICIT)
         }, 100)
+    }
 }
 
 
@@ -99,10 +103,10 @@ fun Context.isEinkDisplay(): Boolean {
 
 private fun Context.hasEinkRefreshRate(): Boolean {
     return try {
-        val windowManager = getSystemService(Context.WINDOW_SERVICE) as WindowManager
         // Check max supported refresh rate, not the current one, because adaptive
         // refresh rate displays can drop to 30Hz or lower without being e-ink
-        windowManager.defaultDisplay.supportedModes.maxOf { it.refreshRate } <= Constants.MIN_ANIM_REFRESH_RATE
+        val maxRefreshRate = display.supportedModes.maxOfOrNull { it.refreshRate } ?: return false
+        maxRefreshRate <= Constants.MIN_ANIM_REFRESH_RATE
     } catch (e: Exception) {
         e.printStackTrace()
         false
@@ -110,6 +114,7 @@ private fun Context.hasEinkRefreshRate(): Boolean {
 }
 
 // Boox devices report 60Hz+ refresh rates, so the refresh rate check misses them
+@SuppressLint("PrivateApi")
 private fun isOnyxDevice(): Boolean {
     if (Build.MANUFACTURER.equals("ONYX", ignoreCase = true)) return true
     return try {
@@ -151,8 +156,8 @@ fun Context.isPackageInstalled(packageName: String, userHandle: UserHandle = and
 
 fun Context.appUsagePermissionGranted(): Boolean {
     val appOpsManager = getSystemService(Context.APP_OPS_SERVICE) as AppOpsManager
-    return appOpsManager.unsafeCheckOpNoThrow(
-        "android:get_usage_stats",
+    return appOpsManager.checkOpNoThrow(
+        AppOpsManager.OPSTR_GET_USAGE_STATS,
         android.os.Process.myUid(),
         packageName
     ) == AppOpsManager.MODE_ALLOWED

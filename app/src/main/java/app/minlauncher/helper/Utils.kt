@@ -9,7 +9,6 @@ import android.content.pm.ApplicationInfo
 import android.content.pm.LauncherApps
 import android.content.res.Configuration
 import android.content.res.Configuration.UI_MODE_NIGHT_YES
-import android.net.Uri
 import android.os.Build
 import android.os.UserHandle
 import android.os.UserManager
@@ -17,7 +16,6 @@ import android.provider.AlarmClock
 import android.provider.CalendarContract
 import android.provider.MediaStore
 import android.provider.Settings
-import android.util.DisplayMetrics
 import android.util.Log
 import android.util.TypedValue
 import android.view.View
@@ -28,6 +26,7 @@ import androidx.annotation.AttrRes
 import androidx.annotation.ColorInt
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.graphics.createBitmap
+import androidx.core.net.toUri
 import app.minlauncher.BuildConfig
 import app.minlauncher.R
 import app.minlauncher.data.AppModel
@@ -179,8 +178,7 @@ private fun upgradeHiddenApps(prefs: Prefs) {
 fun isPackageInstalled(context: Context, packageName: String, userString: String): Boolean {
     val launcher = context.getSystemService(Context.LAUNCHER_APPS_SERVICE) as LauncherApps
     val activityInfo = launcher.getActivityList(packageName, getUserHandleFromString(context, userString))
-    if (activityInfo.isNotEmpty()) return true
-    return false
+    return activityInfo.isNotEmpty()
 }
 
 fun isPrivateSpaceProfile(context: Context, userHandle: UserHandle): Boolean {
@@ -400,13 +398,12 @@ fun isAccessServiceEnabled(context: Context): Boolean {
 
 fun isTablet(context: Context): Boolean {
     val windowManager = context.getSystemService(Context.WINDOW_SERVICE) as WindowManager
-    val metrics = DisplayMetrics()
-    windowManager.defaultDisplay.getMetrics(metrics)
-    val widthInches = metrics.widthPixels / metrics.xdpi
-    val heightInches = metrics.heightPixels / metrics.ydpi
+    val bounds = windowManager.maximumWindowMetrics.bounds
+    val metrics = context.resources.displayMetrics
+    val widthInches = bounds.width() / metrics.xdpi
+    val heightInches = bounds.height() / metrics.ydpi
     val diagonalInches = sqrt(widthInches.toDouble().pow(2.0) + heightInches.toDouble().pow(2.0))
-    if (diagonalInches >= 7.0) return true
-    return false
+    return diagonalInches >= 7.0
 }
 
 fun Context.isDarkThemeOn(): Boolean {
@@ -417,7 +414,7 @@ fun Context.isDarkThemeOn(): Boolean {
 fun Context.openUrl(url: String) {
     if (url.isEmpty()) return
     val intent = Intent(Intent.ACTION_VIEW)
-    intent.data = Uri.parse(url)
+    intent.data = url.toUri()
     startActivity(intent)
 }
 
@@ -444,7 +441,7 @@ fun Context.isSystemApp(packageName: String, user: UserHandle? = null): Boolean 
 
 fun Context.uninstall(packageName: String) {
     val intent = Intent(Intent.ACTION_DELETE)
-    intent.data = Uri.parse("package:$packageName")
+    intent.data = "package:$packageName".toUri()
     startActivity(intent)
 }
 
