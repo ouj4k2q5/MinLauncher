@@ -1,5 +1,4 @@
 apply plugin: 'com.android.application'
-apply plugin: 'kotlin-android'
 
 // Version is injected by the release workflow, which derives it from the git tag:
 //   tag v1.2.3 -> appVersionName=1.2.3, appVersionCode=10203 (major*10000 + minor*100 + patch)
@@ -13,10 +12,6 @@ android {
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_17
         targetCompatibility JavaVersion.VERSION_17
-    }
-
-    kotlinOptions {
-        jvmTarget = JavaVersion.VERSION_17.toString()
     }
 
     defaultConfig {
