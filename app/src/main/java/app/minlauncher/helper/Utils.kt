@@ -3,8 +3,6 @@ package app.minlauncher.helper
 import android.annotation.SuppressLint
 import android.app.SearchManager
 import android.app.WallpaperManager
-import android.content.ClipData
-import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
 import android.content.pm.ApplicationInfo
@@ -104,7 +102,7 @@ suspend fun getAppsList(
             if (includeRegularApps) {
                 val pinned = try {
                     getPinnedShortcuts(context, prefs, collator)
-                } catch (e: Exception) {
+                } catch (_: Exception) {
                     emptyList()
                 }
                 appList.addAll(pinned)
@@ -190,7 +188,7 @@ fun isPrivateSpaceProfile(context: Context, userHandle: UserHandle): Boolean {
     return try {
         val launcherApps = context.getSystemService(Context.LAUNCHER_APPS_SERVICE) as LauncherApps
         launcherApps.getLauncherUserInfo(userHandle)?.userType == "android.os.usertype.profile.PRIVATE"
-    } catch (e: Exception) {
+    } catch (_: Exception) {
         false
     }
 }
@@ -199,7 +197,7 @@ fun isPrivateSpaceLocked(context: Context, userHandle: UserHandle): Boolean {
     return try {
         val userManager = context.getSystemService(Context.USER_SERVICE) as UserManager
         userManager.isQuietModeEnabled(userHandle)
-    } catch (e: Exception) {
+    } catch (_: Exception) {
         true
     }
 }
@@ -376,7 +374,7 @@ fun openCalendar(context: Context) {
             .appendPath("time")
             .build()
         context.startActivity(Intent(Intent.ACTION_VIEW, calendarUri))
-    } catch (e: Exception) {
+    } catch (_: Exception) {
         try {
             val intent = Intent(Intent.ACTION_MAIN)
             intent.addCategory(Intent.CATEGORY_APP_CALENDAR)
@@ -390,7 +388,7 @@ fun openCalendar(context: Context) {
 fun isAccessServiceEnabled(context: Context): Boolean {
     val enabled = try {
         Settings.Secure.getInt(context.applicationContext.contentResolver, Settings.Secure.ACCESSIBILITY_ENABLED)
-    } catch (e: Exception) {
+    } catch (_: Exception) {
         0
     }
     if (enabled == 1) {
@@ -414,13 +412,6 @@ fun isTablet(context: Context): Boolean {
 fun Context.isDarkThemeOn(): Boolean {
     return resources.configuration.uiMode and
             Configuration.UI_MODE_NIGHT_MASK == UI_MODE_NIGHT_YES
-}
-
-fun Context.copyToClipboard(text: String) {
-    val clipboardManager = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-    val clipData = ClipData.newPlainText(getString(R.string.app_name), text)
-    clipboardManager.setPrimaryClip(clipData)
-    showToast("")
 }
 
 fun Context.openUrl(url: String) {

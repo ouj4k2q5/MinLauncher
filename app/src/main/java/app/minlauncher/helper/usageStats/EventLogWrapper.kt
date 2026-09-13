@@ -216,49 +216,6 @@ class EventLogWrapper(private val context: Context) {
     }
 
     /**
-     * Collects event information from system to calculate and aggregate precise
-     * foreground time statistics for the specified relative day.
-     *
-     * @param offset Day to query back in time relative to today
-     */
-    fun getForegroundStatsByRelativeDay(offset: Int): List<ComponentForegroundStat> {
-        val cal = Calendar.getInstance()
-        cal.add(Calendar.DAY_OF_YEAR, -offset)
-        // Set to start of the day
-        cal.set(Calendar.HOUR_OF_DAY, 0)
-        cal.set(Calendar.MINUTE, 0)
-        cal.set(Calendar.SECOND, 0)
-        cal.set(Calendar.MILLISECOND, 0)
-        val beginTime = cal.timeInMillis
-
-        // Set to start of the next day
-        cal.add(Calendar.DAY_OF_YEAR, 1)
-        val endTime = cal.timeInMillis
-
-        return getForegroundStatsByTimestamps(beginTime, endTime)
-    }
-
-    /**
-     * Collects event information from system to calculate and aggregate precise
-     * foreground time statistics starting at `start` and ending at
-     * the end of the day that contains `start`.
-     *
-     * @param start Starting time of query and point in time in day to query
-     */
-    fun getForegroundStatsByPartialDay(start: Long): List<ComponentForegroundStat> {
-        val cal = Calendar.getInstance()
-        cal.timeInMillis = start
-        // Set to start of the next day
-        cal.add(Calendar.DAY_OF_YEAR, 1)
-        cal.set(Calendar.HOUR_OF_DAY, 0)
-        cal.set(Calendar.MINUTE, 0)
-        cal.set(Calendar.SECOND, 0)
-        cal.set(Calendar.MILLISECOND, 0)
-        val endTime = cal.timeInMillis
-        return getForegroundStatsByTimestamps(start, endTime)
-    }
-
-    /**
      * Takes a list of foreground stats and aggregates them to usage stats.
      * Assumes all provided usage stats to be on the same day.
      *
@@ -292,63 +249,6 @@ class EventLogWrapper(private val context: Context) {
         return applicationTotalTime.map { (packageName, totalTime) ->
             SimpleUsageStat(day, totalTime, packageName)
         }
-    }
-
-    /**
-     * Collects <b>all</b> event information from system to calculate and aggregate precise
-     * foreground time statistics for the provided day and presents this information as
-     * [SimpleUsageStat]s.
-     *
-     * @param day Day since epoch
-     */
-    private fun getForegroundStatsByDay(day: Long): List<ComponentForegroundStat> {
-        val cal = Calendar.getInstance()
-        val timeZoneOffset = cal.timeZone.getOffset(System.currentTimeMillis())
-
-        // To convert epoch day to milliseconds, we first get the UTC millis and then adjust for timezone
-        val start = TimeUnit.DAYS.toMillis(day) - timeZoneOffset
-        val end = TimeUnit.DAYS.toMillis(day + 1) - timeZoneOffset
-        return getForegroundStatsByTimestamps(start, end)
-    }
-
-    /**
-     * Collects <b>all</b> event information from system to calculate and aggregate precise
-     * foreground time statistics and presents this information as [SimpleUsageStat]s.
-     * **This method call causes lag** if called with a low since value.
-     *
-     * @param daySince Return data from this day on
-     * @param endConsumer Consumer that accepts ending times of component
-     *                    foreground stats with their package name
-     */
-    fun getAllSimpleUsageStats(daySince: Long, endConsumer: BiConsumer<String, Long>): List<SimpleUsageStat> {
-        val usageStats = mutableListOf<SimpleUsageStat>()
-        var currentDay = daySince
-
-        val timeZoneOffset = Calendar.getInstance().timeZone.getOffset(System.currentTimeMillis())
-        val today = TimeUnit.MILLISECONDS.toDays(System.currentTimeMillis() + timeZoneOffset)
-
-        // Maximum event log size
-        currentDay = max(today - 10, currentDay)
-
-        while (currentDay <= today) {
-            val foregroundStats = getForegroundStatsByDay(currentDay)
-            usageStats.addAll(aggregateForegroundStats(foregroundStats, endConsumer))
-            currentDay++
-        }
-
-        return usageStats
-    }
-
-    /**
-     * Returns only usage statistics that have not been counted yet for
-     * only the day that contains `timestamp`
-     *
-     * @param endConsumer Consumer that accepts ending times of component
-     *                    foreground stats with their package name
-     */
-    fun getIncrementalSimpleUsageStats(timestamp: Long, endConsumer: BiConsumer<String, Long>): List<SimpleUsageStat> {
-        val foregroundStats = getForegroundStatsByPartialDay(timestamp)
-        return aggregateForegroundStats(foregroundStats, endConsumer)
     }
 
     fun aggregateSimpleUsageStats(usageStats: List<SimpleUsageStat>): Long {
