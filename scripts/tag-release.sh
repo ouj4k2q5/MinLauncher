@@ -15,10 +15,6 @@ YELLOW='\033[1;33m'
 RED='\033[1;31m'
 NC='\033[0m' # No Color
 
-# Upstream Olauncher commit this fork was taken from. Tags reachable from it belong to
-# upstream, not to this fork, and are ignored when working out the current version.
-FORK_BASE="1d438f8"
-
 # Display usage information
 show_usage() {
  echo -e "${BLUE}Release Tag Script Usage:${NC}"
@@ -43,7 +39,6 @@ show_usage() {
  echo -e "${GREEN}Notes:${NC}"
  echo -e "  - versionCode is major*10000 + minor*100 + patch, so minor and patch must"
  echo -e "    stay below 100. This matches the calculation in release.yml."
- echo -e "  - Upstream Olauncher tags (reachable from ${FORK_BASE}) are ignored."
  echo ""
  echo -e "=================================================================================="
  echo ""
@@ -130,24 +125,14 @@ else
  exit 1
 fi
 
-# Find this fork's latest release tag. Upstream's 70-odd tags are all reachable from the
-# fork base, so --no-merged separates them without needing them to be deleted. Doing this
-# with one git call rather than merge-base per tag matters: the per-tag form took ~50s
-# against upstream's tag count.
-LATEST_TAG=$(git tag --list 'v*' --no-merged "$FORK_BASE" --sort=-v:refname \
+# Find the latest release tag
+LATEST_TAG=$(git tag --list 'v*' --sort=-v:refname \
  | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | head -1 || true)
 
 if [ -n "$LATEST_TAG" ]; then
- echo -e "${BLUE}Latest release tag for this fork: ${YELLOW}${LATEST_TAG}${NC}"
+ echo -e "${BLUE}Latest release tag: ${YELLOW}${LATEST_TAG}${NC}"
 else
- echo -e "${BLUE}No release tag for this fork yet — this would be the first.${NC}"
- UPSTREAM_TAG_COUNT=$(git tag --list 'v*' --merged "$FORK_BASE" | wc -l | tr -d ' ')
- if [ "$UPSTREAM_TAG_COUNT" -gt 0 ]; then
-   echo -e "${YELLOW}Note: $UPSTREAM_TAG_COUNT upstream Olauncher tag(s) are still present and being ignored.${NC}"
-   echo -e "${YELLOW}To clear them from this fork's tag list:${NC}"
-   echo -e "${YELLOW}  git tag -d \$(git tag)${NC}"
-   echo -e "${YELLOW}  git ls-remote --tags origin | awk '{print \":\"\$2}' | xargs -n50 git push origin${NC}"
- fi
+ echo -e "${BLUE}No release tag yet — this would be the first.${NC}"
 fi
 
 # Work out the new version

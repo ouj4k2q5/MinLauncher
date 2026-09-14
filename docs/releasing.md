@@ -56,6 +56,4 @@ Keep the keystore outside the repository. Add these repository secrets under
 | `KEY_PASSWORD` | Key password |
 
 Adding required reviewers to the `release` GitHub environment makes a tag push wait
-for approval before publishing. A GitHub fork may retain upstream tags; removing
-those inherited tags keeps this fork's release list clear, but is not required by
-`tag-release.sh`.
+for approval before publishing.
