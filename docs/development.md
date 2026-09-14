@@ -33,8 +33,9 @@ in the environment. An unsigned APK cannot be installed; signing is documented i
 
 ## Version overrides
 
-Local builds default to version name `1.0.0` and version code `10000`. Override
-them when testing a release version:
+Local builds default to whatever [`version.properties`](../version.properties)
+has committed — normally the last released version. Override it when testing
+a different version:
 
 ```bash
 ./gradlew assembleDebug -PappVersionName=1.2.3 -PappVersionCode=10203

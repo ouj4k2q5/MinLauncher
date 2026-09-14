@@ -17,30 +17,52 @@ works differently from [`release.yml`](../.github/workflows/release.yml):
   from source: [`metadata/en-US/`](../metadata/en-US/) (title, descriptions,
   changelogs, and screenshots — the same
   [fastlane-compatible layout](https://f-droid.org/docs/All_About_Descriptions_Graphics_and_Screenshots/)
-  used by other stores, without needing the `fastlane` tool itself).
+  used by other stores, without needing the `fastlane` tool itself), and
+  [`version.properties`](../version.properties) (see below).
+
+## Why `version.properties` exists
+
+F-Droid's build server runs a plain `gradle assembleRelease` — it does not pass
+the `-PappVersionName`/`-PappVersionCode` properties that `release.yml` uses.
+And `UpdateCheckMode: Tags`, F-Droid's mechanism for noticing a new release,
+works by regex-scanning specific files in each tagged revision for a literal
+version — it does not run Gradle and cannot resolve a property reference.
+
+So the version needs to exist as a literal, checked-in value, not only as
+something computed from the tag at build time. [`version.properties`](../version.properties)
+is that literal: [`scripts/tag-release.sh`](../scripts/tag-release.sh) commits
+the new `versionName`/`versionCode` to it *before* creating the tag, so the
+tagged commit already carries the correct version in source. `app/build.gradle`
+reads it as the default (an explicit `-P` override still wins, for local
+testing — see [Development](development.md)), and `release.yml` asserts it
+matches the tag before building, so a tag pushed without going through
+`tag-release.sh` fails loudly instead of shipping a mislabeled build.
+The draft recipe's `UpdateCheckData` field points F-Droid's checker at this
+same file.
 
 ## One-time submission
 
 1. Verify the draft recipe still matches
    [F-Droid's build metadata reference](https://f-droid.org/docs/Build_Metadata_Reference/).
 2. Test it with F-Droid's build tooling (`fdroid build` / `fdroid checkupdates`)
-   before submitting — in particular the `prebuild:` step that injects
-   `appVersionName`/`appVersionCode`, since this project normally gets those
-   from Gradle properties passed by `release.yml`, and F-Droid's plain
-   `gradle` build step does not pass them on its own. This has not been
-   tested against real F-Droid build tooling.
-3. Open a merge request against `fdroiddata` with the recipe.
+   before submitting. This has not been tested against real F-Droid build
+   tooling.
+3. Point the recipe's first `Builds:` entry at a tag created *after*
+   `version.properties` started being committed by `tag-release.sh` — earlier
+   tags (including `v0.0.1`) predate that file and won't build correctly
+   under F-Droid's plain `gradle` step.
+4. Open a merge request against `fdroiddata` with the recipe.
 
 ## Ongoing maintenance
 
-Once accepted, `UpdateCheckMode: Tags` means F-Droid's tooling automatically
-detects new `vMAJOR.MINOR.PATCH` tags (the same tags
-[`scripts/tag-release.sh`](../scripts/tag-release.sh) already creates) and
-proposes a new build entry — no action needed here for
-routine releases. The recipe only needs a follow-up MR if the build process
-itself changes in a way F-Droid's build environment can't handle (for
-example, a new dependency source, or a Gradle/AGP upgrade that breaks the
-`prebuild:` workaround above).
+Once accepted, `UpdateCheckMode: Tags` plus the `UpdateCheckData` pointer at
+`version.properties` means F-Droid's tooling can detect new `vMAJOR.MINOR.PATCH`
+tags (the same tags `scripts/tag-release.sh` already creates) directly from
+that literal file and add a new build entry — no MR needed here for routine
+releases, *if* this detection is confirmed working per step 2 above. The
+recipe still needs a follow-up MR if the build process itself changes in a
+way F-Droid's build environment can't handle (for example, a new dependency
+source, or a Gradle/AGP upgrade).
 
 ## Screenshots
 
