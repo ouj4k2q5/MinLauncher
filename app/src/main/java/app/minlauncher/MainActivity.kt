@@ -129,7 +129,7 @@ class MainActivity : AppCompatActivity() {
         super.onResume()
         isResumed = true
         viewModel.isPrivateSpaceToggling = false
-        viewModel.getAppList()
+        viewModel.getPrivateSpaceAppList()
     }
 
     private fun registerShortcutCallback() {
