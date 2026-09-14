@@ -32,6 +32,7 @@ Technical and maintenance documentation is collected in [docs/](docs/README.md):
 - [Releasing](docs/releasing.md)
 - [Privacy and permissions](docs/privacy.md)
 - [Changes from Olauncher](docs/fork-changes.md)
+- [F-Droid](docs/f-droid.md)
 
 ## Contributing
 
