@@ -1,0 +1,1 @@
+Initial F-Droid release of MinLauncher 0.0.1, a minimal ad-free fork of Olauncher with no network access.

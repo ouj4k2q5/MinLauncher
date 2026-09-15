@@ -1,5 +1,11 @@
 # MinLauncher
 
+<div style="text-align: center;">
+  <img alt="home screenshot" src="./metadata/en-US/images/phoneScreenshots/2.png" width="200">
+  <img alt="home screenshot" src="./metadata/en-US/images/phoneScreenshots/3.png" width="200">
+  <img alt="home screenshot" src="./metadata/en-US/images/phoneScreenshots/5.png" width="200">
+</div>
+
 MinLauncher is a minimal, ad-free Android home screen launcher. It is a personal,
 unofficial fork of [Olauncher](https://github.com/tanujnotes/Olauncher), with all
 promotional content and network access removed.
@@ -32,6 +38,7 @@ Technical and maintenance documentation is collected in [docs/](docs/README.md):
 - [Releasing](docs/releasing.md)
 - [Privacy and permissions](docs/privacy.md)
 - [Changes from Olauncher](docs/fork-changes.md)
+- [F-Droid](docs/f-droid.md)
 
 ## Contributing
 

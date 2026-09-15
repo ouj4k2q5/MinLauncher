@@ -1,0 +1,1 @@
+A minimal, ad-free Android launcher with no internet access and no tracking.

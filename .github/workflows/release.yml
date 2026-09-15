@@ -49,9 +49,24 @@ jobs:
             echo "::error::minor and patch must stay below 100 to keep versionCode monotonic"
             exit 1
           fi
+          version_code=$(( major * 10000 + minor * 100 + patch ))
+          
+          # version.properties is committed by scripts/tag-release.sh as part of the
+          # tagged commit, and is what a plain `gradle assembleRelease` (as F-Droid's
+          # build server runs it, with no -P properties) resolves the version from.
+          # Asserting it matches the tag here catches a tag pushed without that script.
+          read -r committed_name committed_code < <(awk -F= '
+            $1 == "versionName" { n = $2 }
+            $1 == "versionCode" { c = $2 }
+            END { print n, c }
+          ' version.properties)
+          if [[ "$committed_name" != "$version" || "$committed_code" != "$version_code" ]]; then
+            echo "::error::version.properties ($committed_name/$committed_code) does not match tag $TAG ($version/$version_code); use scripts/tag-release.sh to tag"
+            exit 1
+          fi
+          
           {
             echo "VERSION_NAME=$version"
-            echo "VERSION_CODE=$(( major * 10000 + minor * 100 + patch ))"
             echo "APK_NAME=MinLauncher-$version.apk"
           } >> "$GITHUB_ENV"
 
@@ -89,10 +104,12 @@ jobs:
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
         # Tests and lint run here too: a tag can point at a commit that never went
         # through CI.
+        # No -PappVersionName/-PappVersionCode here: version.properties, already
+        # verified against the tag above, is what build.gradle falls back to. This
+        # is the same plain `gradle assembleRelease` F-Droid's build server runs.
         run: |
           set -euo pipefail
-          ./gradlew --stacktrace test lint assembleRelease \
-            "-PappVersionName=$VERSION_NAME" "-PappVersionCode=$VERSION_CODE"
+          ./gradlew --stacktrace test lint assembleRelease
 
       - name: Verify signature
         run: |

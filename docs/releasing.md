@@ -25,12 +25,15 @@ the tag:
 ./scripts/tag-release.sh --dry-run patch
 ```
 
-Tags must be `vMAJOR.MINOR.PATCH`. The release workflow derives the version code as
-`major * 10000 + minor * 100 + patch`; minor and patch must be below 100. A tag can
-also be created manually:
+Tags must be `vMAJOR.MINOR.PATCH`. The version code is `major * 10000 + minor *
+100 + patch`; minor and patch must be below 100. Before tagging, the script
+commits the new version to [`version.properties`](../version.properties) and
+pushes that commit to the current branch — `release.yml` checks this matches
+the tag and fails otherwise, so a tag can't be created any other way than
+through this script:
 
 ```bash
-git tag -a v1.0.0 -m "Release v1.0.0"
+git tag -a v1.0.0 -m "Release v1.0.0"  # fails in CI: version.properties still says the old version
 git push origin v1.0.0
 ```
 
@@ -41,8 +44,8 @@ installed copy of the app.
 
 ```bash
 keytool -genkeypair -v \
- -keystore release.jks -storetype PKCS12 \
- -alias minlauncher -keyalg RSA -keysize 4096 -validity 10950
+-keystore release.jks -storetype PKCS12 \
+-alias minlauncher -keyalg RSA -keysize 4096 -validity 10950
 ```
 
 Keep the keystore outside the repository. Add these repository secrets under

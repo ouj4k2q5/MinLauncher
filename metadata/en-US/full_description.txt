@@ -1,0 +1,7 @@
+MinLauncher is a minimal, ad-free Android home screen launcher. It is a personal, unofficial fork of Olauncher, with all promotional content and network access removed.
+
+MinLauncher collects no analytics or telemetry and cannot access the network: it does not declare the INTERNET permission. Its optional screen-time and double-tap-to-lock features are processed entirely on the device.
+
+This fork has its own name, application ID, and release versioning. It requires Android 11 or later and removes upstream promotional, remote-wallpaper, and legacy compatibility code found in the original project.
+
+Licensed under the GNU General Public License v3.

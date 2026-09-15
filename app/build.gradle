@@ -1,11 +1,16 @@
 apply plugin: 'com.android.application'
 
-// Version is injected by the release workflow, which derives it from the git tag:
-//   tag v1.2.3 -> appVersionName=1.2.3, appVersionCode=10203 (major*10000 + minor*100 + patch)
-// The defaults keep local builds working without passing anything.
-def appVersionName = (project.findProperty('appVersionName') ?: '1.0.0').toString()
-def appVersionCode = (project.findProperty('appVersionCode') ?: '10000').toString().toInteger()
-
+// version.properties holds the released version as a literal committed by
+// scripts/tag-release.sh as part of the commit it tags, derived from the tag:
+//   tag v1.2.3 -> versionName=1.2.3, versionCode=10203 (major*10000 + minor*100 + patch)
+// A literal in source (rather than only in the tag) is what lets F-Droid's build
+// server and its tag-based update checker resolve the version without any
+// injected build properties. Passing -PappVersionName/-PappVersionCode still
+// overrides it, e.g. for local testing (see docs/development.md).
+def versionProps = new Properties()
+file("${rootDir}/version.properties").withInputStream { versionProps.load(it) }
+def appVersionName = (project.findProperty('appVersionName') ?: versionProps.getProperty('versionName')).toString()
+def appVersionCode = (project.findProperty('appVersionCode') ?: versionProps.getProperty('versionCode')).toString().toInteger()
 android {
     compileSdk 36
 
