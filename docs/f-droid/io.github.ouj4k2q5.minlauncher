@@ -12,7 +12,7 @@ Repo: https://github.com/ouj4k2q5/Minlauncher.git
 
 # TODO before submitting: fill in versionName/versionCode/commit/CurrentVersion*
 # for a tag created *after* version.properties started being committed by
-# scripts/tag-release.sh (v0.0.1 predates it — see docs/f-droid.md). app/build.gradle
+# scripts/tag-release.sh (v0.0.1 predates it — see docs/f-droid.md). app/build.gradle.kts
 # reads version.properties directly, so no prebuild step is needed to inject it.
 Builds:
  - versionName: 0.0.1
@@ -24,7 +24,7 @@ Builds:
 AutoUpdateMode: Version
 UpdateCheckMode: Tags
 # Points F-Droid's tag-based update checker at the literal version committed
-# to version.properties, instead of the default AndroidManifest.xml/build.gradle
+# to version.properties, instead of the default AndroidManifest.xml/build.gradle.kts
 # scan (which would only find a Gradle property reference, not a literal).
 UpdateCheckData: version.properties|versionCode=(\d+)|version.properties|versionName=(.+)
 CurrentVersion: 0.0.1

@@ -105,7 +105,7 @@ jobs:
         # Tests and lint run here too: a tag can point at a commit that never went
         # through CI.
         # No -PappVersionName/-PappVersionCode here: version.properties, already
-        # verified against the tag above, is what build.gradle falls back to. This
+        # verified against the tag above, is what build.gradle.kts falls back to. This
         # is the same plain `gradle assembleRelease` F-Droid's build server runs.
         run: |
           set -euo pipefail
