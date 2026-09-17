@@ -1,7 +1,6 @@
 package app.minlauncher.data
 
 object Constants {
-
     object Key {
         const val FLAG = "flag"
         const val RENAME = "rename"
@@ -19,13 +18,10 @@ object Constants {
         const val ON = 1
         const val DATE_ONLY = 2
 
-        fun isTimeVisible(dateTimeVisibility: Int): Boolean {
-            return dateTimeVisibility == ON
-        }
+        fun isTimeVisible(dateTimeVisibility: Int): Boolean = dateTimeVisibility == ON
 
-        fun isDateVisible(dateTimeVisibility: Int): Boolean {
-            return dateTimeVisibility == ON || dateTimeVisibility == DATE_ONLY
-        }
+        fun isDateVisible(dateTimeVisibility: Int): Boolean =
+            dateTimeVisibility == ON || dateTimeVisibility == DATE_ONLY
     }
 
     object SwipeDownAction {
@@ -33,12 +29,13 @@ object Constants {
         const val NOTIFICATIONS = 2
     }
 
-    val CLOCK_APP_PACKAGES = arrayOf(
-        "com.google.android.deskclock", //Google Clock
-        "com.sec.android.app.clockpackage", //Samsung Clock
-        "com.oneplus.deskclock", //OnePlus Clock
-        "com.miui.clock", //Xiaomi Clock
-    )
+    val CLOCK_APP_PACKAGES =
+        arrayOf(
+            "com.google.android.deskclock", // Google Clock
+            "com.sec.android.app.clockpackage", // Samsung Clock
+            "com.oneplus.deskclock", // OnePlus Clock
+            "com.miui.clock", // Xiaomi Clock
+        )
 
     const val FLAG_LAUNCH_APP = 100
     const val FLAG_HIDDEN_APPS = 101

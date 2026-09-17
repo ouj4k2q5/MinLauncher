@@ -41,8 +41,9 @@ sealed class AppModel : Comparable<AppModel> {
         override val isNew: Boolean = false
     }
 
-    override fun compareTo(other: AppModel): Int = when {
-        key != null && other.key != null -> key!!.compareTo(other.key)
-        else -> appLabel.compareTo(other.appLabel, true)
-    }
+    override fun compareTo(other: AppModel): Int =
+        when {
+            key != null && other.key != null -> key!!.compareTo(other.key)
+            else -> appLabel.compareTo(other.appLabel, true)
+        }
 }

@@ -2,16 +2,20 @@ package app.minlauncher.helper
 
 import android.accessibilityservice.AccessibilityService
 import android.content.Intent
+import android.util.Log
 import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityNodeInfo
 import app.minlauncher.R
 import app.minlauncher.data.Prefs
 
-class MyAccessibilityService : AccessibilityService() {
+private const val TAG = "MyAccessibilityService"
 
-    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        return START_STICKY
-    }
+class MyAccessibilityService : AccessibilityService() {
+    override fun onStartCommand(
+        intent: Intent?,
+        flags: Int,
+        startId: Int,
+    ): Int = START_STICKY
 
     override fun onServiceConnected() {
         Prefs(applicationContext).lockModeOn = true
@@ -32,11 +36,10 @@ class MyAccessibilityService : AccessibilityService() {
                 // }
             }
         } catch (e: Exception) {
-            return
+            Log.e(TAG, "Failed to handle accessibility event (type=${event.eventType})", e)
         }
     }
 
     override fun onInterrupt() {
-
     }
 }

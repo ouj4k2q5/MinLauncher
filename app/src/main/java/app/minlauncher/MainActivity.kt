@@ -39,7 +39,6 @@ import kotlinx.coroutines.launch
 import kotlin.time.Duration.Companion.milliseconds
 
 class MainActivity : AppCompatActivity() {
-
     private lateinit var prefs: Prefs
     private lateinit var navController: NavController
     private lateinit var viewModel: MainViewModel
@@ -73,20 +72,21 @@ class MainActivity : AppCompatActivity() {
         navController = this.findNavController(R.id.nav_host_fragment)
         viewModel = ViewModelProvider(this)[MainViewModel::class.java]
 
-        val onBackPressedCallback = object : OnBackPressedCallback(true) {
-            override fun handleOnBackPressed() {
-                if (navController.currentDestination?.id != R.id.mainFragment) {
-                    // then we might want to finish the activity or disable this callback.
-                    if (navController.popBackStack()) {
-                        // Successfully popped back
+        val onBackPressedCallback =
+            object : OnBackPressedCallback(true) {
+                override fun handleOnBackPressed() {
+                    if (navController.currentDestination?.id != R.id.mainFragment) {
+                        // then we might want to finish the activity or disable this callback.
+                        if (navController.popBackStack()) {
+                            // Successfully popped back
+                        } else {
+                            // if you want other system/activity level handling
+                        }
                     } else {
-                        // if you want other system/activity level handling
+                        binding.messageLayout.visibility = View.GONE
                     }
-                } else {
-                    binding.messageLayout.visibility = View.GONE
                 }
             }
-        }
         onBackPressedDispatcher.addCallback(this, onBackPressedCallback)
 
         if (prefs.firstOpen) {
@@ -106,16 +106,21 @@ class MainActivity : AppCompatActivity() {
         window.addFlags(FLAG_LAYOUT_NO_LIMITS)
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM) {
-            profileReceiver = object : BroadcastReceiver() {
-                override fun onReceive(context: Context?, intent: Intent?) {
-                    viewModel.isPrivateSpaceToggling = false
-                    viewModel.getPrivateSpaceAppList()
+            profileReceiver =
+                object : BroadcastReceiver() {
+                    override fun onReceive(
+                        context: Context?,
+                        intent: Intent?,
+                    ) {
+                        viewModel.isPrivateSpaceToggling = false
+                        viewModel.getPrivateSpaceAppList()
+                    }
                 }
-            }
-            val filter = IntentFilter().apply {
-                addAction(Intent.ACTION_PROFILE_AVAILABLE)
-                addAction(Intent.ACTION_PROFILE_UNAVAILABLE)
-            }
+            val filter =
+                IntentFilter().apply {
+                    addAction(Intent.ACTION_PROFILE_AVAILABLE)
+                    addAction(Intent.ACTION_PROFILE_UNAVAILABLE)
+                }
             registerReceiver(profileReceiver, filter)
         }
     }
@@ -134,30 +139,43 @@ class MainActivity : AppCompatActivity() {
 
     private fun registerShortcutCallback() {
         val launcherApps = getSystemService(LauncherApps::class.java)
-        launcherAppsCallback = object : LauncherApps.Callback() {
-            override fun onPackageRemoved(packageName: String, user: android.os.UserHandle) = Unit
-            override fun onPackageAdded(packageName: String, user: android.os.UserHandle) = Unit
-            override fun onPackageChanged(packageName: String, user: android.os.UserHandle) = Unit
-            override fun onPackagesAvailable(
-                packageNames: Array<out String>,
-                user: android.os.UserHandle,
-                replacing: Boolean,
-            ) = Unit
+        launcherAppsCallback =
+            object : LauncherApps.Callback() {
+                override fun onPackageRemoved(
+                    packageName: String,
+                    user: android.os.UserHandle,
+                ) = Unit
 
-            override fun onPackagesUnavailable(
-                packageNames: Array<out String>,
-                user: android.os.UserHandle,
-                replacing: Boolean,
-            ) = Unit
+                override fun onPackageAdded(
+                    packageName: String,
+                    user: android.os.UserHandle,
+                ) = Unit
 
-            override fun onShortcutsChanged(
-                packageName: String,
-                shortcuts: MutableList<ShortcutInfo>,
-                user: android.os.UserHandle,
-            ) {
-                viewModel.getAppList()
+                override fun onPackageChanged(
+                    packageName: String,
+                    user: android.os.UserHandle,
+                ) = Unit
+
+                override fun onPackagesAvailable(
+                    packageNames: Array<out String>,
+                    user: android.os.UserHandle,
+                    replacing: Boolean,
+                ) = Unit
+
+                override fun onPackagesUnavailable(
+                    packageNames: Array<out String>,
+                    user: android.os.UserHandle,
+                    replacing: Boolean,
+                ) = Unit
+
+                override fun onShortcutsChanged(
+                    packageName: String,
+                    shortcuts: MutableList<ShortcutInfo>,
+                    user: android.os.UserHandle,
+                ) {
+                    viewModel.getAppList()
+                }
             }
-        }
         launcherApps.registerCallback(launcherAppsCallback!!)
     }
 
@@ -184,7 +202,9 @@ class MainActivity : AppCompatActivity() {
     override fun onConfigurationChanged(newConfig: Configuration) {
         super.onConfigurationChanged(newConfig)
         AppCompatDelegate.setDefaultNightMode(prefs.appTheme)
-        if (prefs.solidWallpaper && AppCompatDelegate.getDefaultNightMode() == AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM) {
+        if (prefs.solidWallpaper &&
+            AppCompatDelegate.getDefaultNightMode() == AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM
+        ) {
             setPlainWallpaperByTheme(this, prefs.appTheme)
             recreate()
         }
@@ -201,10 +221,11 @@ class MainActivity : AppCompatActivity() {
             openLauncherChooser(it)
         }
         viewModel.resetLauncherLiveData.observe(this) {
-            if (isDefaultLauncher())
+            if (isDefaultLauncher()) {
                 resetLauncherViaFakeActivity()
-            else
+            } else {
                 showLauncherSelector(Constants.REQUEST_CODE_LAUNCHER_SELECTOR)
+            }
         }
         viewModel.showDialog.observe(this) {
             when (it) {
@@ -233,7 +254,12 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun showMessageDialog(title: Int, message: Int, action: Int, clickListener: () -> Unit) {
+    private fun showMessageDialog(
+        title: Int,
+        message: Int,
+        action: Int,
+        clickListener: () -> Unit,
+    ) {
         binding.tvTitle.text = getString(title)
         binding.tvMessage.text = getString(message)
         binding.tvAction.text = getString(action)
@@ -253,10 +279,10 @@ class MainActivity : AppCompatActivity() {
     private fun backToHomeScreen() {
         if (viewModel.isPrivateSpaceToggling) return
         binding.messageLayout.visibility = View.GONE
-        if (navController.currentDestination?.id != R.id.mainFragment)
+        if (navController.currentDestination?.id != R.id.mainFragment) {
             navController.popBackStack(R.id.mainFragment, false)
+        }
     }
-
 
     private fun openLauncherChooser(resetFailed: Boolean) {
         if (resetFailed) {
@@ -270,19 +296,28 @@ class MainActivity : AppCompatActivity() {
             prefs.launcherRestartTimestamp = System.currentTimeMillis()
             cacheDir.deleteRecursively()
             recreate()
-        } else
+        } else {
             checkTheme()
+        }
     }
 
     private fun checkTheme() {
         timerJob?.cancel()
-        timerJob = lifecycleScope.launch {
-            delay(200.milliseconds)
-            if ((prefs.appTheme == AppCompatDelegate.MODE_NIGHT_YES && getColorFromAttr(R.attr.primaryColor) != getColor(R.color.white))
-                || (prefs.appTheme == AppCompatDelegate.MODE_NIGHT_NO && getColorFromAttr(R.attr.primaryColor) != getColor(R.color.black))
-            )
-                restartLauncherOrCheckTheme(true)
-        }
+        timerJob =
+            lifecycleScope.launch {
+                delay(200.milliseconds)
+                if ((
+                        prefs.appTheme == AppCompatDelegate.MODE_NIGHT_YES &&
+                            getColorFromAttr(R.attr.primaryColor) != getColor(R.color.white)
+                    ) ||
+                    (
+                        prefs.appTheme == AppCompatDelegate.MODE_NIGHT_NO &&
+                            getColorFromAttr(R.attr.primaryColor) != getColor(R.color.black)
+                    )
+                ) {
+                    restartLauncherOrCheckTheme(true)
+                }
+            }
     }
 
     override fun onDestroy() {
@@ -299,9 +334,14 @@ class MainActivity : AppCompatActivity() {
     }
 
     @Deprecated("Deprecated in Java")
-    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+    override fun onActivityResult(
+        requestCode: Int,
+        resultCode: Int,
+        data: Intent?,
+    ) {
         super.onActivityResult(requestCode, resultCode, data)
-        if (requestCode == Constants.REQUEST_CODE_LAUNCHER_SELECTOR && resultCode == Activity.RESULT_OK)
+        if (requestCode == Constants.REQUEST_CODE_LAUNCHER_SELECTOR && resultCode == Activity.RESULT_OK) {
             resetLauncherViaFakeActivity()
+        }
     }
 }

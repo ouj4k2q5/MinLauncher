@@ -5,8 +5,8 @@
 | Component | Version |
 |---|---|
 | JDK | 17 |
-| Gradle | 8.11.1, through the wrapper |
-| Android Gradle Plugin | 8.9.1 |
+| Gradle | 9.6.0, through the wrapper |
+| Android Gradle Plugin | 9.4.0 |
 | `compileSdk` / `targetSdk` | 36 |
 | `minSdk` | 30 (Android 11) |
 
@@ -18,6 +18,34 @@ cd MinLauncher
 ./gradlew assembleDebug
 ./gradlew test
 ./gradlew lint
+```
+
+## Code style and static analysis
+
+Kotlin code is checked by [ktlint](https://pinterest.github.io/ktlint/) (formatting,
+configured through [.editorconfig](../.editorconfig)) and
+[detekt](https://detekt.dev/) (static analysis, configured through
+[config/detekt/detekt.yml](../config/detekt/detekt.yml)). Existing detekt findings
+that need code changes are recorded in `app/detekt-baseline.xml`; only new
+violations fail the build.
+
+The baseline works as a ratchet — it may shrink, but never grow:
+
+- If detekt fails on new code, fix the code. Do not regenerate the baseline
+  with `detektBaseline` on top of new violations: it silently absorbs them.
+- When you fix a baselined violation, delete the matching entries from
+  `app/detekt-baseline.xml`. If detekt still passes afterwards, nothing was
+  missed.
+- CI enforces this: the number of baseline entries must not exceed the count
+  in `config/detekt/baseline-max`. Deliberately exempting new violations
+  requires raising that number in the same commit, so the decision is
+  reviewed. Lowering the count after shrinking the baseline is encouraged but
+  optional.
+
+```bash
+./gradlew ktlintCheck    # check formatting
+./gradlew ktlintFormat   # apply formatting automatically
+./gradlew detekt         # run static analysis
 ```
 
 The debug build uses the `.debug` application-ID suffix, so it can be installed

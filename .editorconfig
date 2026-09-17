@@ -1,0 +1,17 @@
+# EditorConfig: https://editorconfig.org
+# ktlint reads this file for its code-style configuration (properties under
+# [*.{kt,kts}] sections); anything not set here falls back to ktlint defaults,
+# which follow the official Kotlin coding conventions.
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+
+[*.{kt,kts}]
+indent_size = 4
+max_line_length = 120
+
+[*.{gradle,properties,md,yml,yaml}]
+indent_size = 4

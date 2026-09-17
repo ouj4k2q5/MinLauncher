@@ -32,25 +32,34 @@ import app.minlauncher.helper.setPlainWallpaperByTheme
 import app.minlauncher.helper.showToast
 import kotlin.math.roundToInt
 
-class SettingsFragment : BaseFragment(), View.OnClickListener, View.OnLongClickListener {
-
+class SettingsFragment :
+    BaseFragment(),
+    View.OnClickListener,
+    View.OnLongClickListener {
     private lateinit var prefs: Prefs
     private lateinit var viewModel: MainViewModel
 
-    private var _binding: FragmentSettingsBinding? = null
-    private val binding get() = _binding!!
+    private var viewBinding: FragmentSettingsBinding? = null
+    private val binding get() = viewBinding!!
 
-    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
-        _binding = FragmentSettingsBinding.inflate(inflater, container, false)
+    override fun onCreateView(
+        inflater: LayoutInflater,
+        container: ViewGroup?,
+        savedInstanceState: Bundle?,
+    ): View {
+        viewBinding = FragmentSettingsBinding.inflate(inflater, container, false)
         return binding.root
     }
 
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+    override fun onViewCreated(
+        view: View,
+        savedInstanceState: Bundle?,
+    ) {
         super.onViewCreated(view, savedInstanceState)
         prefs = Prefs(requireContext())
         viewModel = activity?.run {
             ViewModelProvider(this)[MainViewModel::class.java]
-        } ?: throw Exception("Invalid Activity")
+        } ?: error("Fragment is not attached to an activity")
         viewModel.isOlauncherDefault()
 
         binding.homeAppsNum.text = prefs.homeAppsNum.toString()
@@ -83,8 +92,9 @@ class SettingsFragment : BaseFragment(), View.OnClickListener, View.OnLongClickL
                 applyTextSizeScale()
             }
         }
-        if (view.id != R.id.alignmentBottom)
+        if (view.id != R.id.alignmentBottom) {
             binding.alignmentSelectLayout.visibility = View.GONE
+        }
 
         when (view.id) {
             R.id.olauncherHiddenApps -> showHiddenApps()
@@ -136,7 +146,6 @@ class SettingsFragment : BaseFragment(), View.OnClickListener, View.OnLongClickL
             R.id.swipeDownAction -> binding.swipeDownSelectLayout.visibility = View.VISIBLE
             R.id.notifications -> updateSwipeDownAction(Constants.SwipeDownAction.NOTIFICATIONS)
             R.id.search -> updateSwipeDownAction(Constants.SwipeDownAction.SEARCH)
-
         }
     }
 
@@ -196,7 +205,6 @@ class SettingsFragment : BaseFragment(), View.OnClickListener, View.OnLongClickL
         binding.boldFont.setOnClickListener(this)
         binding.actionAccessibility.setOnClickListener(this)
         binding.closeAccessibility.setOnClickListener(this)
-
 
         binding.maxApps0.setOnClickListener(this)
         binding.maxApps1.setOnClickListener(this)
@@ -279,13 +287,14 @@ class SettingsFragment : BaseFragment(), View.OnClickListener, View.OnLongClickL
     }
 
     private fun populateDateTime() {
-        binding.dateTime.text = getString(
-            when (prefs.dateTimeVisibility) {
-                Constants.DateTime.DATE_ONLY -> R.string.date
-                Constants.DateTime.ON -> R.string.on
-                else -> R.string.off
-            }
-        )
+        binding.dateTime.text =
+            getString(
+                when (prefs.dateTimeVisibility) {
+                    Constants.DateTime.DATE_ONLY -> R.string.date
+                    Constants.DateTime.ON -> R.string.on
+                    else -> R.string.off
+                },
+            )
     }
 
     private fun showStatusBar() {
@@ -304,13 +313,14 @@ class SettingsFragment : BaseFragment(), View.OnClickListener, View.OnLongClickL
         viewModel.getHiddenApps()
         findNavController().navigate(
             R.id.action_settingsFragment_to_appListFragment,
-            bundleOf(Constants.Key.FLAG to Constants.FLAG_HIDDEN_APPS)
+            bundleOf(Constants.Key.FLAG to Constants.FLAG_HIDDEN_APPS),
         )
     }
 
     private fun toggleAccessibilityVisibility(show: Boolean) {
-        if (isAccessServiceEnabled(requireContext()))
+        if (isAccessServiceEnabled(requireContext())) {
             binding.actionAccessibility.text = getString(R.string.disable)
+        }
         binding.accessibilityLayout.isVisible = show
         binding.scrollView.animateAlpha(if (show) 0.5f else 1f)
     }
@@ -336,10 +346,12 @@ class SettingsFragment : BaseFragment(), View.OnClickListener, View.OnLongClickL
      * and repaint it, then switch the toggle off.
      */
     private fun removeWallpaper() {
-        prefs.appTheme = if (requireContext().isEinkDisplay())
-            AppCompatDelegate.MODE_NIGHT_NO
-        else
-            AppCompatDelegate.MODE_NIGHT_YES
+        prefs.appTheme =
+            if (requireContext().isEinkDisplay()) {
+                AppCompatDelegate.MODE_NIGHT_NO
+            } else {
+                AppCompatDelegate.MODE_NIGHT_YES
+            }
         setPlainWallpaperByTheme(requireContext(), prefs.appTheme)
         prefs.solidWallpaper = false
         populateWallpaperText()
@@ -348,8 +360,9 @@ class SettingsFragment : BaseFragment(), View.OnClickListener, View.OnLongClickL
     private fun toggleSolidWallpaper() {
         prefs.solidWallpaper = !prefs.solidWallpaper
         populateWallpaperText()
-        if (prefs.solidWallpaper)
+        if (prefs.solidWallpaper) {
             setPlainWallpaperByTheme(requireContext(), prefs.appTheme)
+        }
     }
 
     private fun updateHomeAppsNum(num: Int) {
@@ -381,8 +394,9 @@ class SettingsFragment : BaseFragment(), View.OnClickListener, View.OnLongClickL
         prefs.textSizeScale = pendingTextSizeScale
         pendingTextSizeScale = -1f
         val activity = activity ?: return
-        if (activity.isChangingConfigurations.not())
+        if (activity.isChangingConfigurations.not()) {
             activity.recreate()
+        }
     }
 
     private fun toggleKeyboardText() {
@@ -407,7 +421,6 @@ class SettingsFragment : BaseFragment(), View.OnClickListener, View.OnLongClickL
         if (prefs.solidWallpaper) setPlainWallpaperByTheme(requireContext(), theme)
         requireActivity().recreate()
     }
-
 
     private fun populateAppThemeText(appTheme: Int = prefs.appTheme) {
         // MainActivity forces the light theme on e-ink, so the switcher would do nothing there.
@@ -444,8 +457,11 @@ class SettingsFragment : BaseFragment(), View.OnClickListener, View.OnLongClickL
     }
 
     private fun populateKeyboardText() {
-        if (prefs.autoShowKeyboard) binding.autoShowKeyboard.text = getString(R.string.on)
-        else binding.autoShowKeyboard.text = getString(R.string.off)
+        if (prefs.autoShowKeyboard) {
+            binding.autoShowKeyboard.text = getString(R.string.on)
+        } else {
+            binding.autoShowKeyboard.text = getString(R.string.off)
+        }
     }
 
     private fun populateWallpaperText() {
@@ -468,9 +484,12 @@ class SettingsFragment : BaseFragment(), View.OnClickListener, View.OnLongClickL
             Gravity.CENTER -> binding.alignment.text = getString(R.string.center)
             Gravity.END -> binding.alignment.text = getString(R.string.right)
         }
-        binding.alignmentBottom.text = if (prefs.homeBottomAlignment)
-            getString(R.string.bottom_on)
-        else getString(R.string.bottom_off)
+        binding.alignmentBottom.text =
+            if (prefs.homeBottomAlignment) {
+                getString(R.string.bottom_on)
+            } else {
+                getString(R.string.bottom_off)
+            }
     }
 
     // Home button for recents feature disabled
@@ -491,17 +510,22 @@ class SettingsFragment : BaseFragment(), View.OnClickListener, View.OnLongClickL
     // }
 
     private fun populateLockSettings() {
-        binding.toggleLock.text = getString(
-            if (prefs.lockModeOn && isAccessServiceEnabled(requireContext())) R.string.on
-            else R.string.off
-        )
+        binding.toggleLock.text =
+            getString(
+                if (prefs.lockModeOn && isAccessServiceEnabled(requireContext())) {
+                    R.string.on
+                } else {
+                    R.string.off
+                },
+            )
     }
 
     private fun populateSwipeDownAction() {
-        binding.swipeDownAction.text = when (prefs.swipeDownAction) {
-            Constants.SwipeDownAction.NOTIFICATIONS -> getString(R.string.notifications)
-            else -> getString(R.string.search)
-        }
+        binding.swipeDownAction.text =
+            when (prefs.swipeDownAction) {
+                Constants.SwipeDownAction.NOTIFICATIONS -> getString(R.string.notifications)
+                else -> getString(R.string.search)
+            }
     }
 
     private fun updateSwipeDownAction(swipeDownFor: Int) {
@@ -513,14 +537,17 @@ class SettingsFragment : BaseFragment(), View.OnClickListener, View.OnLongClickL
     private fun populateSwipeApps() {
         binding.swipeLeftApp.text = prefs.appNameSwipeLeft
         binding.swipeRightApp.text = prefs.appNameSwipeRight
-        if (!prefs.swipeLeftEnabled)
+        if (!prefs.swipeLeftEnabled) {
             binding.swipeLeftApp.setTextColor(requireContext().getColorFromAttr(R.attr.primaryColorTrans50))
-        if (!prefs.swipeRightEnabled)
+        }
+        if (!prefs.swipeRightEnabled) {
             binding.swipeRightApp.setTextColor(requireContext().getColorFromAttr(R.attr.primaryColorTrans50))
+        }
     }
 
 //    private fun populateDigitalWellbeing() {
-//        binding.digitalWellbeing.isVisible = requireContext().isPackageInstalled(Constants.DIGITAL_WELLBEING_PACKAGE_NAME).not()
+//        binding.digitalWellbeing.isVisible = requireContext()
+//                .isPackageInstalled(Constants.DIGITAL_WELLBEING_PACKAGE_NAME).not()
 //                && requireContext().isPackageInstalled(Constants.DIGITAL_WELLBEING_SAMSUNG_PACKAGE_NAME).not()
 //                && prefs.hideDigitalWellbeing.not()
 //    }
@@ -537,13 +564,13 @@ class SettingsFragment : BaseFragment(), View.OnClickListener, View.OnLongClickL
         viewModel.getAppList(true)
         findNavController().navigate(
             R.id.action_settingsFragment_to_appListFragment,
-            bundleOf(Constants.Key.FLAG to flag)
+            bundleOf(Constants.Key.FLAG to flag),
         )
     }
 
     override fun onDestroyView() {
         applyTextSizeScale()
         super.onDestroyView()
-        _binding = null
+        viewBinding = null
     }
 }

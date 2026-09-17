@@ -12,17 +12,16 @@ import java.util.Date
 data class ComponentForegroundStat(
     val beginTime: Long,
     val endTime: Long,
-    val packageName: String
+    val packageName: String,
 ) {
     /**
      * Overriding toString for a more readable log output, similar to the original Java class.
      * The default data class toString() would also work, but this one is more explicit
      * about formatting the timestamps as Instants.
      */
-    override fun toString(): String {
-        return "ComponentForegroundStat(" +
-                "beginTime=${Date(beginTime)}, " +
-                "endTime=${Date(endTime)}, " +
-                "packageName='$packageName')"
-    }
+    override fun toString(): String =
+        "ComponentForegroundStat(" +
+            "beginTime=${Date(beginTime)}, " +
+            "endTime=${Date(endTime)}, " +
+            "packageName='$packageName')"
 }

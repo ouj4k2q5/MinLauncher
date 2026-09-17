@@ -1,4 +1,6 @@
 apply plugin: 'com.android.application'
+apply plugin: 'org.jlleitschuh.gradle.ktlint'
+apply plugin: 'io.gitlab.arturbosch.detekt'
 
 // version.properties holds the released version as a literal committed by
 // scripts/tag-release.sh as part of the commit it tags, derived from the tag:
@@ -67,6 +69,19 @@ android {
         buildConfig = true
     }
     namespace = 'app.minlauncher'
+}
+
+ktlint {
+    // Kotlin formatting/lint via .editorconfig at the repo root.
+    // ktlintFormat rewrites, ktlintCheck is what CI runs.
+    android.set(true)
+}
+
+detekt {
+    // Start from detekt's defaults and layer config/detekt/detekt.yml on top,
+    // so the yml only records deliberate deviations.
+    buildUponDefaultConfig = true
+    config.setFrom files("$rootDir/config/detekt/detekt.yml")
 }
 
 dependencies {

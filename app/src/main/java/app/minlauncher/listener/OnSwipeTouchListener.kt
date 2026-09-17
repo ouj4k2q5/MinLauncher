@@ -1,6 +1,7 @@
 package app.minlauncher.listener
 
 import android.content.Context
+import android.util.Log
 import android.view.GestureDetector
 import android.view.GestureDetector.SimpleOnGestureListener
 import android.view.MotionEvent
@@ -16,30 +17,35 @@ import kotlinx.coroutines.withContext
 import kotlin.math.abs
 import kotlin.time.Duration.Companion.milliseconds
 
+private const val TAG = "OnSwipeTouchListener"
+private const val SWIPE_THRESHOLD = 100
+private const val SWIPE_VELOCITY_THRESHOLD = 100
+
 /*
 Swipe, double tap and long press touch listener for a view
 Source: https://www.tutorialspoint.com/how-to-handle-swipe-gestures-in-kotlin
 */
 
-internal open class OnSwipeTouchListener(c: Context?) : OnTouchListener {
+internal open class OnSwipeTouchListener(
+    c: Context?,
+) : OnTouchListener {
     private var longPressOn = false
 
     //    private var doubleTapOn = false
     private val gestureDetector: GestureDetector
 
-    override fun onTouch(view: View, motionEvent: MotionEvent): Boolean {
-        if (motionEvent.action == MotionEvent.ACTION_UP)
+    override fun onTouch(
+        view: View,
+        motionEvent: MotionEvent,
+    ): Boolean {
+        if (motionEvent.action == MotionEvent.ACTION_UP) {
             longPressOn = false
+        }
         return gestureDetector.onTouchEvent(motionEvent)
     }
 
     private inner class GestureListener : SimpleOnGestureListener() {
-        private val SWIPE_THRESHOLD: Int = 100
-        private val SWIPE_VELOCITY_THRESHOLD: Int = 100
-
-        override fun onDown(e: MotionEvent): Boolean {
-            return true
-        }
+        override fun onDown(e: MotionEvent): Boolean = true
 
         override fun onSingleTapUp(e: MotionEvent): Boolean {
 //            if (doubleTapOn) {
@@ -67,8 +73,9 @@ internal open class OnSwipeTouchListener(c: Context?) : OnTouchListener {
             GlobalScope.launch {
                 delay(Constants.LONG_PRESS_DELAY_MS.milliseconds)
                 withContext(Dispatchers.Main) {
-                    if (isActive && longPressOn)
+                    if (isActive && longPressOn) {
                         onLongClick()
+                    }
                 }
             }
             super.onLongPress(e)
@@ -93,19 +100,26 @@ internal open class OnSwipeTouchListener(c: Context?) : OnTouchListener {
                     }
                 }
             } catch (exception: Exception) {
-                exception.printStackTrace()
+                Log.e(TAG, "Failed to handle fling gesture", exception)
             }
             return false
         }
     }
 
     open fun onSwipeRight() {}
+
     open fun onSwipeLeft() {}
+
     open fun onSwipeUp() {}
+
     open fun onSwipeDown() {}
+
     open fun onLongClick() {}
+
     open fun onDoubleClick() {}
+
     open fun onTripleClick() {}
+
     open fun onClick() {}
 
     init {
