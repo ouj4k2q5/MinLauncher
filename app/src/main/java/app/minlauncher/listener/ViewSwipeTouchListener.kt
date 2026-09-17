@@ -16,11 +16,20 @@ import kotlinx.coroutines.withContext
 import kotlin.math.abs
 import kotlin.time.Duration.Companion.milliseconds
 
-internal open class ViewSwipeTouchListener(c: Context?, v: View) : OnTouchListener {
+private const val SWIPE_THRESHOLD = 100
+private const val SWIPE_VELOCITY_THRESHOLD = 100
+
+internal open class ViewSwipeTouchListener(
+    c: Context?,
+    v: View,
+) : OnTouchListener {
     private var longPressOn = false
     private val gestureDetector: GestureDetector
 
-    override fun onTouch(view: View, motionEvent: MotionEvent): Boolean {
+    override fun onTouch(
+        view: View,
+        motionEvent: MotionEvent,
+    ): Boolean {
         when (motionEvent.action) {
             MotionEvent.ACTION_DOWN -> view.isPressed = true
             MotionEvent.ACTION_UP -> view.isPressed = false
@@ -28,22 +37,14 @@ internal open class ViewSwipeTouchListener(c: Context?, v: View) : OnTouchListen
         return gestureDetector.onTouchEvent(motionEvent)
     }
 
-    private inner class GestureListener(private val view: View) : SimpleOnGestureListener() {
-        private val SWIPE_THRESHOLD: Int = 100
-        private val SWIPE_VELOCITY_THRESHOLD: Int = 100
-
-        override fun onDown(e: MotionEvent): Boolean {
-            return true
-        }
+    private inner class GestureListener(
+        private val view: View,
+    ) : SimpleOnGestureListener() {
+        override fun onDown(e: MotionEvent): Boolean = true
 
         override fun onSingleTapUp(e: MotionEvent): Boolean {
             onClick(view)
             return super.onSingleTapUp(e)
-        }
-
-        override fun onDoubleTap(e: MotionEvent): Boolean {
-            onDoubleClick()
-            return super.onDoubleTap(e)
         }
 
         override fun onLongPress(e: MotionEvent) {
@@ -51,8 +52,9 @@ internal open class ViewSwipeTouchListener(c: Context?, v: View) : OnTouchListen
             GlobalScope.launch {
                 delay(Constants.LONG_PRESS_DELAY_MS.milliseconds)
                 withContext(Dispatchers.Main) {
-                    if (isActive && longPressOn)
+                    if (isActive && longPressOn) {
                         onLongClick(view)
+                    }
                 }
             }
             super.onLongPress(e)
@@ -84,11 +86,15 @@ internal open class ViewSwipeTouchListener(c: Context?, v: View) : OnTouchListen
     }
 
     open fun onSwipeRight() {}
+
     open fun onSwipeLeft() {}
+
     open fun onSwipeUp() {}
+
     open fun onSwipeDown() {}
+
     open fun onLongClick(view: View) {}
-    private fun onDoubleClick() {}
+
     open fun onClick(view: View) {}
 
     init {

@@ -35,28 +35,35 @@ class AppDrawerAdapter(
     private val appRenameListener: (AppModel, String) -> Unit,
     private val privateSpaceToggleListener: () -> Unit = {},
     private val privateSpaceSettingsListener: () -> Unit = {},
-) : ListAdapter<AppModel, RecyclerView.ViewHolder>(DIFF_CALLBACK), Filterable {
-
+) : ListAdapter<AppModel, RecyclerView.ViewHolder>(DIFF_CALLBACK),
+    Filterable {
     companion object {
         const val VIEW_TYPE_APP = 0
         const val VIEW_TYPE_PRIVATE_HEADER = 1
 
-        val DIFF_CALLBACK = object : DiffUtil.ItemCallback<AppModel>() {
-            override fun areItemsTheSame(oldItem: AppModel, newItem: AppModel): Boolean = when {
-                oldItem is AppModel.App && newItem is AppModel.App ->
-                    oldItem.appPackage == newItem.appPackage && oldItem.user == newItem.user
+        val DIFF_CALLBACK =
+            object : DiffUtil.ItemCallback<AppModel>() {
+                override fun areItemsTheSame(
+                    oldItem: AppModel,
+                    newItem: AppModel,
+                ): Boolean =
+                    when {
+                        oldItem is AppModel.App && newItem is AppModel.App ->
+                            oldItem.appPackage == newItem.appPackage && oldItem.user == newItem.user
 
-                oldItem is AppModel.PinnedShortcut && newItem is AppModel.PinnedShortcut ->
-                    oldItem.identity == newItem.identity
+                        oldItem is AppModel.PinnedShortcut && newItem is AppModel.PinnedShortcut ->
+                            oldItem.identity == newItem.identity
 
-                oldItem is AppModel.PrivateSpaceHeader && newItem is AppModel.PrivateSpaceHeader -> true
+                        oldItem is AppModel.PrivateSpaceHeader && newItem is AppModel.PrivateSpaceHeader -> true
 
-                else -> false
+                        else -> false
+                    }
+
+                override fun areContentsTheSame(
+                    oldItem: AppModel,
+                    newItem: AppModel,
+                ): Boolean = oldItem == newItem
             }
-
-            override fun areContentsTheSame(oldItem: AppModel, newItem: AppModel): Boolean =
-                oldItem == newItem
-        }
     }
 
     private var autoLaunch = true
@@ -70,34 +77,40 @@ class AppDrawerAdapter(
     var appsList: MutableList<AppModel> = mutableListOf()
     var appFilteredList: MutableList<AppModel> = mutableListOf()
 
-    override fun getItemViewType(position: Int): Int {
-        return when (appFilteredList.getOrNull(position)) {
+    override fun getItemViewType(position: Int): Int =
+        when (appFilteredList.getOrNull(position)) {
             is AppModel.PrivateSpaceHeader -> VIEW_TYPE_PRIVATE_HEADER
             else -> VIEW_TYPE_APP
         }
-    }
 
-    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
-        return when (viewType) {
-            VIEW_TYPE_PRIVATE_HEADER -> PrivateSpaceHeaderViewHolder(
-                AdapterPrivateSpaceHeaderBinding.inflate(
-                    LayoutInflater.from(parent.context),
-                    parent,
-                    false
+    override fun onCreateViewHolder(
+        parent: ViewGroup,
+        viewType: Int,
+    ): RecyclerView.ViewHolder =
+        when (viewType) {
+            VIEW_TYPE_PRIVATE_HEADER ->
+                PrivateSpaceHeaderViewHolder(
+                    AdapterPrivateSpaceHeaderBinding.inflate(
+                        LayoutInflater.from(parent.context),
+                        parent,
+                        false,
+                    ),
                 )
-            )
 
-            else -> ViewHolder(
-                AdapterAppDrawerBinding.inflate(
-                    LayoutInflater.from(parent.context),
-                    parent,
-                    false
+            else ->
+                ViewHolder(
+                    AdapterAppDrawerBinding.inflate(
+                        LayoutInflater.from(parent.context),
+                        parent,
+                        false,
+                    ),
                 )
-            )
         }
-    }
 
-    override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
+    override fun onBindViewHolder(
+        holder: RecyclerView.ViewHolder,
+        position: Int,
+    ) {
         try {
             if (appFilteredList.isEmpty() || position == RecyclerView.NO_POSITION) return
             val appModel = appFilteredList[holder.bindingAdapterPosition]
@@ -110,17 +123,18 @@ class AppDrawerAdapter(
                     )
                 }
 
-                is ViewHolder -> holder.bind(
-                    flag,
-                    appLabelGravity,
-                    myUserHandle,
-                    appModel,
-                    appClickListener,
-                    appDeleteListener,
-                    appInfoListener,
-                    appHideListener,
-                    appRenameListener
-                )
+                is ViewHolder ->
+                    holder.bind(
+                        flag,
+                        appLabelGravity,
+                        myUserHandle,
+                        appModel,
+                        appClickListener,
+                        appDeleteListener,
+                        appInfoListener,
+                        appHideListener,
+                        appRenameListener,
+                    )
             }
         } catch (e: Exception) {
             e.printStackTrace()
@@ -135,10 +149,15 @@ class AppDrawerAdapter(
                 isBangSearch = charSearch?.startsWith("!") ?: false
                 autoLaunch = allowAutoLaunch && (charSearch?.startsWith(" ")?.not() ?: true)
 
-                val appFilteredList = (if (charSearch.isNullOrBlank()) appsList
-                else appsList.filter { app ->
-                    app !is AppModel.PrivateSpaceHeader && appLabelMatches(app.appLabel, charSearch)
-                } as MutableList<AppModel>)
+                val appFilteredList = (
+                    if (charSearch.isNullOrBlank()) {
+                        appsList
+                    } else {
+                        appsList.filter { app ->
+                            app !is AppModel.PrivateSpaceHeader && appLabelMatches(app.appLabel, charSearch)
+                        } as MutableList<AppModel>
+                    }
+                    )
 
                 val filterResults = FilterResults()
                 filterResults.values = appFilteredList
@@ -146,7 +165,10 @@ class AppDrawerAdapter(
             }
 
             @Suppress("UNCHECKED_CAST")
-            override fun publishResults(constraint: CharSequence?, results: FilterResults?) {
+            override fun publishResults(
+                constraint: CharSequence?,
+                results: FilterResults?,
+            ) {
                 results?.values?.let {
                     val items = it as MutableList<AppModel>
                     appFilteredList = items
@@ -160,26 +182,32 @@ class AppDrawerAdapter(
 
     private fun autoLaunch() {
         try {
-            if (itemCount == 1
-                && autoLaunch
-                && isBangSearch.not()
-                && flag == Constants.FLAG_LAUNCH_APP
-                && appFilteredList.isNotEmpty()
-                && appFilteredList[0] !is AppModel.PrivateSpaceHeader
-            ) appClickListener(appFilteredList[0])
+            if (itemCount == 1 &&
+                autoLaunch &&
+                isBangSearch.not() &&
+                flag == Constants.FLAG_LAUNCH_APP &&
+                appFilteredList.isNotEmpty() &&
+                appFilteredList[0] !is AppModel.PrivateSpaceHeader
+            ) {
+                appClickListener(appFilteredList[0])
+            }
         } catch (e: Exception) {
             e.printStackTrace()
         }
     }
 
-    private fun appLabelMatches(appLabel: String, charSearch: CharSequence): Boolean {
+    private fun appLabelMatches(
+        appLabel: String,
+        charSearch: CharSequence,
+    ): Boolean {
         if (appLabel.contains(charSearch.trim(), true)) return true
         val query = charSearch.normalizeForSearch()
         return query.isNotEmpty() && appLabel.normalizeForSearch().contains(query, true)
     }
 
     private fun CharSequence.normalizeForSearch(): String =
-        Normalizer.normalize(this, Normalizer.Form.NFD)
+        Normalizer
+            .normalize(this, Normalizer.Form.NFD)
             .replace(diacriticsRegex, "")
             .replace(separatorsRegex, "")
 
@@ -192,8 +220,8 @@ class AppDrawerAdapter(
                 appPackage = "",
                 activityClassName = "",
                 isNew = false,
-                user = android.os.Process.myUserHandle()
-            )
+                user = android.os.Process.myUserHandle(),
+            ),
         )
         this.appsList = appsList
         this.appFilteredList = appsList
@@ -205,8 +233,9 @@ class AppDrawerAdapter(
         if (first != null) appClickListener(first)
     }
 
-    class PrivateSpaceHeaderViewHolder(private val binding: AdapterPrivateSpaceHeaderBinding) :
-        RecyclerView.ViewHolder(binding.root) {
+    class PrivateSpaceHeaderViewHolder(
+        private val binding: AdapterPrivateSpaceHeaderBinding,
+    ) : RecyclerView.ViewHolder(binding.root) {
         fun bind(
             appLabelGravity: Int,
             toggleListener: () -> Unit,
@@ -221,8 +250,9 @@ class AppDrawerAdapter(
         }
     }
 
-    class ViewHolder(private val binding: AdapterAppDrawerBinding) :
-        RecyclerView.ViewHolder(binding.root) {
+    class ViewHolder(
+        private val binding: AdapterAppDrawerBinding,
+    ) : RecyclerView.ViewHolder(binding.root) {
         fun bind(
             flag: Int,
             appLabelGravity: Int,
@@ -239,10 +269,11 @@ class AppDrawerAdapter(
             appTitle.visibility = View.VISIBLE
 
             // Show indicators in title based on app type and state
-            appTitle.text = buildString {
-                append(appModel.appLabel)
-                if (appModel.isNew) append(" ✦")
-            }
+            appTitle.text =
+                buildString {
+                    append(appModel.appLabel)
+                    if (appModel.isNew) append(" ✦")
+                }
             appTitle.gravity = appLabelGravity
             otherProfileIndicator.isVisible = appModel.user != myUserHandle
 
@@ -250,21 +281,26 @@ class AppDrawerAdapter(
 
             appTitle.setOnLongClickListener {
                 if (appModel.appPackage.isNotEmpty()) {
-                    appDelete.alpha = when (
-                        appModel is AppModel.PinnedShortcut || !root.context.isSystemApp(appModel.appPackage, appModel.user)
-                    ) {
-                        true -> 1.0f
-                        false -> 0.5f
-                    }
-                    appHide.text = if (flag == Constants.FLAG_HIDDEN_APPS)
-                        root.context.getString(R.string.adapter_show)
-                    else
-                        root.context.getString(R.string.adapter_hide)
+                    appDelete.alpha =
+                        when (
+                            appModel is AppModel.PinnedShortcut ||
+                                !root.context.isSystemApp(appModel.appPackage, appModel.user)
+                        ) {
+                            true -> 1.0f
+                            false -> 0.5f
+                        }
+                    appHide.text =
+                        if (flag == Constants.FLAG_HIDDEN_APPS) {
+                            root.context.getString(R.string.adapter_show)
+                        } else {
+                            root.context.getString(R.string.adapter_hide)
+                        }
                     appTitle.visibility = View.INVISIBLE
-                    appHide.alpha = when (appModel is AppModel.PinnedShortcut) {
-                        true -> 0.5f
-                        false -> 1.0f
-                    }
+                    appHide.alpha =
+                        when (appModel is AppModel.PinnedShortcut) {
+                            true -> 0.5f
+                            false -> 1.0f
+                        }
                     appHideLayout.visibility = View.VISIBLE
                     // Only allow renaming non hidden apps
                     appRename.isVisible = flag != Constants.FLAG_HIDDEN_APPS
@@ -284,26 +320,34 @@ class AppDrawerAdapter(
                     etAppRename.imeOptions = EditorInfo.IME_ACTION_DONE
                 }
             }
-            etAppRename.onFocusChangeListener = View.OnFocusChangeListener { _, hasFocus ->
-                appTitle.visibility = if (hasFocus) View.INVISIBLE else View.VISIBLE
-            }
-            etAppRename.addTextChangedListener(object : TextWatcher {
-                override fun afterTextChanged(s: Editable?) {
-                    etAppRename.hint = getAppName(etAppRename.context, appModel.appPackage, appModel.user)
+            etAppRename.onFocusChangeListener =
+                View.OnFocusChangeListener { _, hasFocus ->
+                    appTitle.visibility = if (hasFocus) View.INVISIBLE else View.VISIBLE
                 }
+            etAppRename.addTextChangedListener(
+                object : TextWatcher {
+                    override fun afterTextChanged(s: Editable?) {
+                        etAppRename.hint = getAppName(etAppRename.context, appModel.appPackage, appModel.user)
+                    }
 
-                override fun beforeTextChanged(
-                    s: CharSequence?,
-                    start: Int,
-                    count: Int,
-                    after: Int,
-                ) {
-                }
+                    override fun beforeTextChanged(
+                        s: CharSequence?,
+                        start: Int,
+                        count: Int,
+                        after: Int,
+                    ) {
+                    }
 
-                override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
-                    etAppRename.hint = ""
-                }
-            })
+                    override fun onTextChanged(
+                        s: CharSequence?,
+                        start: Int,
+                        before: Int,
+                        count: Int,
+                    ) {
+                        etAppRename.hint = ""
+                    }
+                },
+            )
             etAppRename.setOnEditorActionListener { _, actionCode, _ ->
                 if (actionCode == EditorInfo.IME_ACTION_DONE) {
                     val renameLabel = etAppRename.text.toString().trim()
@@ -324,7 +368,7 @@ class AppDrawerAdapter(
                 } else {
                     appRenameListener(
                         appModel,
-                        getAppName(etAppRename.context, appModel.appPackage, appModel.user)
+                        getAppName(etAppRename.context, appModel.appPackage, appModel.user),
                     )
                     renameLayout.visibility = View.GONE
                 }
@@ -342,7 +386,11 @@ class AppDrawerAdapter(
             appHide.setOnClickListener { appHideListener(appModel, bindingAdapterPosition) }
         }
 
-        private fun getAppName(context: Context, appPackage: String, user: UserHandle): String {
+        private fun getAppName(
+            context: Context,
+            appPackage: String,
+            user: UserHandle,
+        ): String {
             val launcherApps = context.getSystemService(Context.LAUNCHER_APPS_SERVICE) as LauncherApps
             return try {
                 val activityList = launcherApps.getActivityList(appPackage, user)
@@ -350,9 +398,10 @@ class AppDrawerAdapter(
                     activityList.first().label.toString()
                 } else {
                     val packageManager = context.packageManager
-                    packageManager.getApplicationLabel(
-                        packageManager.getApplicationInfo(appPackage, 0)
-                    ).toString()
+                    packageManager
+                        .getApplicationLabel(
+                            packageManager.getApplicationInfo(appPackage, 0),
+                        ).toString()
                 }
             } catch (_: Exception) {
                 "" // As a fallback, display an empty string.

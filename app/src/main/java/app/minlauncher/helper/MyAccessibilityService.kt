@@ -8,10 +8,11 @@ import app.minlauncher.R
 import app.minlauncher.data.Prefs
 
 class MyAccessibilityService : AccessibilityService() {
-
-    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        return START_STICKY
-    }
+    override fun onStartCommand(
+        intent: Intent?,
+        flags: Int,
+        startId: Int,
+    ): Int = START_STICKY
 
     override fun onServiceConnected() {
         Prefs(applicationContext).lockModeOn = true
@@ -37,6 +38,5 @@ class MyAccessibilityService : AccessibilityService() {
     }
 
     override fun onInterrupt() {
-
     }
 }

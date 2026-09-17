@@ -11,10 +11,11 @@ import java.util.function.BiConsumer
 import kotlin.math.max
 import kotlin.math.min
 
-class EventLogWrapper(private val context: Context) {
+class EventLogWrapper(
+    private val context: Context,
+) {
     private val usageStatsManager by lazy { context.getSystemService("usagestats") as UsageStatsManager }
     private val guardian = UnmatchedCloseEventGuardian(usageStatsManager)
-
 
     /**
      * Collects event information from system to calculate and aggregate precise
@@ -27,7 +28,10 @@ class EventLogWrapper(private val context: Context) {
      * @param end   Last point in time to include in results
      * @return A list of foreground stats for the specified period
      */
-    fun getForegroundStatsByTimestamps(start: Long, end: Long): List<ComponentForegroundStat> {
+    fun getForegroundStatsByTimestamps(
+        start: Long,
+        end: Long,
+    ): List<ComponentForegroundStat> {
         var queryStart = start // Can be mutated by DEVICE_STARTUP event
 
         /*
@@ -63,6 +67,7 @@ class EventLogWrapper(private val context: Context) {
          * to prevent apps that had been opened previously in a period from being counted as "opened
          * before start" (as they are not a True unmatched close event).
          */
+
         // Map components to the last moveToForeground event. Null value means it was closed.
         val moveToForegroundMap = mutableMapOf<AppClass, Long?>()
         val componentForegroundStats = mutableListOf<ComponentForegroundStat>()
@@ -88,7 +93,8 @@ class EventLogWrapper(private val context: Context) {
                      * "An event type denoting that a component was in the foreground the previous day.
                      * This is effectively treated as a MOVE_TO_FOREGROUND."
                      */
-                4 -> {
+                4,
+                    -> {
                     // Store open timestamp in map, overwriting earlier timestamps in case of Duplicate open event
                     moveToForegroundMap[appClass] = event.timeStamp
                 }
@@ -109,31 +115,34 @@ class EventLogWrapper(private val context: Context) {
                      * "An event type denoting that a component was in the foreground when the stats
                      * rolled-over. This is effectively treated as a {@link #MOVE_TO_BACKGROUND}."
                      */
-                3 -> {
-                    val eventBeginTime: Long? = moveToForegroundMap[appClass]?.also {
-                        // Open and close events in order. Mark as closed.
-                        moveToForegroundMap[appClass] = null
-                    } ?: if (
-                    // App has not been in this query yet (test for Duplicate close event)
-                        moveToForegroundMap.keys.none { it.packageName == event.packageName } &&
-                        // Test if this unmatched close event is True by asking the Guardian to scan for it
-                        guardian.test(event, queryStart)
-                    ) {
-                        // Identified as True unmatched close event. Take start as a starting timestamp.
-                        queryStart
-                    } else {
-                        null // Ignore Faulty unmatched close event
-                    }
+                3,
+                    -> {
+                    val eventBeginTime: Long? =
+                        moveToForegroundMap[appClass]?.also {
+                            // Open and close events in order. Mark as closed.
+                            moveToForegroundMap[appClass] = null
+                        } ?: if (
+                        // App has not been in this query yet (test for Duplicate close event)
+                            moveToForegroundMap.keys.none { it.packageName == event.packageName } &&
+                            // Test if this unmatched close event is True by asking the Guardian to scan for it
+                            guardian.test(event, queryStart)
+                        ) {
+                            // Identified as True unmatched close event. Take start as a starting timestamp.
+                            queryStart
+                        } else {
+                            null // Ignore Faulty unmatched close event
+                        }
 
                     if (eventBeginTime != null) {
                         // Check if another of the app's components have moved to the foreground in the meantime
-                        val endTime = moveToForegroundMap.entries
-                            .filter { (key, value) -> key.packageName == event.packageName && value != null }
-                            .mapNotNull { it.value }
-                            .minOrNull() ?: event.timeStamp
+                        val endTime =
+                            moveToForegroundMap.entries
+                                .filter { (key, value) -> key.packageName == event.packageName && value != null }
+                                .mapNotNull { it.value }
+                                .minOrNull() ?: event.timeStamp
 
                         componentForegroundStats.add(
-                            ComponentForegroundStat(eventBeginTime, endTime, event.packageName)
+                            ComponentForegroundStat(eventBeginTime, endTime, event.packageName),
                         )
                     }
                 }
@@ -146,7 +155,7 @@ class EventLogWrapper(private val context: Context) {
                     moveToForegroundMap.forEach { (key, value) ->
                         if (value != null) { // If it's a remaining start event
                             componentForegroundStats.add(
-                                ComponentForegroundStat(value, event.timeStamp, key.packageName)
+                                ComponentForegroundStat(value, event.timeStamp, key.packageName),
                             )
                             // Set entire app to closed
                             moveToForegroundMap.keys
@@ -182,8 +191,8 @@ class EventLogWrapper(private val context: Context) {
                         ComponentForegroundStat(
                             value,
                             min(System.currentTimeMillis(), end),
-                            key.packageName
-                        )
+                            key.packageName,
+                        ),
                     )
                 }
                 // If app is not in foreground, drop event (Assume Faulty unmatched open event)
@@ -204,10 +213,13 @@ class EventLogWrapper(private val context: Context) {
                         ComponentForegroundStat(
                             queryStart,
                             min(System.currentTimeMillis(), end),
-                            foregroundProcess
-                        )
+                            foregroundProcess,
+                        ),
                     )
-                    Log.d("EventLogWrapper", "Assuming that application $foregroundProcess has been used the whole query time")
+                    Log.d(
+                        "EventLogWrapper",
+                        "Assuming that application $foregroundProcess has been used the whole query time",
+                    )
                 }
             }
         }
@@ -225,16 +237,17 @@ class EventLogWrapper(private val context: Context) {
     @JvmOverloads
     fun aggregateForegroundStats(
         foregroundStats: List<ComponentForegroundStat>,
-        endConsumer: BiConsumer<String, Long>? = null
+        endConsumer: BiConsumer<String, Long>? = null,
     ): List<SimpleUsageStat> {
         if (foregroundStats.isEmpty()) return emptyList()
 
         // Group by package name, merge overlapping intervals, then sum durations
-        val applicationTotalTime = foregroundStats
-            .groupBy { it.packageName }
-            .mapValues { (_, stats) ->
-                mergeOverlappingIntervals(stats).sumOf { it.endTime - it.beginTime }
-            }
+        val applicationTotalTime =
+            foregroundStats
+                .groupBy { it.packageName }
+                .mapValues { (_, stats) ->
+                    mergeOverlappingIntervals(stats).sumOf { it.endTime - it.beginTime }
+                }
 
         val firstBeginTime = foregroundStats.first().beginTime
         val timeZoneOffset = Calendar.getInstance().timeZone.getOffset(firstBeginTime)
@@ -251,16 +264,13 @@ class EventLogWrapper(private val context: Context) {
         }
     }
 
-    fun aggregateSimpleUsageStats(usageStats: List<SimpleUsageStat>): Long {
-        return usageStats.sumOf { it.timeUsed }
-    }
+    fun aggregateSimpleUsageStats(usageStats: List<SimpleUsageStat>): Long = usageStats.sumOf { it.timeUsed }
+
     /**
      * Merges overlapping or adjacent time intervals to prevent double-counting
      * when multiple components of the same package have overlapping foreground times.
      */
-    private fun mergeOverlappingIntervals(
-        stats: List<ComponentForegroundStat>
-    ): List<ComponentForegroundStat> {
+    private fun mergeOverlappingIntervals(stats: List<ComponentForegroundStat>): List<ComponentForegroundStat> {
         if (stats.size <= 1) return stats
 
         val sorted = stats.sortedBy { it.beginTime }
@@ -270,11 +280,12 @@ class EventLogWrapper(private val context: Context) {
         for (i in 1 until sorted.size) {
             val next = sorted[i]
             if (next.beginTime <= current.endTime) {
-                current = ComponentForegroundStat(
-                    current.beginTime,
-                    max(current.endTime, next.endTime),
-                    current.packageName
-                )
+                current =
+                    ComponentForegroundStat(
+                        current.beginTime,
+                        max(current.endTime, next.endTime),
+                        current.packageName,
+                    )
             } else {
                 merged.add(current)
                 current = next
@@ -287,5 +298,8 @@ class EventLogWrapper(private val context: Context) {
     /**
      * Stores a class name and its corresponding package.
      */
-    private data class AppClass(val packageName: String, val className: String?)
+    private data class AppClass(
+        val packageName: String,
+        val className: String?,
+    )
 }

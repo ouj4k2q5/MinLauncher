@@ -40,14 +40,14 @@ fun View.showKeyboard(show: Boolean = true) {
     }
 }
 
-
 fun Activity.showLauncherSelector(requestCode: Int) {
     val roleManager = getSystemService(Context.ROLE_SERVICE) as RoleManager
     if (roleManager.isRoleAvailable(RoleManager.ROLE_HOME)) {
         val intent = roleManager.createRequestRoleIntent(RoleManager.ROLE_HOME)
         startActivityForResult(intent, requestCode)
-    } else
+    } else {
         resetDefaultLauncher()
+    }
 }
 
 // The implicit intent is the mechanism here: FakeHomeActivity is briefly enabled so that
@@ -61,7 +61,7 @@ fun Context.resetDefaultLauncher() {
         packageManager.setComponentEnabledSetting(
             componentName,
             PackageManager.COMPONENT_ENABLED_STATE_ENABLED,
-            PackageManager.DONT_KILL_APP
+            PackageManager.DONT_KILL_APP,
         )
         val selector = Intent(Intent.ACTION_MAIN)
         selector.addCategory(Intent.CATEGORY_HOME)
@@ -69,7 +69,7 @@ fun Context.resetDefaultLauncher() {
         packageManager.setComponentEnabledSetting(
             componentName,
             PackageManager.COMPONENT_ENABLED_STATE_DISABLED,
-            PackageManager.DONT_KILL_APP
+            PackageManager.DONT_KILL_APP,
         )
     } catch (e: Exception) {
         e.printStackTrace()
@@ -83,8 +83,9 @@ fun Context.isDefaultLauncher(): Boolean {
 
 fun Context.resetLauncherViaFakeActivity() {
     resetDefaultLauncher()
-    if (getDefaultLauncherPackage(this).contains("."))
+    if (getDefaultLauncherPackage(this).contains(".")) {
         startActivity(Intent(Settings.ACTION_MANAGE_DEFAULT_APPS_SETTINGS))
+    }
 }
 
 fun Context.openSearch(query: String? = null) {
@@ -132,23 +133,26 @@ private fun isKnownEinkModel(): Boolean {
     val einkOnlyBrands = listOf("onyx", "boox", "dasung", "bigme", "boyue", "meebook", "mudita")
     if (einkOnlyBrands.any { brand.contains(it) || manufacturer.contains(it) }) return true
     // Hisense also sells LCD phones, so match only their e-ink line
-    if (brand.contains("hisense") || manufacturer.contains("hisense"))
+    if (brand.contains("hisense") || manufacturer.contains("hisense")) {
         return Regex("\\bA[579]\\b|TOUCH|HI READER").containsMatchIn(Build.MODEL.uppercase())
+    }
     return false
 }
 
-fun Context.isSystemAnimationsDisabled(): Boolean {
-    return try {
-        Settings.Global.getFloat(contentResolver, Settings.Global.WINDOW_ANIMATION_SCALE, 1f) == 0f
-                || Settings.Global.getFloat(contentResolver, Settings.Global.TRANSITION_ANIMATION_SCALE, 1f) == 0f
-                || Settings.Global.getFloat(contentResolver, Settings.Global.ANIMATOR_DURATION_SCALE, 1f) == 0f
+fun Context.isSystemAnimationsDisabled(): Boolean =
+    try {
+        Settings.Global.getFloat(contentResolver, Settings.Global.WINDOW_ANIMATION_SCALE, 1f) == 0f ||
+            Settings.Global.getFloat(contentResolver, Settings.Global.TRANSITION_ANIMATION_SCALE, 1f) == 0f ||
+            Settings.Global.getFloat(contentResolver, Settings.Global.ANIMATOR_DURATION_SCALE, 1f) == 0f
     } catch (e: Exception) {
         e.printStackTrace()
         false
     }
-}
 
-fun Context.isPackageInstalled(packageName: String, userHandle: UserHandle = android.os.Process.myUserHandle()): Boolean {
+fun Context.isPackageInstalled(
+    packageName: String,
+    userHandle: UserHandle = android.os.Process.myUserHandle(),
+): Boolean {
     val launcher = getSystemService(Context.LAUNCHER_APPS_SERVICE) as LauncherApps
     val activityInfo = launcher.getActivityList(packageName, userHandle)
     return activityInfo.isNotEmpty()
@@ -159,7 +163,7 @@ fun Context.appUsagePermissionGranted(): Boolean {
     return appOpsManager.checkOpNoThrow(
         AppOpsManager.OPSTR_GET_USAGE_STATS,
         android.os.Process.myUid(),
-        packageName
+        packageName,
     ) == AppOpsManager.MODE_ALLOWED
 }
 
@@ -171,11 +175,12 @@ fun Context.formattedTimeSpent(timeSpent: Long): String {
     return when {
         timeSpent == 0L -> "0m"
 
-        hours > 0 -> getString(
-            R.string.time_spent_hour,
-            hours.toString(),
-            remainingMinutes.toString()
-        )
+        hours > 0 ->
+            getString(
+                R.string.time_spent_hour,
+                hours.toString(),
+                remainingMinutes.toString(),
+            )
 
         minutes > 0 -> {
             getString(R.string.time_spent_min, minutes.toString())
@@ -191,6 +196,4 @@ fun Long.hasBeenHours(hours: Int): Boolean =
 fun Long.hasBeenMinutes(minutes: Int): Boolean =
     ((System.currentTimeMillis() - this) / Constants.ONE_MINUTE_IN_MILLIS) >= minutes
 
-fun Int.dpToPx(): Int {
-    return (this * Resources.getSystem().displayMetrics.density).toInt()
-}
+fun Int.dpToPx(): Int = (this * Resources.getSystem().displayMetrics.density).toInt()

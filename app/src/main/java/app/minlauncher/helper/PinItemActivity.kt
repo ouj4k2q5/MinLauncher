@@ -6,10 +6,9 @@ import androidx.appcompat.app.AppCompatActivity
 import app.minlauncher.R
 
 class PinItemActivity : AppCompatActivity() {
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        
+
         window.setBackgroundDrawable(null)
 
         val launcherApps = getSystemService(LauncherApps::class.java)
@@ -39,10 +38,11 @@ class PinItemActivity : AppCompatActivity() {
         val shortcutInfo = pinItemRequest.shortcutInfo
         if (shortcutInfo != null) {
             val success = runCatching { pinItemRequest.accept() }.getOrDefault(false)
-            val message = when (success) {
-                true -> R.string.shortcut_pinned
-                false -> R.string.shortcut_pin_failed
-            }
+            val message =
+                when (success) {
+                    true -> R.string.shortcut_pinned
+                    false -> R.string.shortcut_pin_failed
+                }
             showToast(message)
         } else {
             showToast(R.string.invalid_shortcut)

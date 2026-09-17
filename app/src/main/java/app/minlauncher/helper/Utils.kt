@@ -39,12 +39,18 @@ import java.text.Collator
 import kotlin.math.pow
 import kotlin.math.sqrt
 
-fun Context.showToast(message: String?, duration: Int = Toast.LENGTH_SHORT) {
+fun Context.showToast(
+    message: String?,
+    duration: Int = Toast.LENGTH_SHORT,
+) {
     if (message.isNullOrBlank()) return
     Toast.makeText(this, message, duration).show()
 }
 
-fun Context.showToast(stringResource: Int, duration: Int = Toast.LENGTH_SHORT) {
+fun Context.showToast(
+    stringResource: Int,
+    duration: Int = Toast.LENGTH_SHORT,
+) {
     Toast.makeText(this, getString(stringResource), duration).show()
 }
 
@@ -53,8 +59,8 @@ suspend fun getAppsList(
     prefs: Prefs,
     includeRegularApps: Boolean = true,
     includeHiddenApps: Boolean = false,
-): MutableList<AppModel> {
-    return withContext(Dispatchers.IO) {
+): MutableList<AppModel> =
+    withContext(Dispatchers.IO) {
         val appList: MutableList<AppModel> = mutableListOf()
 
         try {
@@ -69,16 +75,19 @@ suspend fun getAppsList(
             for (profile in userManager.userProfiles) {
                 if (isPrivateSpaceProfile(context, profile)) continue
                 for (app in launcherApps.getActivityList(null, profile)) {
-                    val appLabelShown = prefs.getAppRenameLabel(app.applicationInfo.packageName)
-                        .ifBlank { app.label.toString() }
-                    val appModel = AppModel.App(
-                        appLabel = appLabelShown,
-                        key = collator.getCollationKey(app.label.toString()),
-                        appPackage = app.applicationInfo.packageName,
-                        activityClassName = app.componentName.className,
-                        isNew = (System.currentTimeMillis() - app.firstInstallTime) < Constants.ONE_HOUR_IN_MILLIS,
-                        user = profile
-                    )
+                    val appLabelShown =
+                        prefs
+                            .getAppRenameLabel(app.applicationInfo.packageName)
+                            .ifBlank { app.label.toString() }
+                    val appModel =
+                        AppModel.App(
+                            appLabel = appLabelShown,
+                            key = collator.getCollationKey(app.label.toString()),
+                            appPackage = app.applicationInfo.packageName,
+                            activityClassName = app.componentName.className,
+                            isNew = (System.currentTimeMillis() - app.firstInstallTime) < Constants.ONE_HOUR_IN_MILLIS,
+                            user = profile,
+                        )
 
                     // if the current app is not OLauncher
                     if (app.applicationInfo.packageName != BuildConfig.APPLICATION_ID) {
@@ -99,11 +108,12 @@ suspend fun getAppsList(
 
             // Add shortcuts if we're getting regular apps
             if (includeRegularApps) {
-                val pinned = try {
-                    getPinnedShortcuts(context, prefs, collator)
-                } catch (_: Exception) {
-                    emptyList()
-                }
+                val pinned =
+                    try {
+                        getPinnedShortcuts(context, prefs, collator)
+                    } catch (_: Exception) {
+                        emptyList()
+                    }
                 appList.addAll(pinned)
             }
 
@@ -113,7 +123,6 @@ suspend fun getAppsList(
         }
         appList
     }
-}
 
 private suspend fun getPinnedShortcuts(
     context: Context,
@@ -124,24 +133,28 @@ private suspend fun getPinnedShortcuts(
         val pinnedShortcuts = mutableListOf<AppModel.PinnedShortcut>()
         val shortcuts = context.getSystemService(Context.LAUNCHER_APPS_SERVICE) as? LauncherApps
         if (shortcuts?.hasShortcutHostPermission() == true) {
-            val query = LauncherApps.ShortcutQuery().apply {
-                setQueryFlags(LauncherApps.ShortcutQuery.FLAG_MATCH_PINNED)
-            }
+            val query =
+                LauncherApps.ShortcutQuery().apply {
+                    setQueryFlags(LauncherApps.ShortcutQuery.FLAG_MATCH_PINNED)
+                }
             shortcuts.profiles.forEach { profile ->
                 if (isPrivateSpaceProfile(context, profile)) return@forEach
                 try {
                     shortcuts.getShortcuts(query, profile)?.forEach { shortcut ->
-                        val identity = shortcutIdentity(
-                            shortcut.`package`,
-                            shortcut.id,
-                            profile.toString()
-                        )
+                        val identity =
+                            shortcutIdentity(
+                                shortcut.`package`,
+                                shortcut.id,
+                                profile.toString(),
+                            )
                         if (shortcut.isPinned && pinnedShortcuts.none { it.identity == identity }) {
-                            val label = prefs.getAppRenameLabel(identity)
-                                .ifBlank { prefs.getAppRenameLabel(shortcut.id) }
-                                .takeIf { it.isNotBlank() }
-                                ?: shortcut.shortLabel?.toString()
-                                ?: shortcut.longLabel?.toString().orEmpty()
+                            val label =
+                                prefs
+                                    .getAppRenameLabel(identity)
+                                    .ifBlank { prefs.getAppRenameLabel(shortcut.id) }
+                                    .takeIf { it.isNotBlank() }
+                                    ?: shortcut.shortLabel?.toString()
+                                    ?: shortcut.longLabel?.toString().orEmpty()
                             pinnedShortcuts.add(
                                 AppModel.PinnedShortcut(
                                     appLabel = label,
@@ -149,8 +162,8 @@ private suspend fun getPinnedShortcuts(
                                     appPackage = shortcut.`package`,
                                     shortcutId = shortcut.id,
                                     isNew = false,
-                                    user = profile
-                                )
+                                    user = profile,
+                                ),
                             )
                         }
                     }
@@ -168,20 +181,35 @@ private fun upgradeHiddenApps(prefs: Prefs) {
     val hiddenAppsSet = prefs.hiddenApps
     val newHiddenAppsSet = mutableSetOf<String>()
     for (hiddenPackage in hiddenAppsSet) {
-        if (hiddenPackage.contains("|")) newHiddenAppsSet.add(hiddenPackage)
-        else newHiddenAppsSet.add(hiddenPackage + android.os.Process.myUserHandle().toString())
+        if (hiddenPackage.contains("|")) {
+            newHiddenAppsSet.add(hiddenPackage)
+        } else {
+            newHiddenAppsSet.add(
+                hiddenPackage +
+                    android.os.Process
+                        .myUserHandle()
+                        .toString(),
+            )
+        }
     }
     prefs.hiddenApps = newHiddenAppsSet
     prefs.hiddenAppsUpdated = true
 }
 
-fun isPackageInstalled(context: Context, packageName: String, userString: String): Boolean {
+fun isPackageInstalled(
+    context: Context,
+    packageName: String,
+    userString: String,
+): Boolean {
     val launcher = context.getSystemService(Context.LAUNCHER_APPS_SERVICE) as LauncherApps
     val activityInfo = launcher.getActivityList(packageName, getUserHandleFromString(context, userString))
     return activityInfo.isNotEmpty()
 }
 
-fun isPrivateSpaceProfile(context: Context, userHandle: UserHandle): Boolean {
+fun isPrivateSpaceProfile(
+    context: Context,
+    userHandle: UserHandle,
+): Boolean {
     if (Build.VERSION.SDK_INT < Build.VERSION_CODES.VANILLA_ICE_CREAM) return false
     return try {
         val launcherApps = context.getSystemService(Context.LAUNCHER_APPS_SERVICE) as LauncherApps
@@ -191,14 +219,16 @@ fun isPrivateSpaceProfile(context: Context, userHandle: UserHandle): Boolean {
     }
 }
 
-fun isPrivateSpaceLocked(context: Context, userHandle: UserHandle): Boolean {
-    return try {
+fun isPrivateSpaceLocked(
+    context: Context,
+    userHandle: UserHandle,
+): Boolean =
+    try {
         val userManager = context.getSystemService(Context.USER_SERVICE) as UserManager
         userManager.isQuietModeEnabled(userHandle)
     } catch (_: Exception) {
         true
     }
-}
 
 fun getPrivateSpaceUserHandle(context: Context): UserHandle? {
     if (Build.VERSION.SDK_INT < Build.VERSION_CODES.VANILLA_ICE_CREAM) return null
@@ -222,8 +252,10 @@ suspend fun getPrivateSpaceApps(
 
             for (app in launcherApps.getActivityList(null, privateSpaceHandle)) {
                 if (app.applicationInfo.packageName == BuildConfig.APPLICATION_ID) continue
-                val appLabelShown = prefs.getAppRenameLabel(app.applicationInfo.packageName)
-                    .ifBlank { app.label.toString() }
+                val appLabelShown =
+                    prefs
+                        .getAppRenameLabel(app.applicationInfo.packageName)
+                        .ifBlank { app.label.toString() }
                 appList.add(
                     AppModel.App(
                         appLabel = appLabelShown,
@@ -231,8 +263,8 @@ suspend fun getPrivateSpaceApps(
                         appPackage = app.applicationInfo.packageName,
                         activityClassName = app.componentName.className,
                         isNew = false,
-                        user = privateSpaceHandle
-                    )
+                        user = privateSpaceHandle,
+                    ),
                 )
             }
             appList.sortWith(compareBy(collator) { it.appLabel })
@@ -243,7 +275,10 @@ suspend fun getPrivateSpaceApps(
     }
 }
 
-fun getUserHandleFromString(context: Context, userHandleString: String): UserHandle {
+fun getUserHandleFromString(
+    context: Context,
+    userHandleString: String,
+): UserHandle {
     val userManager = context.getSystemService(Context.USER_SERVICE) as UserManager
     for (userHandle in userManager.userProfiles) {
         if (userHandle.toString() == userHandleString) {
@@ -266,22 +301,32 @@ fun getDefaultLauncherPackage(context: Context): String {
     val result = packageManager.resolveActivity(intent, 0)
     return if (result?.activityInfo != null) {
         result.activityInfo.packageName
-    } else "android"
+    } else {
+        "android"
+    }
 }
 
-fun setPlainWallpaperByTheme(context: Context, appTheme: Int) {
+fun setPlainWallpaperByTheme(
+    context: Context,
+    appTheme: Int,
+) {
     when (appTheme) {
         AppCompatDelegate.MODE_NIGHT_YES -> setPlainWallpaper(context, android.R.color.black)
         AppCompatDelegate.MODE_NIGHT_NO -> setPlainWallpaper(context, android.R.color.white)
         else -> {
-            if (context.isDarkThemeOn())
+            if (context.isDarkThemeOn()) {
                 setPlainWallpaper(context, android.R.color.black)
-            else setPlainWallpaper(context, android.R.color.white)
+            } else {
+                setPlainWallpaper(context, android.R.color.white)
+            }
         }
     }
 }
 
-fun setPlainWallpaper(context: Context, color: Int) {
+fun setPlainWallpaper(
+    context: Context,
+    color: Int,
+) {
     try {
         val bitmap = createBitmap(1000, 2000)
         bitmap.eraseColor(context.getColor(color))
@@ -294,25 +339,34 @@ fun setPlainWallpaper(context: Context, color: Int) {
     }
 }
 
-fun getChangedAppTheme(context: Context, currentAppTheme: Int): Int {
-    return when (currentAppTheme) {
+fun getChangedAppTheme(
+    context: Context,
+    currentAppTheme: Int,
+): Int =
+    when (currentAppTheme) {
         AppCompatDelegate.MODE_NIGHT_YES -> AppCompatDelegate.MODE_NIGHT_NO
         AppCompatDelegate.MODE_NIGHT_NO -> AppCompatDelegate.MODE_NIGHT_YES
         else -> {
-            if (context.isDarkThemeOn())
+            if (context.isDarkThemeOn()) {
                 AppCompatDelegate.MODE_NIGHT_NO
-            else AppCompatDelegate.MODE_NIGHT_YES
+            } else {
+                AppCompatDelegate.MODE_NIGHT_YES
+            }
         }
     }
-}
 
-fun openAppInfo(context: Context, userHandle: UserHandle, packageName: String) {
+fun openAppInfo(
+    context: Context,
+    userHandle: UserHandle,
+    packageName: String,
+) {
     val launcher = context.getSystemService(Context.LAUNCHER_APPS_SERVICE) as LauncherApps
     val component = launcher.getActivityList(packageName, userHandle).firstOrNull()?.componentName
-    if (component != null)
+    if (component != null) {
         launcher.startAppDetailsActivity(component, userHandle, null, null)
-    else
+    } else {
         context.showToast(context.getString(R.string.unable_to_open_app_info))
+    }
 }
 
 fun openSearch(context: Context) {
@@ -367,10 +421,11 @@ fun openAlarmApp(context: Context) {
 @SuppressLint("UnsafeImplicitIntentLaunch")
 fun openCalendar(context: Context) {
     try {
-        val calendarUri = CalendarContract.CONTENT_URI
-            .buildUpon()
-            .appendPath("time")
-            .build()
+        val calendarUri =
+            CalendarContract.CONTENT_URI
+                .buildUpon()
+                .appendPath("time")
+                .build()
         context.startActivity(Intent(Intent.ACTION_VIEW, calendarUri))
     } catch (_: Exception) {
         try {
@@ -384,14 +439,20 @@ fun openCalendar(context: Context) {
 }
 
 fun isAccessServiceEnabled(context: Context): Boolean {
-    val enabled = try {
-        Settings.Secure.getInt(context.applicationContext.contentResolver, Settings.Secure.ACCESSIBILITY_ENABLED)
-    } catch (_: Exception) {
-        0
-    }
+    val enabled =
+        try {
+            Settings.Secure.getInt(context.applicationContext.contentResolver, Settings.Secure.ACCESSIBILITY_ENABLED)
+        } catch (_: Exception) {
+            0
+        }
     if (enabled == 1) {
-        val enabledServicesString: String? = Settings.Secure.getString(context.contentResolver, Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES)
-        return enabledServicesString?.contains(context.packageName + "/" + MyAccessibilityService::class.java.name) ?: false
+        val enabledServicesString: String? =
+            Settings.Secure.getString(
+                context.contentResolver,
+                Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES,
+            )
+        return enabledServicesString?.contains(context.packageName + "/" + MyAccessibilityService::class.java.name)
+            ?: false
     }
     return false
 }
@@ -406,10 +467,9 @@ fun isTablet(context: Context): Boolean {
     return diagonalInches >= 7.0
 }
 
-fun Context.isDarkThemeOn(): Boolean {
-    return resources.configuration.uiMode and
-            Configuration.UI_MODE_NIGHT_MASK == UI_MODE_NIGHT_YES
-}
+fun Context.isDarkThemeOn(): Boolean =
+    resources.configuration.uiMode and
+        Configuration.UI_MODE_NIGHT_MASK == UI_MODE_NIGHT_YES
 
 fun Context.openUrl(url: String) {
     if (url.isEmpty()) return
@@ -418,7 +478,10 @@ fun Context.openUrl(url: String) {
     startActivity(intent)
 }
 
-fun Context.isSystemApp(packageName: String, user: UserHandle? = null): Boolean {
+fun Context.isSystemApp(
+    packageName: String,
+    user: UserHandle? = null,
+): Boolean {
     if (packageName.isBlank()) return true
     return try {
         val launcherApps = getSystemService(Context.LAUNCHER_APPS_SERVICE) as LauncherApps
@@ -426,12 +489,16 @@ fun Context.isSystemApp(packageName: String, user: UserHandle? = null): Boolean 
         val activityList = launcherApps.getActivityList(packageName, targetUser)
         if (activityList.isNotEmpty()) {
             val applicationInfo = activityList.first().applicationInfo
-            ((applicationInfo.flags and ApplicationInfo.FLAG_SYSTEM != 0)
-                    || (applicationInfo.flags and ApplicationInfo.FLAG_UPDATED_SYSTEM_APP != 0))
+            (
+                (applicationInfo.flags and ApplicationInfo.FLAG_SYSTEM != 0) ||
+                    (applicationInfo.flags and ApplicationInfo.FLAG_UPDATED_SYSTEM_APP != 0)
+                )
         } else {
             val applicationInfo = packageManager.getApplicationInfo(packageName, 0)
-            ((applicationInfo.flags and ApplicationInfo.FLAG_SYSTEM != 0)
-                    || (applicationInfo.flags and ApplicationInfo.FLAG_UPDATED_SYSTEM_APP != 0))
+            (
+                (applicationInfo.flags and ApplicationInfo.FLAG_SYSTEM != 0) ||
+                    (applicationInfo.flags and ApplicationInfo.FLAG_UPDATED_SYSTEM_APP != 0)
+                )
         }
     } catch (e: Exception) {
         e.printStackTrace()
@@ -468,24 +535,30 @@ fun View.animateAlpha(alpha: Float = 1.0f) {
     }
 }
 
-fun Context.deletePinnedShortcut(packageName: String, shortcutIdToDelete: String, user: UserHandle) {
+fun Context.deletePinnedShortcut(
+    packageName: String,
+    shortcutIdToDelete: String,
+    user: UserHandle,
+) {
     val launcherApps = getSystemService(Context.LAUNCHER_APPS_SERVICE) as LauncherApps
 
     // 1. Query for existing pinned shortcuts for the package
-    val query = LauncherApps.ShortcutQuery().apply {
-        setPackage(packageName)
-        // Query only for pinned shortcuts
-        setQueryFlags(LauncherApps.ShortcutQuery.FLAG_MATCH_PINNED)
-    }
+    val query =
+        LauncherApps.ShortcutQuery().apply {
+            setPackage(packageName)
+            // Query only for pinned shortcuts
+            setQueryFlags(LauncherApps.ShortcutQuery.FLAG_MATCH_PINNED)
+        }
 
     try {
         val pinnedShortcuts = launcherApps.getShortcuts(query, user)
 
         if (pinnedShortcuts != null) {
             // 2. Filter out the shortcut to be deleted
-            val updatedPinnedIds = pinnedShortcuts
-                .filter { it.id != shortcutIdToDelete }
-                .map { it.id }
+            val updatedPinnedIds =
+                pinnedShortcuts
+                    .filter { it.id != shortcutIdToDelete }
+                    .map { it.id }
 
             // 3. Re-pin the remaining shortcuts
             // This replaces the existing set of pinned shortcuts for this package

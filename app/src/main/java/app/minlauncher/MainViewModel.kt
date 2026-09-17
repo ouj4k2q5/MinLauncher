@@ -28,8 +28,9 @@ import app.minlauncher.helper.usageStats.EventLogWrapper
 import kotlinx.coroutines.launch
 import java.util.Calendar
 
-
-class MainViewModel(application: Application) : AndroidViewModel(application) {
+class MainViewModel(
+    application: Application,
+) : AndroidViewModel(application) {
     private val appContext by lazy { application.applicationContext }
     private val prefs = Prefs(appContext)
 
@@ -56,7 +57,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     // Home button for recents feature disabled
     // val showRecentApps = SingleLiveEvent<Unit?>()
 
-    fun selectedApp(appModel: AppModel, flag: Int) {
+    fun selectedApp(
+        appModel: AppModel,
+        flag: Int,
+    ) {
         if (appModel is AppModel.PrivateSpaceHeader) return
         when (flag) {
             Constants.FLAG_LAUNCH_APP -> {
@@ -94,13 +98,16 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     private fun launchShortcut(appModel: AppModel.PinnedShortcut) {
         val launcher = appContext.getSystemService(Context.LAUNCHER_APPS_SERVICE) as LauncherApps
-        val query = LauncherApps.ShortcutQuery().apply {
-            setPackage(appModel.appPackage)
-            setQueryFlags(LauncherApps.ShortcutQuery.FLAG_MATCH_PINNED)
-        }
+        val query =
+            LauncherApps.ShortcutQuery().apply {
+                setPackage(appModel.appPackage)
+                setQueryFlags(LauncherApps.ShortcutQuery.FLAG_MATCH_PINNED)
+            }
         try {
-            val shortcut = launcher.getShortcuts(query, appModel.user)
-                ?.find { it.id == appModel.shortcutId }
+            val shortcut =
+                launcher
+                    .getShortcuts(query, appModel.user)
+                    ?.find { it.id == appModel.shortcutId }
             if (shortcut == null) {
                 appContext.showToast(appContext.getString(R.string.shortcut_not_found))
                 return
@@ -111,7 +118,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    private fun saveHomeApp(appModel: AppModel, position: Int) {
+    private fun saveHomeApp(
+        appModel: AppModel,
+        position: Int,
+    ) {
         when (appModel) {
             is AppModel.PrivateSpaceHeader -> return
             is AppModel.App -> {
@@ -269,7 +279,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         refreshHome(false)
     }
 
-    private fun saveSwipeApp(appModel: AppModel, isLeft: Boolean) {
+    private fun saveSwipeApp(
+        appModel: AppModel,
+        isLeft: Boolean,
+    ) {
         when (appModel) {
             is AppModel.PrivateSpaceHeader -> return
             is AppModel.App -> {
@@ -351,26 +364,32 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         updateSwipeApps.postValue(Unit)
     }
 
-    private fun launchApp(packageName: String, activityClassName: String?, userHandle: UserHandle) {
+    private fun launchApp(
+        packageName: String,
+        activityClassName: String?,
+        userHandle: UserHandle,
+    ) {
         val launcher = appContext.getSystemService(Context.LAUNCHER_APPS_SERVICE) as LauncherApps
         val activityInfo = launcher.getActivityList(packageName, userHandle)
 
-        val isActivityValid = activityClassName.isNullOrBlank().not()
-                && activityInfo.any { it.componentName.className == activityClassName }
+        val isActivityValid =
+            activityClassName.isNullOrBlank().not() &&
+                activityInfo.any { it.componentName.className == activityClassName }
 
-        val component = if (isActivityValid)
-            ComponentName(packageName, activityClassName)
-        else {
-            when (activityInfo.size) {
-                0 -> {
-                    appContext.showToast(appContext.getString(R.string.app_not_found))
-                    return
-                }
+        val component =
+            if (isActivityValid) {
+                ComponentName(packageName, activityClassName)
+            } else {
+                when (activityInfo.size) {
+                    0 -> {
+                        appContext.showToast(appContext.getString(R.string.app_not_found))
+                        return
+                    }
 
-                1 -> ComponentName(packageName, activityInfo[0].name)
-                else -> ComponentName(packageName, activityInfo[activityInfo.size - 1].name)
-            }.also { prefs.updateAppActivityClassName(packageName, it.className) }
-        }
+                    1 -> ComponentName(packageName, activityInfo[0].name)
+                    else -> ComponentName(packageName, activityInfo[activityInfo.size - 1].name)
+                }.also { prefs.updateAppActivityClassName(packageName, it.className) }
+            }
 
         try {
             launcher.startMainActivity(component, userHandle, null, null)
@@ -404,7 +423,6 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         isOlauncherDefault.value = isOlauncherDefault(appContext)
     }
 
-
     fun updateHomeAlignment(gravity: Int) {
         prefs.homeAlignment = gravity
         homeAppAlignment.value = prefs.homeAlignment
@@ -413,24 +431,27 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     fun getTodaysScreenTime() {
         if (prefs.screenTimeLastUpdated.hasBeenMinutes(1).not()) return
 
-        val eventLogWrapper = EventLogWrapper(
-            appContext
-        )
+        val eventLogWrapper =
+            EventLogWrapper(
+                appContext,
+            )
         // Start of today in millis
-        val calendar = Calendar.getInstance().apply {
-            set(Calendar.HOUR_OF_DAY, 0)
-            set(Calendar.MINUTE, 0)
-            set(Calendar.SECOND, 0)
-            set(Calendar.MILLISECOND, 0)
-        }
+        val calendar =
+            Calendar.getInstance().apply {
+                set(Calendar.HOUR_OF_DAY, 0)
+                set(Calendar.MINUTE, 0)
+                set(Calendar.SECOND, 0)
+                set(Calendar.MILLISECOND, 0)
+            }
         val startTime = calendar.timeInMillis
         val endTime = System.currentTimeMillis()
 
-        val timeSpent = eventLogWrapper.aggregateSimpleUsageStats(
-            eventLogWrapper.aggregateForegroundStats(
-                eventLogWrapper.getForegroundStatsByTimestamps(startTime, endTime)
+        val timeSpent =
+            eventLogWrapper.aggregateSimpleUsageStats(
+                eventLogWrapper.aggregateForegroundStats(
+                    eventLogWrapper.getForegroundStatsByTimestamps(startTime, endTime),
+                ),
             )
-        )
         val viewTimeSpent = appContext.formattedTimeSpent(timeSpent)
         screenTimeValue.postValue(viewTimeSpent)
         prefs.screenTimeLastUpdated = endTime
@@ -487,7 +508,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                     appContext.packageManager.getLaunchIntentForPackage(packageName)?.component?.className?.let {
                         prefs.clockAppPackage = packageName
                         prefs.clockAppClassName = it
-                        prefs.clockAppUser = android.os.Process.myUserHandle().toString()
+                        prefs.clockAppUser =
+                            android.os.Process
+                                .myUserHandle()
+                                .toString()
                     }
                 }
             } catch (e: Exception) {

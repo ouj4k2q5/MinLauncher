@@ -14,7 +14,7 @@ import java.util.concurrent.TimeUnit
 data class SimpleUsageStat(
     val day: Long,
     val timeUsed: Long,
-    val applicationId: String
+    val applicationId: String,
 ) {
     /**
      * Secondary constructor to create a SimpleUsageStat from the system's [UsageStats].
@@ -22,11 +22,10 @@ data class SimpleUsageStat(
     constructor(systemUsageStat: UsageStats) : this(
         day = getEpochDay(systemUsageStat.lastTimeUsed),
         timeUsed = systemUsageStat.totalTimeInForeground,
-        applicationId = systemUsageStat.packageName
+        applicationId = systemUsageStat.packageName,
     )
 
     companion object {
-
         /**
          * Calculates the epoch day from a timestamp in milliseconds, compatible with API 24+.
          * It manually calculates the day by using integer division on the milliseconds.
@@ -37,4 +36,3 @@ data class SimpleUsageStat(
         }
     }
 }
-

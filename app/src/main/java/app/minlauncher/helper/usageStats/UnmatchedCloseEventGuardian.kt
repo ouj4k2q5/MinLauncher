@@ -11,8 +11,9 @@ import android.util.Log
  * [the documentation](https://codeberg.org/fynngodau/usageDirect/wiki/Event-log-wrapper-scenarios))
  * by seeking backwards through time and scanning for the open event.
  */
-class UnmatchedCloseEventGuardian(private val usageStatsManager: UsageStatsManager) {
-
+class UnmatchedCloseEventGuardian(
+    private val usageStatsManager: UsageStatsManager,
+) {
     companion object {
         private const val SCAN_INTERVAL = 1000L * 60 * 60 * 24 // 24 hours
     }
@@ -22,7 +23,10 @@ class UnmatchedCloseEventGuardian(private val usageStatsManager: UsageStatsManag
      * @param queryStart Timestamp at which original query o
      * @return True if the event is valid, false otherwise
      */
-    fun test(event: UsageEvents.Event, queryStart: Long): Boolean {
+    fun test(
+        event: UsageEvents.Event,
+        queryStart: Long,
+    ): Boolean {
         val events = usageStatsManager.queryEvents(queryStart - SCAN_INTERVAL, queryStart)
 
         // Reusable event object for iteration
