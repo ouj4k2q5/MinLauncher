@@ -94,7 +94,7 @@ class EventLogWrapper(
                      * This is effectively treated as a MOVE_TO_FOREGROUND."
                      */
                 4,
-                    -> {
+                -> {
                     // Store open timestamp in map, overwriting earlier timestamps in case of Duplicate open event
                     moveToForegroundMap[appClass] = event.timeStamp
                 }
@@ -116,13 +116,13 @@ class EventLogWrapper(
                      * rolled-over. This is effectively treated as a {@link #MOVE_TO_BACKGROUND}."
                      */
                 3,
-                    -> {
+                -> {
                     val eventBeginTime: Long? =
                         moveToForegroundMap[appClass]?.also {
                             // Open and close events in order. Mark as closed.
                             moveToForegroundMap[appClass] = null
                         } ?: if (
-                        // App has not been in this query yet (test for Duplicate close event)
+                            // App has not been in this query yet (test for Duplicate close event)
                             moveToForegroundMap.keys.none { it.packageName == event.packageName } &&
                             // Test if this unmatched close event is True by asking the Guardian to scan for it
                             guardian.test(event, queryStart)

@@ -478,13 +478,13 @@ fun Context.isSystemApp(
             (
                 (applicationInfo.flags and ApplicationInfo.FLAG_SYSTEM != 0) ||
                     (applicationInfo.flags and ApplicationInfo.FLAG_UPDATED_SYSTEM_APP != 0)
-                )
+            )
         } else {
             val applicationInfo = packageManager.getApplicationInfo(packageName, 0)
             (
                 (applicationInfo.flags and ApplicationInfo.FLAG_SYSTEM != 0) ||
                     (applicationInfo.flags and ApplicationInfo.FLAG_UPDATED_SYSTEM_APP != 0)
-                )
+            )
         }
     } catch (e: Exception) {
         Log.e(TAG, "Failed to check if app is a system app", e)

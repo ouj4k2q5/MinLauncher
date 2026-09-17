@@ -309,11 +309,11 @@ class MainActivity : AppCompatActivity() {
                 if ((
                         prefs.appTheme == AppCompatDelegate.MODE_NIGHT_YES &&
                             getColorFromAttr(R.attr.primaryColor) != getColor(R.color.white)
-                        ) ||
+                    ) ||
                     (
                         prefs.appTheme == AppCompatDelegate.MODE_NIGHT_NO &&
                             getColorFromAttr(R.attr.primaryColor) != getColor(R.color.black)
-                        )
+                    )
                 ) {
                     restartLauncherOrCheckTheme(true)
                 }

@@ -160,7 +160,7 @@ class AppDrawerAdapter(
                             app !is AppModel.PrivateSpaceHeader && appLabelMatches(app.appLabel, charSearch)
                         } as MutableList<AppModel>
                     }
-                    )
+                )
 
                 val filterResults = FilterResults()
                 filterResults.values = appFilteredList
