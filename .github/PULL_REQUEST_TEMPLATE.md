@@ -5,11 +5,11 @@ A clear and concise description of what this PR does and why it's needed.
 Fixes # (issue number)
 
 ## Type of Change
-[ ] Bug fix
-[ ] New feature
-[ ] Refactor
-[ ] Documentation
-[ ] Other:
+- [ ] Bug fix
+- [ ] New feature
+- [ ] Refactor
+- [ ] Documentation
+- [ ] Other:
 
 ## How to Test
 Provide instructions on how to verify these changes.
