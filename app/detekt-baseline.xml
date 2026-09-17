@@ -25,22 +25,12 @@
         <ID>NestedBlockDepth:OnSwipeTouchListener.kt$OnSwipeTouchListener.GestureListener$override fun onFling( event1: MotionEvent?, event2: MotionEvent, velocityX: Float, velocityY: Float, ): Boolean</ID>
         <ID>NestedBlockDepth:UnmatchedCloseEventGuardian.kt$UnmatchedCloseEventGuardian$fun test( event: UsageEvents.Event, queryStart: Long, ): Boolean</ID>
         <ID>NestedBlockDepth:ViewSwipeTouchListener.kt$ViewSwipeTouchListener.GestureListener$override fun onFling( event1: MotionEvent?, event2: MotionEvent, velocityX: Float, velocityY: Float, ): Boolean</ID>
-        <ID>PrintStackTrace:AppDrawerAdapter.kt$AppDrawerAdapter$e</ID>
-        <ID>PrintStackTrace:AppDrawerFragment.kt$AppDrawerFragment$e</ID>
-        <ID>PrintStackTrace:Extensions.kt$e</ID>
-        <ID>PrintStackTrace:HomeFragment.kt$HomeFragment$e</ID>
-        <ID>PrintStackTrace:HomeFragment.kt$HomeFragment.&lt;no name provided&gt;$e</ID>
-        <ID>PrintStackTrace:MainViewModel.kt$MainViewModel$e</ID>
-        <ID>PrintStackTrace:OnSwipeTouchListener.kt$OnSwipeTouchListener.GestureListener$exception</ID>
-        <ID>PrintStackTrace:Utils.kt$e</ID>
-        <ID>PrintStackTrace:ViewSwipeTouchListener.kt$ViewSwipeTouchListener.GestureListener$exception</ID>
         <ID>ReturnCount:AppDrawerFragment.kt$AppDrawerFragment$private fun isSearchComposing(): Boolean</ID>
         <ID>ReturnCount:Extensions.kt$private fun isKnownEinkModel(): Boolean</ID>
         <ID>ReturnCount:HomeFragment.kt$HomeFragment$private fun populateHomeScreen(appCountUpdated: Boolean)</ID>
         <ID>ReturnCount:HomeFragment.kt$HomeFragment$private fun setHomeAppText( textView: TextView, appName: String, packageName: String, userString: String, isShortcut: Boolean, shortcutId: String?, ): Boolean</ID>
         <ID>ReturnCount:MyAccessibilityService.kt$MyAccessibilityService$override fun onAccessibilityEvent(event: AccessibilityEvent)</ID>
         <ID>ReturnCount:Utils.kt$fun getPrivateSpaceUserHandle(context: Context): UserHandle?</ID>
-        <ID>SwallowedException:MyAccessibilityService.kt$MyAccessibilityService$e: Exception</ID>
         <ID>TooGenericExceptionCaught:AppDrawerAdapter.kt$AppDrawerAdapter$e: Exception</ID>
         <ID>TooGenericExceptionCaught:AppDrawerFragment.kt$AppDrawerFragment$e: Exception</ID>
         <ID>TooGenericExceptionCaught:AppDrawerFragment.kt$AppDrawerFragment.&lt;no name provided&gt;$e: Exception</ID>
@@ -52,8 +42,6 @@
         <ID>TooGenericExceptionCaught:OnSwipeTouchListener.kt$OnSwipeTouchListener.GestureListener$exception: Exception</ID>
         <ID>TooGenericExceptionCaught:Utils.kt$e: Exception</ID>
         <ID>TooGenericExceptionCaught:ViewSwipeTouchListener.kt$ViewSwipeTouchListener.GestureListener$exception: Exception</ID>
-        <ID>TooGenericExceptionThrown:HomeFragment.kt$HomeFragment$throw Exception("Invalid Activity")</ID>
-        <ID>TooGenericExceptionThrown:SettingsFragment.kt$SettingsFragment$throw Exception("Invalid Activity")</ID>
         <ID>TooManyFunctions:AppDrawerFragment.kt$AppDrawerFragment : BaseFragment</ID>
         <ID>TooManyFunctions:Extensions.kt$app.minlauncher.helper.Extensions.kt</ID>
         <ID>TooManyFunctions:HomeFragment.kt$HomeFragment : BaseFragmentOnClickListenerOnLongClickListener</ID>

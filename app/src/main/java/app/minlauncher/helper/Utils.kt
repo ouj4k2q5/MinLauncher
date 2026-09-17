@@ -39,6 +39,8 @@ import java.text.Collator
 import kotlin.math.pow
 import kotlin.math.sqrt
 
+private const val TAG = "Utils"
+
 fun Context.showToast(
     message: String?,
     duration: Int = Toast.LENGTH_SHORT,
@@ -119,7 +121,7 @@ suspend fun getAppsList(
 
             appList.sortWith(compareBy(collator) { it.appLabel })
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e(TAG, "Failed to load apps list", e)
         }
         appList
     }
@@ -168,7 +170,7 @@ private suspend fun getPinnedShortcuts(
                         }
                     }
                 } catch (e: Exception) {
-                    e.printStackTrace()
+                    Log.e(TAG, "Failed to load pinned shortcuts", e)
                 }
             }
         }
@@ -269,7 +271,7 @@ suspend fun getPrivateSpaceApps(
             }
             appList.sortWith(compareBy(collator) { it.appLabel })
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e(TAG, "Failed to load private space apps", e)
         }
         appList
     }
@@ -335,7 +337,7 @@ fun setPlainWallpaper(
         manager.setBitmap(bitmap, null, false, WallpaperManager.FLAG_LOCK)
         bitmap.recycle()
     } catch (e: Exception) {
-        e.printStackTrace()
+        Log.e(TAG, "Failed to set plain wallpaper", e)
     }
 }
 
@@ -384,7 +386,7 @@ fun expandNotificationDrawer(context: Context) {
         val method = statusBarManager.getMethod("expandNotificationsPanel")
         method.invoke(statusBarService)
     } catch (e: Exception) {
-        e.printStackTrace()
+        Log.e(TAG, "Failed to expand notification drawer", e)
     }
 }
 
@@ -393,7 +395,7 @@ fun openDialerApp(context: Context) {
         val sendIntent = Intent(Intent.ACTION_DIAL)
         context.startActivity(sendIntent)
     } catch (e: Exception) {
-        e.printStackTrace()
+        Log.e(TAG, "Failed to open dialer app", e)
     }
 }
 
@@ -402,7 +404,7 @@ fun openCameraApp(context: Context) {
         val sendIntent = Intent(MediaStore.INTENT_ACTION_STILL_IMAGE_CAMERA)
         context.startActivity(sendIntent)
     } catch (e: Exception) {
-        e.printStackTrace()
+        Log.e(TAG, "Failed to open camera app", e)
     }
 }
 
@@ -411,7 +413,7 @@ fun openAlarmApp(context: Context) {
         val intent = Intent(AlarmClock.ACTION_SHOW_ALARMS)
         context.startActivity(intent)
     } catch (e: Exception) {
-        Log.d("TAG", e.toString())
+        Log.e(TAG, "Failed to open alarm app", e)
     }
 }
 
@@ -433,7 +435,7 @@ fun openCalendar(context: Context) {
             intent.addCategory(Intent.CATEGORY_APP_CALENDAR)
             context.startActivity(intent)
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e(TAG, "Failed to open calendar app", e)
         }
     }
 }
@@ -501,7 +503,7 @@ fun Context.isSystemApp(
                 )
         }
     } catch (e: Exception) {
-        e.printStackTrace()
+        Log.e(TAG, "Failed to check if app is a system app", e)
         false
     }
 }

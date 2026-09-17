@@ -8,6 +8,7 @@ import android.content.pm.LauncherApps
 import android.os.Build
 import android.os.UserHandle
 import android.os.UserManager
+import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.viewModelScope
@@ -27,6 +28,8 @@ import app.minlauncher.helper.showToast
 import app.minlauncher.helper.usageStats.EventLogWrapper
 import kotlinx.coroutines.launch
 import java.util.Calendar
+
+private const val TAG = "MainViewModel"
 
 class MainViewModel(
     application: Application,
@@ -497,7 +500,7 @@ class MainViewModel(
             userManager.requestQuietModeEnabled(!currentlyLocked, handle)
         } catch (e: Exception) {
             isPrivateSpaceToggling = false
-            e.printStackTrace()
+            Log.e(TAG, "Failed to toggle private space lock", e)
         }
     }
 
@@ -515,7 +518,7 @@ class MainViewModel(
                     }
                 }
             } catch (e: Exception) {
-                e.printStackTrace()
+                Log.e(TAG, "Failed to set default clock app", e)
             }
         }
     }

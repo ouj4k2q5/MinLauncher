@@ -59,7 +59,7 @@ class SettingsFragment :
         prefs = Prefs(requireContext())
         viewModel = activity?.run {
             ViewModelProvider(this)[MainViewModel::class.java]
-        } ?: throw Exception("Invalid Activity")
+        } ?: error("Fragment is not attached to an activity")
         viewModel.isOlauncherDefault()
 
         binding.homeAppsNum.text = prefs.homeAppsNum.toString()

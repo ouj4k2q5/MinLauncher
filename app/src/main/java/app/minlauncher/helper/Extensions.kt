@@ -14,12 +14,15 @@ import android.content.res.Resources
 import android.os.Build
 import android.os.UserHandle
 import android.provider.Settings
+import android.util.Log
 import android.view.View
 import android.view.WindowInsets
 import android.view.inputmethod.InputMethodManager
 import app.minlauncher.BuildConfig
 import app.minlauncher.R
 import app.minlauncher.data.Constants
+
+private const val TAG = "Extensions"
 
 fun View.hideKeyboard() {
     clearFocus()
@@ -72,7 +75,7 @@ fun Context.resetDefaultLauncher() {
             PackageManager.DONT_KILL_APP,
         )
     } catch (e: Exception) {
-        e.printStackTrace()
+        Log.e(TAG, "Failed to reset default launcher", e)
     }
 }
 
@@ -109,7 +112,7 @@ private fun Context.hasEinkRefreshRate(): Boolean {
         val maxRefreshRate = display.supportedModes.maxOfOrNull { it.refreshRate } ?: return false
         maxRefreshRate <= Constants.MIN_ANIM_REFRESH_RATE
     } catch (e: Exception) {
-        e.printStackTrace()
+        Log.e(TAG, "Failed to check display refresh rate", e)
         false
     }
 }
@@ -145,7 +148,7 @@ fun Context.isSystemAnimationsDisabled(): Boolean =
             Settings.Global.getFloat(contentResolver, Settings.Global.TRANSITION_ANIMATION_SCALE, 1f) == 0f ||
             Settings.Global.getFloat(contentResolver, Settings.Global.ANIMATOR_DURATION_SCALE, 1f) == 0f
     } catch (e: Exception) {
-        e.printStackTrace()
+        Log.e(TAG, "Failed to check system animations setting", e)
         false
     }
 

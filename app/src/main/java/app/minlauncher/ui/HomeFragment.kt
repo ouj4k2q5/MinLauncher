@@ -6,6 +6,7 @@ import android.content.pm.LauncherApps
 import android.content.res.Configuration
 import android.os.BatteryManager
 import android.os.Bundle
+import android.util.Log
 import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.View
@@ -42,6 +43,8 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
+private const val TAG = "HomeFragment"
+
 class HomeFragment :
     BaseFragment(),
     View.OnClickListener,
@@ -69,7 +72,7 @@ class HomeFragment :
         prefs = Prefs(requireContext())
         viewModel = activity?.run {
             ViewModelProvider(this)[MainViewModel::class.java]
-        } ?: throw Exception("Invalid Activity")
+        } ?: error("Fragment is not attached to an activity")
 
         initObservers()
         setHomeAlignment(prefs.homeAlignment)
@@ -104,7 +107,7 @@ class HomeFragment :
                     val appLocation = view.tag.toString().toInt()
                     homeAppClicked(appLocation)
                 } catch (e: Exception) {
-                    e.printStackTrace()
+                    Log.e(TAG, "Failed to launch home screen app", e)
                 }
             }
         }
@@ -485,7 +488,7 @@ class HomeFragment :
                 textView.text = ""
                 return false
             } catch (e: Exception) {
-                e.printStackTrace()
+                Log.e(TAG, "Failed to verify home screen shortcut", e)
                 textView.text = ""
                 return false
             }
@@ -640,7 +643,7 @@ class HomeFragment :
                     Constants.Key.RENAME to rename,
                 ),
             )
-            e.printStackTrace()
+            Log.e(TAG, "Failed to navigate to app list", e)
         }
     }
 
@@ -677,7 +680,7 @@ class HomeFragment :
             )
             startActivity(intent)
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e(TAG, "Failed to open Digital Wellbeing app", e)
             try {
                 intent.setClassName(
                     Constants.DIGITAL_WELLBEING_SAMSUNG_PACKAGE_NAME,
@@ -685,7 +688,7 @@ class HomeFragment :
                 )
                 startActivity(intent)
             } catch (e: Exception) {
-                e.printStackTrace()
+                Log.e(TAG, "Failed to open Samsung Digital Wellbeing app", e)
             }
         }
     }
@@ -724,7 +727,7 @@ class HomeFragment :
                     findNavController().navigate(R.id.action_mainFragment_to_settingsFragment)
                     viewModel.firstOpen(false)
                 } catch (e: Exception) {
-                    e.printStackTrace()
+                    Log.e(TAG, "Failed to navigate to settings fragment", e)
                 }
             }
 

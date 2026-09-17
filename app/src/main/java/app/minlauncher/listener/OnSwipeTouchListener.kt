@@ -1,6 +1,7 @@
 package app.minlauncher.listener
 
 import android.content.Context
+import android.util.Log
 import android.view.GestureDetector
 import android.view.GestureDetector.SimpleOnGestureListener
 import android.view.MotionEvent
@@ -16,6 +17,7 @@ import kotlinx.coroutines.withContext
 import kotlin.math.abs
 import kotlin.time.Duration.Companion.milliseconds
 
+private const val TAG = "OnSwipeTouchListener"
 private const val SWIPE_THRESHOLD = 100
 private const val SWIPE_VELOCITY_THRESHOLD = 100
 
@@ -98,7 +100,7 @@ internal open class OnSwipeTouchListener(
                     }
                 }
             } catch (exception: Exception) {
-                exception.printStackTrace()
+                Log.e(TAG, "Failed to handle fling gesture", exception)
             }
             return false
         }

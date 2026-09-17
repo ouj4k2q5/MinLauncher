@@ -2,10 +2,13 @@ package app.minlauncher.helper
 
 import android.accessibilityservice.AccessibilityService
 import android.content.Intent
+import android.util.Log
 import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityNodeInfo
 import app.minlauncher.R
 import app.minlauncher.data.Prefs
+
+private const val TAG = "MyAccessibilityService"
 
 class MyAccessibilityService : AccessibilityService() {
     override fun onStartCommand(
@@ -33,7 +36,7 @@ class MyAccessibilityService : AccessibilityService() {
                 // }
             }
         } catch (e: Exception) {
-            return
+            Log.e(TAG, "Failed to handle accessibility event (type=${event.eventType})", e)
         }
     }
 

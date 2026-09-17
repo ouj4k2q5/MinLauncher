@@ -4,6 +4,7 @@ import android.content.Context
 import android.os.Bundle
 import android.os.Process
 import android.text.Spannable
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -34,6 +35,8 @@ import app.minlauncher.helper.openUrl
 import app.minlauncher.helper.showKeyboard
 import app.minlauncher.helper.showToast
 import app.minlauncher.helper.uninstall
+
+private const val TAG = "AppDrawerFragment"
 
 class AppDrawerFragment : BaseFragment() {
     private lateinit var prefs: Prefs
@@ -90,7 +93,7 @@ class AppDrawerFragment : BaseFragment() {
             searchTextView = binding.search.findViewById(androidx.appcompat.R.id.search_src_text)
             searchTextView?.gravity = prefs.appLabelAlignment
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e(TAG, "Failed to style search view", e)
         }
     }
 
@@ -116,7 +119,7 @@ class AppDrawerFragment : BaseFragment() {
                             if (canRename && newText.isNotBlank()) View.VISIBLE else View.GONE
                         return true
                     } catch (e: Exception) {
-                        e.printStackTrace()
+                        Log.e(TAG, "Failed to filter app list", e)
                     }
                     return false
                 }

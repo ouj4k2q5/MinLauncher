@@ -5,6 +5,7 @@ import android.content.pm.LauncherApps
 import android.os.UserHandle
 import android.text.Editable
 import android.text.TextWatcher
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -24,6 +25,8 @@ import app.minlauncher.helper.hideKeyboard
 import app.minlauncher.helper.isSystemApp
 import app.minlauncher.helper.showKeyboard
 import java.text.Normalizer
+
+private const val TAG = "AppDrawerAdapter"
 
 class AppDrawerAdapter(
     private var flag: Int,
@@ -137,7 +140,7 @@ class AppDrawerAdapter(
                     )
             }
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e(TAG, "Failed to bind app drawer item", e)
         }
     }
 
@@ -192,7 +195,7 @@ class AppDrawerAdapter(
                 appClickListener(appFilteredList[0])
             }
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e(TAG, "Failed to auto launch app", e)
         }
     }
 
