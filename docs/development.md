@@ -20,6 +20,21 @@ cd MinLauncher
 ./gradlew lint
 ```
 
+## Code style and static analysis
+
+Kotlin code is checked by [ktlint](https://pinterest.github.io/ktlint/) (formatting,
+configured through [.editorconfig](../.editorconfig)) and
+[detekt](https://detekt.dev/) (static analysis, configured through
+[config/detekt/detekt.yml](../config/detekt/detekt.yml)). Existing detekt findings
+that need code changes are recorded in `app/detekt-baseline.xml`; only new
+violations fail the build.
+
+```bash
+./gradlew ktlintCheck    # check formatting
+./gradlew ktlintFormat   # apply formatting automatically
+./gradlew detekt         # run static analysis
+```
+
 The debug build uses the `.debug` application-ID suffix, so it can be installed
 alongside a release build or upstream Olauncher:
 

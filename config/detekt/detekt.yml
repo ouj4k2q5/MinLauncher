@@ -1,0 +1,16 @@
+# detekt configuration. Used with buildUponDefaultConfig = true (see
+# app/build.gradle), so this file only lists deliberate deviations from
+# detekt's defaults. Existing findings that require code changes are recorded
+# in app/detekt-baseline.xml so only new violations fail the build.
+
+style:
+  MagicNumber:
+    # The UI code is full of intentional pixel dimensions, view sizes and
+    # resource IDs; extracting them all to named constants would not improve
+    # readability here.
+    active: false
+empty-blocks:
+  EmptyFunctionBlock:
+    # Framework hooks such as AccessibilityService.onInterrupt() are required
+    # overrides that are legitimately empty.
+    ignoreOverridden: true
