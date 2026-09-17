@@ -41,7 +41,9 @@ jobs:
         # surface in the release build, and release.yml depends on it succeeding.
         # ktlintCheck and detekt enforce the Kotlin code style (.editorconfig) and
         # static analysis (config/detekt) on top of the built-in Android lint.
-        run: ./gradlew --stacktrace test lint detekt ktlintCheck assembleDebug assembleRelease
+        # --continue so a failing task (e.g. test) doesn't hide later failures in
+        # detekt/ktlintCheck; reports are uploaded either way via if: always().
+        run: ./gradlew --stacktrace --continue test lint detekt ktlintCheck assembleDebug assembleRelease
 
       - name: Upload reports
         # Reports are most useful precisely when the build failed.
