@@ -11,7 +11,7 @@ works differently from [`release.yml`](../.github/workflows/release.yml):
 - The recipe that tells F-Droid how to build the app lives in a separate
   repository, [`fdroiddata`](https://gitlab.com/fdroid/fdroiddata), not here.
   A draft of that recipe is kept at
-  [`docs/f-droid/io.github.ouj4k2q5.minlauncher.yml`](f-droid/io.github.ouj4k2q5.minlauncher.yml)
+  [`docs/f-droid/io.github.ouj4k2q5.minlauncher`](f-droid/io.github.ouj4k2q5.minlauncher)
   to copy into a merge request there.
 - What *does* live in this repository is the metadata F-Droid reads directly
   from source: [`metadata/en-US/`](../metadata/en-US/) (title, descriptions,
@@ -32,7 +32,7 @@ So the version needs to exist as a literal, checked-in value, not only as
 something computed from the tag at build time. [`version.properties`](../version.properties)
 is that literal: [`scripts/tag-release.sh`](../scripts/tag-release.sh) commits
 the new `versionName`/`versionCode` to it *before* creating the tag, so the
-tagged commit already carries the correct version in source. `app/build.gradle`
+tagged commit already carries the correct version in source. `app/build.gradle.kts`
 reads it as the default (an explicit `-P` override still wins, for local
 testing — see [Development](development.md)), and `release.yml` asserts it
 matches the tag before building, so a tag pushed without going through
