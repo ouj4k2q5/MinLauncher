@@ -26,7 +26,7 @@ android {
         versionCode appVersionCode
         versionName appVersionName
 
-        resourceConfigurations += ["en", "ar", "de", "es-rES", "es-rUS", "fr", "he", "hr", "hu", "in", "it", "ja", "ko", "nl", "pl", "pt-rBR", "ru-rRU", "sv", "tr", "uk", "zh"]
+        resourceConfigurations += ["en", "ja"]
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
 
