@@ -29,6 +29,19 @@ configured through [.editorconfig](../.editorconfig)) and
 that need code changes are recorded in `app/detekt-baseline.xml`; only new
 violations fail the build.
 
+The baseline works as a ratchet — it may shrink, but never grow:
+
+- If detekt fails on new code, fix the code. Do not regenerate the baseline
+  with `detektBaseline` on top of new violations: it silently absorbs them.
+- When you fix a baselined violation, delete the matching entries from
+  `app/detekt-baseline.xml`. If detekt still passes afterwards, nothing was
+  missed.
+- CI enforces this: the number of baseline entries must not exceed the count
+  in `config/detekt/baseline-max`. Deliberately exempting new violations
+  requires raising that number in the same commit, so the decision is
+  reviewed. Lowering the count after shrinking the baseline is encouraged but
+  optional.
+
 ```bash
 ./gradlew ktlintCheck    # check formatting
 ./gradlew ktlintFormat   # apply formatting automatically
