@@ -341,22 +341,6 @@ fun setPlainWallpaper(
     }
 }
 
-fun getChangedAppTheme(
-    context: Context,
-    currentAppTheme: Int,
-): Int =
-    when (currentAppTheme) {
-        AppCompatDelegate.MODE_NIGHT_YES -> AppCompatDelegate.MODE_NIGHT_NO
-        AppCompatDelegate.MODE_NIGHT_NO -> AppCompatDelegate.MODE_NIGHT_YES
-        else -> {
-            if (context.isDarkThemeOn()) {
-                AppCompatDelegate.MODE_NIGHT_NO
-            } else {
-                AppCompatDelegate.MODE_NIGHT_YES
-            }
-        }
-    }
-
 fun openAppInfo(
     context: Context,
     userHandle: UserHandle,
