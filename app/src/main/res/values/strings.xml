@@ -51,7 +51,7 @@
     <string name="system_default">System</string>
     <string name="dark">Dark</string>
     <string name="light">Light</string>
-    <string name="welcome_to_olauncher_settings">Thank you for choosing MinLauncher.
+    <string name="welcome_to_minlauncher_settings">Thank you for choosing MinLauncher.
     \n\nEnjoy your clean home screen.</string>
     <string name="keyboard_message">The keyboard is the fastest way to find apps.
     \n\nYou can change this setting anytime.</string>
@@ -63,7 +63,7 @@
     <string name="date_only">Date only</string>
     <string name="bottom_on">Align bottom</string>
     <string name="bottom_off">Align center</string>
-    <string name="please_set_olauncher_as_default_first">To use this feature, set MinLauncher as your default launcher.</string>
+    <string name="please_set_minlauncher_as_default_first">To use this feature, set MinLauncher as your default launcher.</string>
     <string name="hidden_apps_message">Tip: Tap \'MinLauncher\' at the top of this Settings page to find your hidden apps.</string>
     <string name="swipe_down_for">Swipe-down action</string>
     <string name="search">Search</string>

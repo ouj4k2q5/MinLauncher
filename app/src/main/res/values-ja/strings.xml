@@ -38,7 +38,7 @@
     <string name="system_default">システム</string>
     <string name="dark">ダーク</string>
     <string name="light">ライト</string>
-    <string name="welcome_to_olauncher_settings">MinLauncher をお選びいただき、ありがとうございます。
+    <string name="welcome_to_minlauncher_settings">MinLauncher をお選びいただき、ありがとうございます。
         \n\nすっきりとしたホーム画面をお楽しみください。</string>
     <string name="keyboard_message">アプリを探すなら、キーボードが一番速い方法です。
         \n\nこの設定はいつでも変更できます。</string>
@@ -50,7 +50,7 @@
     <string name="date_only">日付のみ</string>
     <string name="bottom_on">下に寄せる</string>
     <string name="bottom_off">中央に寄せる</string>
-    <string name="please_set_olauncher_as_default_first">この機能を使用するには、MinLauncher をデフォルトのランチャーとして設定する必要があります</string>
+    <string name="please_set_minlauncher_as_default_first">この機能を使用するには、MinLauncher をデフォルトのランチャーとして設定する必要があります</string>
     <string name="hidden_apps_message">ヒント: 非表示にしたアプリを表示するには、この設定ページ上部の「MinLauncher」をタップします。</string>
     <string name="swipe_down_for">下スワイプの動作</string>
     <string name="search">検索</string>

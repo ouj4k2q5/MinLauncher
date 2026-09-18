@@ -21,7 +21,7 @@ import app.minlauncher.helper.getAppsList
 import app.minlauncher.helper.getPrivateSpaceApps
 import app.minlauncher.helper.getPrivateSpaceUserHandle
 import app.minlauncher.helper.hasBeenMinutes
-import app.minlauncher.helper.isOlauncherDefault
+import app.minlauncher.helper.isMinLauncherDefault
 import app.minlauncher.helper.isPackageInstalled
 import app.minlauncher.helper.isPrivateSpaceLocked
 import app.minlauncher.helper.showToast
@@ -46,7 +46,7 @@ class MainViewModel(
     val updateSwipeApps = MutableLiveData<Any>()
     val appList = MutableLiveData<List<AppModel>?>()
     val hiddenApps = MutableLiveData<List<AppModel>?>()
-    val isOlauncherDefault = MutableLiveData<Boolean>()
+    val isMinLauncherDefault = MutableLiveData<Boolean>()
     val launcherResetFailed = MutableLiveData<Boolean>()
     val homeAppAlignment = MutableLiveData<Int>()
     val screenTimeValue = MutableLiveData<String>()
@@ -425,8 +425,8 @@ class MainViewModel(
         }
     }
 
-    fun isOlauncherDefault() {
-        isOlauncherDefault.value = isOlauncherDefault(appContext)
+    fun isMinLauncherDefault() {
+        isMinLauncherDefault.value = isMinLauncherDefault(appContext)
     }
 
     fun updateHomeAlignment(gravity: Int) {

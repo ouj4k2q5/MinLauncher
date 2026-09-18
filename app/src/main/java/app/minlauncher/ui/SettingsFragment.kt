@@ -60,7 +60,7 @@ class SettingsFragment :
         viewModel = activity?.run {
             ViewModelProvider(this)[MainViewModel::class.java]
         } ?: error("Fragment is not attached to an activity")
-        viewModel.isOlauncherDefault()
+        viewModel.isMinLauncherDefault()
 
         binding.homeAppsNum.text = prefs.homeAppsNum.toString()
         populateKeyboardText()
@@ -97,7 +97,7 @@ class SettingsFragment :
         }
 
         when (view.id) {
-            R.id.olauncherHiddenApps -> showHiddenApps()
+            R.id.minlauncherHiddenApps -> showHiddenApps()
             R.id.screenTimeOnOff -> viewModel.showDialog.postValue(Constants.Dialog.DIGITAL_WELLBEING)
             R.id.appInfo -> openAppInfo(requireContext(), Process.myUserHandle(), BuildConfig.APPLICATION_ID)
             R.id.setLauncher -> viewModel.resetLauncherLiveData.call()
@@ -171,7 +171,7 @@ class SettingsFragment :
     }
 
     private fun initClickListeners() {
-        binding.olauncherHiddenApps.setOnClickListener(this)
+        binding.minlauncherHiddenApps.setOnClickListener(this)
         binding.scrollLayout.setOnClickListener(this)
         binding.appInfo.setOnClickListener(this)
         binding.setLauncher.setOnClickListener(this)
@@ -232,7 +232,7 @@ class SettingsFragment :
             viewModel.showDialog.postValue(Constants.Dialog.ABOUT)
             prefs.firstSettingsOpen = false
         }
-        viewModel.isOlauncherDefault.observe(viewLifecycleOwner) {
+        viewModel.isMinLauncherDefault.observe(viewLifecycleOwner) {
             if (it) binding.setLauncher.text = getString(R.string.change_default_launcher)
         }
         viewModel.homeAppAlignment.observe(viewLifecycleOwner) {
@@ -469,8 +469,8 @@ class SettingsFragment :
     }
 
     private fun updateHomeBottomAlignment() {
-        if (viewModel.isOlauncherDefault.value != true) {
-            requireContext().showToast(getString(R.string.please_set_olauncher_as_default_first), Toast.LENGTH_LONG)
+        if (viewModel.isMinLauncherDefault.value != true) {
+            requireContext().showToast(getString(R.string.please_set_minlauncher_as_default_first), Toast.LENGTH_LONG)
             return
         }
         prefs.homeBottomAlignment = !prefs.homeBottomAlignment
