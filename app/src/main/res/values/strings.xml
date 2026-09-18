@@ -16,20 +16,20 @@
     <string name="app">App</string>
     <string name="set_as_default_launcher">Set as default launcher</string>
     <string name="set_as_default_launcher_u"><u>Set as default launcher</u></string>
-    <string name="double_tap_to_lock_screen">Double tap to lock</string>
-    <string name="home_button_show_recents">Home button for recents</string>
+    <string name="double_tap_to_lock_screen">Double-tap to lock the screen</string>
+    <string name="home_button_show_recents">Home button shows recent apps</string>
     <string name="off">Off</string>
     <string name="on">On</string>
     <string name="change_default_launcher">Change default launcher</string>
-    <string name="swipe_up_for_apps">1. Swipe up for all apps\n2. Long press anywhere for settings</string>
-    <string name="apps_on_home_screen">Apps on home screen</string>
+    <string name="swipe_up_for_apps">Swipe up to see all apps\nLong-press anywhere to open settings</string>
+    <string name="apps_on_home_screen">Number of apps on the home screen</string>
     <string name="solid_wallpaper" tools:ignore="MissingTranslation">Wallpaper</string>
     <string name="left">Left</string>
     <string name="right">Right</string>
     <string name="center">Center</string>
-    <string name="home_layout_alignment">App alignment</string>
-    <string name="swipe_left_app">Swipe left app</string>
-    <string name="swipe_right_app">Swipe right app</string>
+    <string name="home_layout_alignment">Layout</string>
+    <string name="swipe_left_app">Swipe left</string>
+    <string name="swipe_right_app">Swipe right</string>
     <string name="_0">0</string>
     <string name="_1">1</string>
     <string name="_2">2</string>
@@ -39,71 +39,71 @@
     <string name="_6">6</string>
     <string name="_7">7</string>
     <string name="_8">8</string>
-    <string name="okay">Okay</string>
-    <string name="auto_show_keyboard">Auto show keyboard</string>
+    <string name="okay">OK</string>
+    <string name="auto_show_keyboard">Auto-show keyboard</string>
     <string name="hide">Hide</string>
-    <string name="status_bar">Status bar on top</string>
+    <string name="status_bar">Show status bar</string>
     <string name="rename">Rename</string>
-    <string name="show_date_time">Show date time</string>
+    <string name="show_date_time">Show date and time</string>
     <string name="appearance">Appearance</string>
     <string name="gestures">Gestures</string>
-    <string name="theme_mode">Theme mode</string>
+    <string name="theme_mode">Theme</string>
     <string name="system_default">System</string>
     <string name="dark">Dark</string>
     <string name="light">Light</string>
-    <string name="welcome_to_olauncher_settings">Welcome to the settings!
-      \n\nRemember, if you have any questions, our About page has the answer.</string>
-    <string name="keyboard_message">Hi, keyboard is the fastest way to find and launch apps in Olauncher. Can we request you to keep this On for a few more days and then decide?
-      \n\nThe choice is always yours.</string>
-    <string name="app_usage_message">To show/hide your screen time on the home screen, please allow or disallow the app usage permission.
-      \n\nNote: No app usage data is collected. Everything is processed on your device.</string>
-    <string name="accessibility_service_description">The accessibility permission is required to enable the gesture - double tap to lock . Any data acquired by Olauncher via this service will not leave your device.</string>
+    <string name="welcome_to_olauncher_settings">Thank you for choosing MinLauncher.
+    \n\nEnjoy your clean home screen.</string>
+    <string name="keyboard_message">The keyboard is the fastest way to find apps.
+    \n\nYou can change this setting anytime.</string>
+    <string name="app_usage_message">To show screen time on the home screen, allow access to app usage.
+    \n\nThis feature is used only to display screen time. No data is collected or shared.</string>
+    <string name="accessibility_service_description">Accessibility permission is required to enable \"Double-tap to lock the screen\". This service is used only for this gesture. No data is collected or shared.</string>
     <string name="close">Close</string>
     <string name="date">Date</string>
     <string name="date_only">Date only</string>
-    <string name="bottom_on">Bottom: On</string>
-    <string name="bottom_off">Bottom: Off</string>
-    <string name="please_set_olauncher_as_default_first">Please set Olauncher as default first</string>
-    <string name="hidden_apps_message">Note: Tap on \'Olauncher\' at the top of this Settings page to find your hidden apps.\n\nMore details available in our About page.</string>
-    <string name="swipe_down_for">Swipe down for</string>
+    <string name="bottom_on">Align bottom</string>
+    <string name="bottom_off">Align center</string>
+    <string name="please_set_olauncher_as_default_first">To use this feature, set MinLauncher as your default launcher.</string>
+    <string name="hidden_apps_message">Tip: Tap \'MinLauncher\' at the top of this Settings page to find your hidden apps.</string>
+    <string name="swipe_down_for">Swipe-down action</string>
     <string name="search">Search</string>
     <string name="notifications">Notifications</string>
-    <string name="accessibility_disclosure">Please turn on Olauncher\'s accessibility service in your device\'s settings to enable Double tap to lock gesture.
-  \n\nPlease note that this service is only used for this particular feature. Our accessibility service does not collect or share any data.</string>
+    <string name="accessibility_disclosure">Accessibility permission is required to enable \"Double-tap to lock the screen\".
+\n\nThis service is used only for this gesture. No data is collected or shared.</string>
     <string name="permission">Permission</string>
-    <string name="double_tap_lock">Double tap to lock</string>
+    <string name="double_tap_lock">Double-tap to lock the screen</string>
     <string name="enable">Enable</string>
     <string name="disable">Disable</string>
     <string name="info">Info</string>
     <string name="delete">Uninstall</string>
     <string name="text_size">Text size</string>
     <string name="bold_font" tools:ignore="MissingTranslation">Bold font</string>
-    <string name="long_press_to_select_app">Long press to select app</string>
-    <string name="unable_to_open_app">Unable to open app</string>
-    <string name="unable_to_open_app_info" tools:ignore="MissingTranslation">Unable to open app info</string>
-    <string name="system_app_cannot_delete">System app, cannot delete</string>
-    <string name="type_a_new_app_name_first">Type a new app name first</string>
+    <string name="long_press_to_select_app">Long-press to select an app</string>
+    <string name="unable_to_open_app">Can\'t open app</string>
+    <string name="unable_to_open_app_info" tools:ignore="MissingTranslation">Can\'t open app info</string>
+    <string name="system_app_cannot_delete">System apps can\'t be uninstalled</string>
+    <string name="type_a_new_app_name_first">Enter a new app name first</string>
     <string name="app_not_found">App not found</string>
-    <string name="swipe_left_app_enabled">Swipe left app enabled</string>
-    <string name="swipe_right_app_enabled">Swipe right app enabled</string>
-    <string name="swipe_left_app_disabled">Swipe left app disabled</string>
-    <string name="swipe_right_app_disabled">Swipe right app disabled</string>
-    <string name="long_press_to_enable">Long press to enable</string>
+    <string name="swipe_left_app_enabled">Swipe left enabled</string>
+    <string name="swipe_right_app_enabled">Swipe right enabled</string>
+    <string name="swipe_left_app_disabled">Swipe left disabled</string>
+    <string name="swipe_right_app_disabled">Swipe right disabled</string>
+    <string name="long_press_to_enable">Long-press to enable</string>
     <string name="no_hidden_apps">No hidden apps</string>
     <string name="hidden_apps">Hidden apps</string>
     <string name="adapter_show">Show</string>
     <string name="adapter_hide">Hide</string>
     <string name="screen_time">Screen time</string>
-    <string name="alignment_changed">Alignment changed ✅</string>
+    <string name="alignment_changed">Alignment changed</string>
     <string name="home_screen">Home screen</string>
-    <string name="notification_bar">Notification bar</string>
+    <string name="notification_bar">Status bar</string>
     <string name="private_space">Private space</string>
-    <string name="invalid_pin_request">Invalid pin request</string>
-    <string name="widgets_not_supported">Widgets are not supported</string>
-    <string name="pin_action_not_supported">This pin action is not supported</string>
+    <string name="invalid_pin_request">This pin request isn\'t valid</string>
+    <string name="widgets_not_supported">Widgets aren\'t supported</string>
+    <string name="pin_action_not_supported">This pin action isn\'t supported</string>
     <string name="shortcut_pinned">Shortcut added</string>
-    <string name="shortcut_pin_failed">Could not add shortcut</string>
+    <string name="shortcut_pin_failed">Couldn\'t add shortcut</string>
     <string name="invalid_shortcut">Invalid shortcut</string>
     <string name="shortcut_not_found">Shortcut not found</string>
-    <string name="unable_to_open_shortcut">Unable to open shortcut</string>
+    <string name="unable_to_open_shortcut">Can\'t open shortcut</string>
 </resources>
