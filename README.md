@@ -1,14 +1,23 @@
+<div align="center">
+
+<img src="app/src/main/ic_launcher-playstore.png" width="96" alt="MinLauncher app icon">
+
 # MinLauncher
 
-<div style="text-align: center;">
-  <img alt="home screenshot" src="./metadata/en-US/images/phoneScreenshots/2.png" width="200">
-  <img alt="home screenshot" src="./metadata/en-US/images/phoneScreenshots/3.png" width="200">
-  <img alt="home screenshot" src="./metadata/en-US/images/phoneScreenshots/5.png" width="200">
+A minimal, ad-free, offline Android home screen launcher
+
+[![CI](https://github.com/ouj4k2q5/Minlauncher/actions/workflows/ci.yml/badge.svg)](https://github.com/ouj4k2q5/Minlauncher/actions/workflows/ci.yml)
+[![License: GPL v3](https://img.shields.io/github/license/ouj4k2q5/Minlauncher)](LICENSE)
+
+<img alt="home screenshot" src="./metadata/en-US/images/phoneScreenshots/2.png" width="200">
+<img alt="home screenshot" src="./metadata/en-US/images/phoneScreenshots/3.png" width="200">
+<img alt="home screenshot" src="./metadata/en-US/images/phoneScreenshots/5.png" width="200">
+
 </div>
 
-MinLauncher is a minimal, ad-free Android home screen launcher. It is a personal,
-unofficial fork of [Olauncher](https://github.com/tanujnotes/Olauncher), with all
-promotional content and network access removed.
+MinLauncher is a personal, unofficial fork of
+[Olauncher](https://github.com/tanujnotes/Olauncher), with all promotional
+content and network access removed.
 
 ## Get it
 
