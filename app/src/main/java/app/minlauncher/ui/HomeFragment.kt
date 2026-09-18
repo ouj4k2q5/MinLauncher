@@ -83,7 +83,7 @@ class HomeFragment :
     override fun onResume() {
         super.onResume()
         populateHomeScreen(false)
-        viewModel.isOlauncherDefault()
+        viewModel.isMinLauncherDefault()
         if (prefs.showStatusBar) {
             showStatusBar()
         } else {
@@ -173,7 +173,7 @@ class HomeFragment :
             R.id.setDefaultLauncher -> {
                 prefs.hideSetDefaultLauncher = true
                 binding.setDefaultLauncher.visibility = View.GONE
-                if (viewModel.isOlauncherDefault.value != true) {
+                if (viewModel.isMinLauncherDefault.value != true) {
                     requireContext().showToast(R.string.set_as_default_launcher)
                     findNavController().navigate(R.id.action_mainFragment_to_settingsFragment)
                 }
@@ -193,7 +193,7 @@ class HomeFragment :
         viewModel.refreshHome.observe(viewLifecycleOwner) {
             populateHomeScreen(it)
         }
-        viewModel.isOlauncherDefault.observe(
+        viewModel.isMinLauncherDefault.observe(
             viewLifecycleOwner,
             Observer {
                 if (it != true) {

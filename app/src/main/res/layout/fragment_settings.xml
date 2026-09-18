@@ -46,7 +46,7 @@
                     android:layout_marginBottom="4dp">
 
                     <TextView
-                        android:id="@+id/olauncherHiddenApps"
+                        android:id="@+id/minlauncherHiddenApps"
                         style="@style/TextLarge"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"

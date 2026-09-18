@@ -91,7 +91,7 @@ suspend fun getAppsList(
                             user = profile,
                         )
 
-                    // if the current app is not OLauncher
+                    // if the current app is not MinLauncher
                     if (app.applicationInfo.packageName != BuildConfig.APPLICATION_ID) {
                         // is this a hidden app?
                         if (hiddenApps.contains(app.applicationInfo.packageName + "|" + profile.toString())) {
@@ -290,7 +290,7 @@ fun getUserHandleFromString(
     return android.os.Process.myUserHandle()
 }
 
-fun isOlauncherDefault(context: Context): Boolean {
+fun isMinLauncherDefault(context: Context): Boolean {
     val launcherPackageName = getDefaultLauncherPackage(context)
     return BuildConfig.APPLICATION_ID == launcherPackageName
 }
