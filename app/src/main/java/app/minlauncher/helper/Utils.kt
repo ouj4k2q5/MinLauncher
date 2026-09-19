@@ -392,6 +392,22 @@ fun openCameraApp(context: Context) {
     }
 }
 
+fun openClock(context: Context) {
+    val launchIntent =
+        Constants.CLOCK_APP_PACKAGES
+            .firstOrNull { context.isPackageInstalled(it) }
+            ?.let { context.packageManager.getLaunchIntentForPackage(it) }
+    if (launchIntent != null) {
+        try {
+            context.startActivity(launchIntent)
+            return
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to open clock app", e)
+        }
+    }
+    openAlarmApp(context)
+}
+
 fun openAlarmApp(context: Context) {
     try {
         val intent = Intent(AlarmClock.ACTION_SHOW_ALARMS)

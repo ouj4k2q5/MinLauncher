@@ -82,15 +82,6 @@ class Prefs(
         private const val APP_ACTIVITY_CLASS_NAME_SWIPE_RIGHT = "APP_ACTIVITY_CLASS_NAME_SWIPE_RIGHT"
         private const val APP_USER_SWIPE_LEFT = "APP_USER_SWIPE_LEFT"
         private const val APP_USER_SWIPE_RIGHT = "APP_USER_SWIPE_RIGHT"
-        private const val CLOCK_APP_PACKAGE = "CLOCK_APP_PACKAGE"
-        private const val CLOCK_APP_USER = "CLOCK_APP_USER"
-        private const val CLOCK_APP_CLASS_NAME = "CLOCK_APP_CLASS_NAME"
-        private const val CALENDAR_APP_PACKAGE = "CALENDAR_APP_PACKAGE"
-        private const val CALENDAR_APP_USER = "CALENDAR_APP_USER"
-        private const val CALENDAR_APP_CLASS_NAME = "CALENDAR_APP_CLASS_NAME"
-        private const val SCREEN_TIME_APP_PACKAGE = "SCREEN_TIME_APP_PACKAGE"
-        private const val SCREEN_TIME_APP_USER = "SCREEN_TIME_APP_USER"
-        private const val SCREEN_TIME_APP_CLASS_NAME = "SCREEN_TIME_APP_CLASS_NAME"
 
         private const val IS_SHORTCUT_1 = "IS_SHORTCUT_1"
         private const val SHORTCUT_ID_1 = "SHORTCUT_ID_1"
@@ -388,42 +379,6 @@ class Prefs(
         get() = sharedPrefs.getString(APP_USER_SWIPE_RIGHT, "").toString()
         set(value) = sharedPrefs.edit { putString(APP_USER_SWIPE_RIGHT, value).apply() }
 
-    var clockAppPackage: String
-        get() = sharedPrefs.getString(CLOCK_APP_PACKAGE, "").toString()
-        set(value) = sharedPrefs.edit { putString(CLOCK_APP_PACKAGE, value).apply() }
-
-    var clockAppUser: String
-        get() = sharedPrefs.getString(CLOCK_APP_USER, "").toString()
-        set(value) = sharedPrefs.edit { putString(CLOCK_APP_USER, value).apply() }
-
-    var clockAppClassName: String?
-        get() = sharedPrefs.getString(CLOCK_APP_CLASS_NAME, "").toString()
-        set(value) = sharedPrefs.edit { putString(CLOCK_APP_CLASS_NAME, value).apply() }
-
-    var calendarAppPackage: String
-        get() = sharedPrefs.getString(CALENDAR_APP_PACKAGE, "").toString()
-        set(value) = sharedPrefs.edit { putString(CALENDAR_APP_PACKAGE, value).apply() }
-
-    var calendarAppUser: String
-        get() = sharedPrefs.getString(CALENDAR_APP_USER, "").toString()
-        set(value) = sharedPrefs.edit { putString(CALENDAR_APP_USER, value).apply() }
-
-    var calendarAppClassName: String?
-        get() = sharedPrefs.getString(CALENDAR_APP_CLASS_NAME, "").toString()
-        set(value) = sharedPrefs.edit { putString(CALENDAR_APP_CLASS_NAME, value).apply() }
-
-    var screenTimeAppPackage: String
-        get() = sharedPrefs.getString(SCREEN_TIME_APP_PACKAGE, "").toString()
-        set(value) = sharedPrefs.edit { putString(SCREEN_TIME_APP_PACKAGE, value).apply() }
-
-    var screenTimeAppUser: String
-        get() = sharedPrefs.getString(SCREEN_TIME_APP_USER, "").toString()
-        set(value) = sharedPrefs.edit { putString(SCREEN_TIME_APP_USER, value).apply() }
-
-    var screenTimeAppClassName: String?
-        get() = sharedPrefs.getString(SCREEN_TIME_APP_CLASS_NAME, "").toString()
-        set(value) = sharedPrefs.edit { putString(SCREEN_TIME_APP_CLASS_NAME, value).apply() }
-
     var isShortcut1: Boolean
         get() = sharedPrefs.getBoolean(IS_SHORTCUT_1, false)
         set(value) = sharedPrefs.edit { putBoolean(IS_SHORTCUT_1, value) }
@@ -605,9 +560,6 @@ class Prefs(
         for (i in 1..8) {
             if (getAppPackage(i) == packageName) setAppActivityClassName(i, activityClassName)
         }
-        if (clockAppPackage == packageName) clockAppClassName = activityClassName
-        if (calendarAppPackage == packageName) calendarAppClassName = activityClassName
-        if (screenTimeAppPackage == packageName) screenTimeAppClassName = activityClassName
         if (appPackageSwipeLeft == packageName) appActivityClassNameSwipeLeft = activityClassName
         if (appPackageSwipeRight == packageName) appActivityClassNameRight = activityClassName
     }

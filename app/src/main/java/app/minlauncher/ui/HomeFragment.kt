@@ -32,9 +32,9 @@ import app.minlauncher.helper.dpToPx
 import app.minlauncher.helper.expandNotificationDrawer
 import app.minlauncher.helper.getUserHandleFromString
 import app.minlauncher.helper.isPackageInstalled
-import app.minlauncher.helper.openAlarmApp
 import app.minlauncher.helper.openCalendar
 import app.minlauncher.helper.openCameraApp
+import app.minlauncher.helper.openClock
 import app.minlauncher.helper.openDialerApp
 import app.minlauncher.helper.openSearch
 import app.minlauncher.helper.showToast
@@ -97,8 +97,8 @@ class HomeFragment :
             R.id.lock -> {}
             // Home button for recents feature disabled
             // R.id.recents -> {}
-            R.id.clock -> openClockApp()
-            R.id.date -> openCalendarApp()
+            R.id.clock -> openClock(requireContext())
+            R.id.date -> openCalendar(requireContext())
             R.id.setDefaultLauncher -> viewModel.resetLauncherLiveData.call()
             R.id.tvScreenTime -> openScreenTimeDigitalWellbeing()
 
@@ -114,32 +114,6 @@ class HomeFragment :
         }
     }
 
-    private fun openClockApp() {
-        if (prefs.clockAppPackage.isBlank()) {
-            openAlarmApp(requireContext())
-        } else {
-            launchApp(
-                "Clock",
-                prefs.clockAppPackage,
-                prefs.clockAppClassName,
-                prefs.clockAppUser,
-            )
-        }
-    }
-
-    private fun openCalendarApp() {
-        if (prefs.calendarAppPackage.isBlank()) {
-            openCalendar(requireContext())
-        } else {
-            launchApp(
-                "Calendar",
-                prefs.calendarAppPackage,
-                prefs.calendarAppClassName,
-                prefs.calendarAppUser,
-            )
-        }
-    }
-
     override fun onLongClick(view: View): Boolean {
         when (view.id) {
             R.id.homeApp1 -> showAppList(Constants.FLAG_SET_HOME_APP_1, prefs.appName1.isNotEmpty(), true)
@@ -150,26 +124,6 @@ class HomeFragment :
             R.id.homeApp6 -> showAppList(Constants.FLAG_SET_HOME_APP_6, prefs.appName6.isNotEmpty(), true)
             R.id.homeApp7 -> showAppList(Constants.FLAG_SET_HOME_APP_7, prefs.appName7.isNotEmpty(), true)
             R.id.homeApp8 -> showAppList(Constants.FLAG_SET_HOME_APP_8, prefs.appName8.isNotEmpty(), true)
-            R.id.clock -> {
-                showAppList(Constants.FLAG_SET_CLOCK_APP)
-                prefs.clockAppPackage = ""
-                prefs.clockAppClassName = ""
-                prefs.clockAppUser = ""
-            }
-
-            R.id.date -> {
-                showAppList(Constants.FLAG_SET_CALENDAR_APP)
-                prefs.calendarAppPackage = ""
-                prefs.calendarAppClassName = ""
-                prefs.calendarAppUser = ""
-            }
-
-            R.id.tvScreenTime -> {
-                showAppList(Constants.FLAG_SET_SCREEN_TIME_APP)
-                prefs.screenTimeAppPackage = ""
-                prefs.screenTimeAppClassName = ""
-                prefs.screenTimeAppUser = ""
-            }
 
             R.id.setDefaultLauncher -> {
                 prefs.hideSetDefaultLauncher = true
@@ -239,12 +193,9 @@ class HomeFragment :
         // binding.recents.setOnClickListener(this)
         binding.clock.setOnClickListener(this)
         binding.date.setOnClickListener(this)
-        binding.clock.setOnLongClickListener(this)
-        binding.date.setOnLongClickListener(this)
         binding.setDefaultLauncher.setOnClickListener(this)
         binding.setDefaultLauncher.setOnLongClickListener(this)
         binding.tvScreenTime.setOnClickListener(this)
-        binding.tvScreenTime.setOnLongClickListener(this)
 
         // These fire only on d-pad/keyboard events; touch is consumed by ViewSwipeTouchListener
         binding.homeApp1.setOnClickListener(this)
@@ -668,15 +619,6 @@ class HomeFragment :
     }
 
     private fun openScreenTimeDigitalWellbeing() {
-        if (prefs.screenTimeAppPackage.isNotBlank()) {
-            launchApp(
-                "Screen Time",
-                prefs.screenTimeAppPackage,
-                prefs.screenTimeAppClassName,
-                prefs.screenTimeAppUser,
-            )
-            return
-        }
         val intent = Intent()
         try {
             intent.setClassName(

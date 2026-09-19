@@ -51,9 +51,6 @@ object Constants {
 
     const val FLAG_SET_SWIPE_LEFT_APP = 11
     const val FLAG_SET_SWIPE_RIGHT_APP = 12
-    const val FLAG_SET_CLOCK_APP = 13
-    const val FLAG_SET_CALENDAR_APP = 14
-    const val FLAG_SET_SCREEN_TIME_APP = 15
 
     const val REQUEST_CODE_LAUNCHER_SELECTOR = 678
 

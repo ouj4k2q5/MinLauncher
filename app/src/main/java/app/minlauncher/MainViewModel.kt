@@ -22,7 +22,6 @@ import app.minlauncher.helper.getPrivateSpaceApps
 import app.minlauncher.helper.getPrivateSpaceUserHandle
 import app.minlauncher.helper.hasBeenMinutes
 import app.minlauncher.helper.isMinLauncherDefault
-import app.minlauncher.helper.isPackageInstalled
 import app.minlauncher.helper.isPrivateSpaceLocked
 import app.minlauncher.helper.showToast
 import app.minlauncher.helper.usageStats.EventLogWrapper
@@ -96,9 +95,6 @@ class MainViewModel(
 
             Constants.FLAG_SET_SWIPE_LEFT_APP -> saveSwipeApp(appModel, isLeft = true)
             Constants.FLAG_SET_SWIPE_RIGHT_APP -> saveSwipeApp(appModel, isLeft = false)
-            Constants.FLAG_SET_CLOCK_APP -> saveClockApp(appModel)
-            Constants.FLAG_SET_CALENDAR_APP -> saveCalendarApp(appModel)
-            Constants.FLAG_SET_SCREEN_TIME_APP -> saveScreenTimeApp(appModel)
         }
     }
 
@@ -330,30 +326,6 @@ class MainViewModel(
         updateSwipeApps()
     }
 
-    private fun saveClockApp(appModel: AppModel) {
-        if (appModel is AppModel.App) {
-            prefs.clockAppPackage = appModel.appPackage
-            prefs.clockAppUser = appModel.user.toString()
-            prefs.clockAppClassName = appModel.activityClassName
-        }
-    }
-
-    private fun saveCalendarApp(appModel: AppModel) {
-        if (appModel is AppModel.App) {
-            prefs.calendarAppPackage = appModel.appPackage
-            prefs.calendarAppUser = appModel.user.toString()
-            prefs.calendarAppClassName = appModel.activityClassName
-        }
-    }
-
-    private fun saveScreenTimeApp(appModel: AppModel) {
-        if (appModel is AppModel.App) {
-            prefs.screenTimeAppPackage = appModel.appPackage
-            prefs.screenTimeAppUser = appModel.user.toString()
-            prefs.screenTimeAppClassName = appModel.activityClassName
-        }
-    }
-
     fun firstOpen(value: Boolean) {
         firstOpen.postValue(value)
     }
@@ -508,25 +480,6 @@ class MainViewModel(
         } catch (e: Exception) {
             isPrivateSpaceToggling = false
             Log.e(TAG, "Failed to toggle private space lock", e)
-        }
-    }
-
-    fun setDefaultClockApp() {
-        viewModelScope.launch {
-            try {
-                Constants.CLOCK_APP_PACKAGES.firstOrNull { appContext.isPackageInstalled(it) }?.let { packageName ->
-                    appContext.packageManager.getLaunchIntentForPackage(packageName)?.component?.className?.let {
-                        prefs.clockAppPackage = packageName
-                        prefs.clockAppClassName = it
-                        prefs.clockAppUser =
-                            android.os.Process
-                                .myUserHandle()
-                                .toString()
-                    }
-                }
-            } catch (e: Exception) {
-                Log.e(TAG, "Failed to set default clock app", e)
-            }
         }
     }
 }
