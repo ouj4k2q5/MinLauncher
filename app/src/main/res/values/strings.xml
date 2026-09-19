@@ -1,4 +1,4 @@
-<resources xmlns:tools="http://schemas.android.com/tools">
+<resources>
     <string name="app_name" translatable="false">MinLauncher</string>
     <string name="lock_layout_description" translatable="false">lock layout description to be used a unique id to lock screen</string>
     <string name="day_battery" formatted="false" translatable="false">%s, %d%%</string>
@@ -23,7 +23,7 @@
     <string name="change_default_launcher">Change default launcher</string>
     <string name="swipe_up_for_apps">Swipe up to see all apps\nLong-press anywhere to open settings</string>
     <string name="apps_on_home_screen">Number of apps on the home screen</string>
-    <string name="solid_wallpaper" tools:ignore="MissingTranslation">Wallpaper</string>
+    <string name="solid_wallpaper">Wallpaper</string>
     <string name="left">Left</string>
     <string name="right">Right</string>
     <string name="center">Center</string>
@@ -77,10 +77,10 @@
     <string name="info">Info</string>
     <string name="delete">Uninstall</string>
     <string name="text_size">Text size</string>
-    <string name="bold_font" tools:ignore="MissingTranslation">Bold font</string>
+    <string name="bold_font">Bold font</string>
     <string name="long_press_to_select_app">Long-press to select an app</string>
     <string name="unable_to_open_app">Can\'t open app</string>
-    <string name="unable_to_open_app_info" tools:ignore="MissingTranslation">Can\'t open app info</string>
+    <string name="unable_to_open_app_info">Can\'t open app info</string>
     <string name="system_app_cannot_delete">System apps can\'t be uninstalled</string>
     <string name="type_a_new_app_name_first">Enter a new app name first</string>
     <string name="app_not_found">App not found</string>
@@ -106,4 +106,8 @@
     <string name="invalid_shortcut">Invalid shortcut</string>
     <string name="shortcut_not_found">Shortcut not found</string>
     <string name="unable_to_open_shortcut">Can\'t open shortcut</string>
+    <string name="select_app_hint">Please select an app</string>
+    <string name="hide_pinned_shortcut_not_supported">Hiding pinned shortcuts is not supported</string>
+    <string name="swipe_left_app_default">Camera</string>
+    <string name="swipe_right_app_default">Phone</string>
 </resources>

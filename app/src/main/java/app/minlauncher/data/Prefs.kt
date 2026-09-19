@@ -114,7 +114,7 @@ class Prefs(
         private const val IS_SHORTCUT_SWIPE_RIGHT = "IS_SHORTCUT_SWIPE_RIGHT"
     }
 
-    private val sharedPrefs: SharedPreferences = context.getSharedPreferences(PREFS_FILENAME, 0)
+    private val sharedPrefs: SharedPreferences = context.getSharedPreferences(PREFS_FILENAME, Context.MODE_PRIVATE)
 
     var firstOpen: Boolean
         get() = sharedPrefs.getBoolean(FIRST_OPEN, true)
@@ -351,11 +351,11 @@ class Prefs(
         set(value) = sharedPrefs.edit { putString(APP_USER_8, value).apply() }
 
     var appNameSwipeLeft: String
-        get() = sharedPrefs.getString(APP_NAME_SWIPE_LEFT, "Camera").toString()
+        get() = sharedPrefs.getString(APP_NAME_SWIPE_LEFT, "").toString()
         set(value) = sharedPrefs.edit { putString(APP_NAME_SWIPE_LEFT, value).apply() }
 
     var appNameSwipeRight: String
-        get() = sharedPrefs.getString(APP_NAME_SWIPE_RIGHT, "Phone").toString()
+        get() = sharedPrefs.getString(APP_NAME_SWIPE_RIGHT, "").toString()
         set(value) = sharedPrefs.edit { putString(APP_NAME_SWIPE_RIGHT, value).apply() }
 
     var appPackageSwipeLeft: String

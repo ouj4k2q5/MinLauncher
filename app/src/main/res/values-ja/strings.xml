@@ -11,6 +11,7 @@
     <string name="swipe_up_for_apps">上にスワイプすると、すべてのアプリが表示されます
         \n画面の任意の場所を長押しすると、設定が開きます</string>
     <string name="apps_on_home_screen">ホーム画面に表示するアプリの数</string>
+    <string name="solid_wallpaper">壁紙</string>
     <string name="left">左</string>
     <string name="right">右</string>
     <string name="center">中央</string>
@@ -63,8 +64,10 @@
     <string name="info">情報</string>
     <string name="delete">アンインストール</string>
     <string name="text_size">文字サイズ</string>
+    <string name="bold_font">太字フォント</string>
     <string name="long_press_to_select_app">長押ししてアプリを選択してください</string>
     <string name="unable_to_open_app">アプリを開けません</string>
+    <string name="unable_to_open_app_info">アプリ情報を開けません</string>
     <string name="system_app_cannot_delete">システムアプリはアンインストールできません</string>
     <string name="type_a_new_app_name_first">先に新しいアプリ名を入力してください</string>
     <string name="app_not_found">アプリが見つかりません</string>
@@ -90,4 +93,8 @@
     <string name="invalid_shortcut">無効なショートカットです</string>
     <string name="shortcut_not_found">ショートカットが見つかりません</string>
     <string name="unable_to_open_shortcut">ショートカットを開けません</string>
+    <string name="select_app_hint">アプリを選択してください</string>
+    <string name="hide_pinned_shortcut_not_supported">ピン留めショートカットは非表示にできません</string>
+    <string name="swipe_left_app_default">カメラ</string>
+    <string name="swipe_right_app_default">電話</string>
 </resources> <!-- Japanese -->

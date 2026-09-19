@@ -87,7 +87,7 @@ class AppDrawerFragment : BaseFragment() {
         if (flag == Constants.FLAG_HIDDEN_APPS) {
             binding.search.queryHint = getString(R.string.hidden_apps)
         } else if (flag in Constants.FLAG_SET_HOME_APP_1..Constants.FLAG_SET_CALENDAR_APP) {
-            binding.search.queryHint = "Please select an app"
+            binding.search.queryHint = getString(R.string.select_app_hint)
         }
         try {
             searchTextView = binding.search.findViewById(androidx.appcompat.R.id.search_src_text)
@@ -203,7 +203,7 @@ class AppDrawerFragment : BaseFragment() {
                 },
                 appHideListener = { appModel, position ->
                     if (appModel is AppModel.PinnedShortcut) {
-                        requireContext().showToast("Hiding pinned shortcuts is not supported")
+                        requireContext().showToast(getString(R.string.hide_pinned_shortcut_not_supported))
                         return@AppDrawerAdapter
                     }
                     adapter.appFilteredList.removeAt(position)
