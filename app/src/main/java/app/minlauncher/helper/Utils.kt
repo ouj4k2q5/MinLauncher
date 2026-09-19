@@ -1,7 +1,6 @@
 package app.minlauncher.helper
 
 import android.annotation.SuppressLint
-import android.app.SearchManager
 import android.app.WallpaperManager
 import android.content.Context
 import android.content.Intent
@@ -353,12 +352,6 @@ fun openAppInfo(
     } else {
         context.showToast(context.getString(R.string.unable_to_open_app_info))
     }
-}
-
-fun openSearch(context: Context) {
-    val intent = Intent(Intent.ACTION_WEB_SEARCH)
-    intent.putExtra(SearchManager.QUERY, "")
-    context.startActivity(intent)
 }
 
 @SuppressLint("WrongConstant", "PrivateApi")

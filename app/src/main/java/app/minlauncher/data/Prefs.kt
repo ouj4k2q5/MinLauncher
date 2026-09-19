@@ -31,7 +31,6 @@ class Prefs(
         private const val HIDDEN_APPS = "HIDDEN_APPS"
         private const val HIDDEN_APPS_UPDATED = "HIDDEN_APPS_UPDATED"
         private const val APP_THEME = "APP_THEME"
-        private const val SWIPE_DOWN_ACTION = "SWIPE_DOWN_ACTION"
         private const val TEXT_SIZE_SCALE = "TEXT_SIZE_SCALE"
         private const val BOLD_FONT = "BOLD_FONT"
         private const val HIDE_SET_DEFAULT_LAUNCHER = "HIDE_SET_DEFAULT_LAUNCHER"
@@ -214,10 +213,6 @@ class Prefs(
     var hiddenAppsUpdated: Boolean
         get() = sharedPrefs.getBoolean(HIDDEN_APPS_UPDATED, false)
         set(value) = sharedPrefs.edit { putBoolean(HIDDEN_APPS_UPDATED, value).apply() }
-
-    var swipeDownAction: Int
-        get() = sharedPrefs.getInt(SWIPE_DOWN_ACTION, Constants.SwipeDownAction.NOTIFICATIONS)
-        set(value) = sharedPrefs.edit { putInt(SWIPE_DOWN_ACTION, value).apply() }
 
     var appName1: String
         get() = sharedPrefs.getString(APP_NAME_1, "").toString()

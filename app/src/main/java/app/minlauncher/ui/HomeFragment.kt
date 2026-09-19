@@ -36,7 +36,6 @@ import app.minlauncher.helper.openCalendar
 import app.minlauncher.helper.openCameraApp
 import app.minlauncher.helper.openClock
 import app.minlauncher.helper.openDialerApp
-import app.minlauncher.helper.openSearch
 import app.minlauncher.helper.showToast
 import app.minlauncher.listener.OnSwipeTouchListener
 import app.minlauncher.listener.ViewSwipeTouchListener
@@ -603,13 +602,6 @@ class HomeFragment :
         }
     }
 
-    private fun swipeDownAction() {
-        when (prefs.swipeDownAction) {
-            Constants.SwipeDownAction.SEARCH -> openSearch(requireContext())
-            else -> expandNotificationDrawer(requireContext())
-        }
-    }
-
     private fun showStatusBar() {
         requireActivity().window.insetsController?.show(WindowInsets.Type.statusBars())
     }
@@ -665,7 +657,7 @@ class HomeFragment :
 
             override fun onSwipeDown() {
                 super.onSwipeDown()
-                swipeDownAction()
+                expandNotificationDrawer(context)
             }
 
             override fun onLongClick() {
@@ -708,7 +700,7 @@ class HomeFragment :
 
             override fun onSwipeDown() {
                 super.onSwipeDown()
-                swipeDownAction()
+                expandNotificationDrawer(context)
             }
 
             override fun onLongClick(view: View) {

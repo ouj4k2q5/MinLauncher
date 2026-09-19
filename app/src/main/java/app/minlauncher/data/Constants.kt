@@ -24,11 +24,6 @@ object Constants {
             dateTimeVisibility == ON || dateTimeVisibility == DATE_ONLY
     }
 
-    object SwipeDownAction {
-        const val SEARCH = 1
-        const val NOTIFICATIONS = 2
-    }
-
     val CLOCK_APP_PACKAGES =
         arrayOf(
             "com.google.android.deskclock", // Google Clock

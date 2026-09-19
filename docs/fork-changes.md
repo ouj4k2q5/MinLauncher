@@ -25,5 +25,9 @@ by the original author. Report issues for this fork to this repository, not upst
   any installed app to it. Tapping them now always opens a fixed destination: the
   installed clock app (falling back to the system alarm intent), the calendar, or
   Digital Wellbeing, matching stock Android home-screen conventions.
+- Removes the swipe-down action setting. Swiping down on the home screen now always
+  expands the notification drawer, matching the stock Android home-screen convention;
+  the setting was also effectively undiscoverable (it only appeared after tapping the
+  "Gestures" header in Settings).
 
 For current permissions and their purposes, see [Privacy and permissions](privacy.md).
