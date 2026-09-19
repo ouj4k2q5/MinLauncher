@@ -21,5 +21,9 @@ by the original author. Report issues for this fork to this repository, not upst
   permission. The existing local solid-colour wallpaper remains.
 - Removes unused dependencies and resources, and explicitly declares the coroutine and
   lifecycle dependencies used by the app.
+- Removes the ability to long-press the clock, date, or screen-time text and assign
+  any installed app to it. Tapping them now always opens a fixed destination: the
+  installed clock app (falling back to the system alarm intent), the calendar, or
+  Digital Wellbeing, matching stock Android home-screen conventions.
 
 For current permissions and their purposes, see [Privacy and permissions](privacy.md).
