@@ -598,7 +598,7 @@ class HomeFragment :
     private fun openSwipeRightApp() {
         if (!prefs.swipeRightEnabled) return
         launchAppOrShortcut(
-            appName = prefs.appNameSwipeRight,
+            appName = prefs.appNameSwipeRight.ifEmpty { getString(R.string.swipe_right_app_default) },
             packageName = prefs.appPackageSwipeRight,
             activityClassName = prefs.appActivityClassNameRight,
             shortcutId = prefs.shortcutIdSwipeRight,
@@ -611,7 +611,7 @@ class HomeFragment :
     private fun openSwipeLeftApp() {
         if (!prefs.swipeLeftEnabled) return
         launchAppOrShortcut(
-            appName = prefs.appNameSwipeLeft,
+            appName = prefs.appNameSwipeLeft.ifEmpty { getString(R.string.swipe_left_app_default) },
             packageName = prefs.appPackageSwipeLeft,
             activityClassName = prefs.appActivityClassNameSwipeLeft,
             shortcutId = prefs.shortcutIdSwipeLeft,

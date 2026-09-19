@@ -535,8 +535,8 @@ class SettingsFragment :
     }
 
     private fun populateSwipeApps() {
-        binding.swipeLeftApp.text = prefs.appNameSwipeLeft
-        binding.swipeRightApp.text = prefs.appNameSwipeRight
+        binding.swipeLeftApp.text = prefs.appNameSwipeLeft.ifEmpty { getString(R.string.swipe_left_app_default) }
+        binding.swipeRightApp.text = prefs.appNameSwipeRight.ifEmpty { getString(R.string.swipe_right_app_default) }
         if (!prefs.swipeLeftEnabled) {
             binding.swipeLeftApp.setTextColor(requireContext().getColorFromAttr(R.attr.primaryColorTrans50))
         }
