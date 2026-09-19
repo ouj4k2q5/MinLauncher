@@ -299,7 +299,10 @@ class HomeFragment :
     }
 
     private fun populateScreenTime() {
-        if (requireContext().appUsagePermissionGranted().not()) return
+        if (requireContext().appUsagePermissionGranted().not() || prefs.screenTimeEnabled.not()) {
+            binding.tvScreenTime.visibility = View.GONE
+            return
+        }
 
         viewModel.getTodaysScreenTime()
         binding.tvScreenTime.visibility = View.VISIBLE

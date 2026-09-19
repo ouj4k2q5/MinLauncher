@@ -98,7 +98,7 @@ class SettingsFragment :
 
         when (view.id) {
             R.id.minlauncherHiddenApps -> showHiddenApps()
-            R.id.screenTimeOnOff -> viewModel.showDialog.postValue(Constants.Dialog.DIGITAL_WELLBEING)
+            R.id.screenTimeOnOff -> toggleScreenTime()
             R.id.appInfo -> openAppInfo(requireContext(), Process.myUserHandle(), BuildConfig.APPLICATION_ID)
             R.id.setLauncher -> viewModel.resetLauncherLiveData.call()
             R.id.toggleLock -> toggleLockMode()
@@ -451,9 +451,24 @@ class SettingsFragment :
         binding.boldFont.text = getString(if (prefs.boldFont) R.string.on else R.string.off)
     }
 
+    private fun toggleScreenTime() {
+        if (requireContext().appUsagePermissionGranted().not()) {
+            viewModel.showDialog.postValue(Constants.Dialog.DIGITAL_WELLBEING)
+            return
+        }
+        prefs.screenTimeEnabled = !prefs.screenTimeEnabled
+        populateScreenTimeOnOff()
+    }
+
     private fun populateScreenTimeOnOff() {
         binding.screenTimeOnOff.text =
-            getString(if (requireContext().appUsagePermissionGranted()) R.string.on else R.string.off)
+            getString(
+                if (requireContext().appUsagePermissionGranted() && prefs.screenTimeEnabled) {
+                    R.string.on
+                } else {
+                    R.string.off
+                },
+            )
     }
 
     private fun populateKeyboardText() {
