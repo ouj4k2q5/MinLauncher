@@ -36,6 +36,7 @@ class Prefs(
         private const val BOLD_FONT = "BOLD_FONT"
         private const val HIDE_SET_DEFAULT_LAUNCHER = "HIDE_SET_DEFAULT_LAUNCHER"
         private const val SCREEN_TIME_LAST_UPDATED = "SCREEN_TIME_LAST_UPDATED"
+        private const val SCREEN_TIME_ENABLED = "SCREEN_TIME_ENABLED"
         private const val LAUNCHER_RESTART_TIMESTAMP = "LAUNCHER_RECREATE_TIMESTAMP"
         // Home button for recents feature disabled
         // private val HOME_BUTTON_SHOW_RECENTS = "HOME_BUTTON_SHOW_RECENTS"
@@ -200,6 +201,11 @@ class Prefs(
     var screenTimeLastUpdated: Long
         get() = sharedPrefs.getLong(SCREEN_TIME_LAST_UPDATED, 0L)
         set(value) = sharedPrefs.edit { putLong(SCREEN_TIME_LAST_UPDATED, value).apply() }
+
+    /** Whether the screen time text is shown on the home screen (needs usage access). */
+    var screenTimeEnabled: Boolean
+        get() = sharedPrefs.getBoolean(SCREEN_TIME_ENABLED, true)
+        set(value) = sharedPrefs.edit { putBoolean(SCREEN_TIME_ENABLED, value).apply() }
 
     var launcherRestartTimestamp: Long
         get() = sharedPrefs.getLong(LAUNCHER_RESTART_TIMESTAMP, 0L)
