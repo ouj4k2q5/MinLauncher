@@ -6,6 +6,7 @@ import android.content.pm.LauncherApps
 import android.content.res.Configuration
 import android.os.BatteryManager
 import android.os.Bundle
+import android.text.format.DateFormat
 import android.util.Log
 import android.view.Gravity
 import android.view.LayoutInflater
@@ -283,8 +284,9 @@ class HomeFragment :
         binding.clock.isVisible = Constants.DateTime.isTimeVisible(prefs.dateTimeVisibility)
         binding.date.isVisible = Constants.DateTime.isDateVisible(prefs.dateTimeVisibility)
 
-//        var dateText = SimpleDateFormat("EEE, d MMM", Locale.getDefault()).format(Date())
-        val dateFormat = SimpleDateFormat("EEE, d MMM", Locale.getDefault())
+        val locale = Locale.getDefault()
+        val datePattern = DateFormat.getBestDateTimePattern(locale, "EEEMMMd")
+        val dateFormat = SimpleDateFormat(datePattern, locale)
         var dateText = dateFormat.format(Date())
 
         if (!prefs.showStatusBar) {
