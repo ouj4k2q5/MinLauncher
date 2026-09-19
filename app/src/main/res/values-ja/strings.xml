@@ -53,9 +53,6 @@
     <string name="bottom_off">中央に寄せる</string>
     <string name="please_set_minlauncher_as_default_first">この機能を使用するには、MinLauncher をデフォルトのランチャーとして設定する必要があります</string>
     <string name="hidden_apps_message">ヒント: 非表示にしたアプリを表示するには、この設定ページ上部の「MinLauncher」をタップします。</string>
-    <string name="swipe_down_for">下スワイプの動作</string>
-    <string name="search">検索</string>
-    <string name="notifications">通知</string>
     <string name="accessibility_disclosure">「ダブルタップで画面をロック」を有効にするには、ユーザー補助サービスの許可が必要です。\n\nこのサービスはこのジェスチャーのためだけに使用され、データの収集や共有は一切行いません。</string>
     <string name="permission">許可</string>
     <string name="double_tap_lock">ダブルタップで画面をロック</string>

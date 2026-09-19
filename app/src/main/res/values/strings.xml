@@ -65,9 +65,6 @@
     <string name="bottom_off">Align center</string>
     <string name="please_set_minlauncher_as_default_first">To use this feature, set MinLauncher as your default launcher.</string>
     <string name="hidden_apps_message">Tip: Tap \'MinLauncher\' at the top of this Settings page to find your hidden apps.</string>
-    <string name="swipe_down_for">Swipe-down action</string>
-    <string name="search">Search</string>
-    <string name="notifications">Notifications</string>
     <string name="accessibility_disclosure">Accessibility permission is required to enable \"Double-tap to lock the screen\".
 \n\nThis service is used only for this gesture. No data is collected or shared.</string>
     <string name="permission">Permission</string>

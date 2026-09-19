@@ -76,7 +76,6 @@ class SettingsFragment :
         populateStatusBar()
         populateDateTime()
         populateSwipeApps()
-        populateSwipeDownAction()
         initClickListeners()
         initObservers()
     }
@@ -85,7 +84,6 @@ class SettingsFragment :
         binding.appsNumSelectLayout.visibility = View.GONE
         binding.dateTimeSelectLayout.visibility = View.GONE
         binding.appThemeSelectLayout.visibility = View.GONE
-        binding.swipeDownSelectLayout.visibility = View.GONE
         if (view.id != R.id.textSizeMinus && view.id != R.id.textSizePlus) {
             if (binding.textSizesLayout.isVisible) {
                 binding.textSizesLayout.visibility = View.GONE
@@ -126,8 +124,6 @@ class SettingsFragment :
             R.id.actionAccessibility -> openAccessibilityService()
             R.id.closeAccessibility -> toggleAccessibilityVisibility(false)
 
-            R.id.tvGestures -> binding.flSwipeDown.visibility = View.VISIBLE
-
             R.id.maxApps0 -> updateHomeAppsNum(0)
             R.id.maxApps1 -> updateHomeAppsNum(1)
             R.id.maxApps2 -> updateHomeAppsNum(2)
@@ -143,9 +139,6 @@ class SettingsFragment :
 
             R.id.swipeLeftApp -> showAppListIfEnabled(Constants.FLAG_SET_SWIPE_LEFT_APP)
             R.id.swipeRightApp -> showAppListIfEnabled(Constants.FLAG_SET_SWIPE_RIGHT_APP)
-            R.id.swipeDownAction -> binding.swipeDownSelectLayout.visibility = View.VISIBLE
-            R.id.notifications -> updateSwipeDownAction(Constants.SwipeDownAction.NOTIFICATIONS)
-            R.id.search -> updateSwipeDownAction(Constants.SwipeDownAction.SEARCH)
         }
     }
 
@@ -194,9 +187,6 @@ class SettingsFragment :
         binding.dateOnly.setOnClickListener(this)
         binding.swipeLeftApp.setOnClickListener(this)
         binding.swipeRightApp.setOnClickListener(this)
-        binding.swipeDownAction.setOnClickListener(this)
-        binding.search.setOnClickListener(this)
-        binding.notifications.setOnClickListener(this)
         binding.appThemeText.setOnClickListener(this)
         binding.themeLight.setOnClickListener(this)
         binding.themeDark.setOnClickListener(this)
@@ -533,20 +523,6 @@ class SettingsFragment :
                     R.string.off
                 },
             )
-    }
-
-    private fun populateSwipeDownAction() {
-        binding.swipeDownAction.text =
-            when (prefs.swipeDownAction) {
-                Constants.SwipeDownAction.NOTIFICATIONS -> getString(R.string.notifications)
-                else -> getString(R.string.search)
-            }
-    }
-
-    private fun updateSwipeDownAction(swipeDownFor: Int) {
-        if (prefs.swipeDownAction == swipeDownFor) return
-        prefs.swipeDownAction = swipeDownFor
-        populateSwipeDownAction()
     }
 
     private fun populateSwipeApps() {
