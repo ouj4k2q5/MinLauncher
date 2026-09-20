@@ -16,3 +16,8 @@ calculated on the device and never leaves it.
 
 The optional accessibility service is used only to lock the screen after the
 double-tap gesture. It does not collect or transmit data.
+
+Android's automatic backup is disabled: `dataExtractionRules` and
+`fullBackupContent` exclude all app data from both cloud backup and
+device-to-device transfer, so settings are not carried over when switching
+devices.
