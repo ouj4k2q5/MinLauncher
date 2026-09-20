@@ -1,6 +1,8 @@
 package app.minlauncher.listener
 
 import android.content.Context
+import android.os.Handler
+import android.os.Looper
 import android.util.Log
 import android.view.GestureDetector
 import android.view.GestureDetector.SimpleOnGestureListener
@@ -8,14 +10,7 @@ import android.view.MotionEvent
 import android.view.View
 import android.view.View.OnTouchListener
 import app.minlauncher.data.Constants
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.isActive
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import kotlin.math.abs
-import kotlin.time.Duration.Companion.milliseconds
 
 private const val TAG = "OnSwipeTouchListener"
 private const val SWIPE_THRESHOLD = 100
@@ -30,6 +25,8 @@ internal open class OnSwipeTouchListener(
     c: Context?,
 ) : OnTouchListener {
     private var longPressOn = false
+    private val handler = Handler(Looper.getMainLooper())
+    private var longPressAction: Runnable? = null
 
     //    private var doubleTapOn = false
     private val gestureDetector: GestureDetector
@@ -38,8 +35,9 @@ internal open class OnSwipeTouchListener(
         view: View,
         motionEvent: MotionEvent,
     ): Boolean {
-        if (motionEvent.action == MotionEvent.ACTION_UP) {
+        if (motionEvent.action == MotionEvent.ACTION_UP || motionEvent.action == MotionEvent.ACTION_CANCEL) {
             longPressOn = false
+            longPressAction?.let(handler::removeCallbacks)
         }
         return gestureDetector.onTouchEvent(motionEvent)
     }
@@ -70,14 +68,13 @@ internal open class OnSwipeTouchListener(
 
         override fun onLongPress(e: MotionEvent) {
             longPressOn = true
-            GlobalScope.launch {
-                delay(Constants.LONG_PRESS_DELAY_MS.milliseconds)
-                withContext(Dispatchers.Main) {
-                    if (isActive && longPressOn) {
-                        onLongClick()
-                    }
+            longPressAction?.let(handler::removeCallbacks)
+            val action =
+                Runnable {
+                    if (longPressOn) onLongClick()
                 }
-            }
+            longPressAction = action
+            handler.postDelayed(action, Constants.LONG_PRESS_DELAY_MS)
             super.onLongPress(e)
         }
 
