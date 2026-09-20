@@ -7,6 +7,21 @@ SourceCode: https://github.com/ouj4k2q5/Minlauncher
 IssueTracker: https://github.com/ouj4k2q5/Minlauncher/issues
 Changelog: https://github.com/ouj4k2q5/Minlauncher/releases
 
+Summary: Minimal, fully offline home-screen launcher
+Description: MinLauncher is a personal fork of Olauncher with the same goal:
+ a minimalist home screen with large typography and nothing else.
+
+ It shows your chosen apps on the home screen; swipe up to open the app
+ drawer, swipe down to expand notifications, long-press for settings.
+ Home-screen apps, gestures, hidden apps and text size are configurable.
+
+ The launcher is fully offline: it does not hold the INTERNET permission
+ and contains no analytics or crash reporting.
+
+ It requests QUERY_ALL_PACKAGES because enumerating installed apps is the
+ core function of any launcher (app drawer, picking apps for the home
+ screen and gestures). The list of installed apps never leaves the device.
+
 RepoType: git
 Repo: https://github.com/ouj4k2q5/Minlauncher.git
 
