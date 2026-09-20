@@ -1,6 +1,7 @@
 package app.minlauncher.ui
 
 import android.content.Context
+import android.net.Uri
 import android.os.Bundle
 import android.os.Process
 import android.text.Spannable
@@ -102,7 +103,7 @@ class AppDrawerFragment : BaseFragment() {
             object : SearchView.OnQueryTextListener {
                 override fun onQueryTextSubmit(query: String?): Boolean {
                     if (query?.startsWith("!") == true) {
-                        requireContext().openUrl(Constants.URL_DUCK_SEARCH + query.replace(" ", "%20"))
+                        requireContext().openUrl(Constants.URL_DUCK_SEARCH + Uri.encode(query))
                     } else if (adapter.itemCount == 0) {
                         requireContext().openSearch(query?.trim())
                     } else {
