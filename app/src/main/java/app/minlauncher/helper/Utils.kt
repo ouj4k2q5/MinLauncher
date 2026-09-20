@@ -2,6 +2,7 @@ package app.minlauncher.helper
 
 import android.annotation.SuppressLint
 import android.app.WallpaperManager
+import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
 import android.content.pm.ApplicationInfo
@@ -470,7 +471,12 @@ fun Context.openUrl(url: String) {
     if (url.isEmpty()) return
     val intent = Intent(Intent.ACTION_VIEW)
     intent.data = url.toUri()
-    startActivity(intent)
+    try {
+        startActivity(intent)
+    } catch (e: ActivityNotFoundException) {
+        Log.e(TAG, "Failed to open url", e)
+        showToast(R.string.no_app_to_handle_action)
+    }
 }
 
 fun Context.isSystemApp(

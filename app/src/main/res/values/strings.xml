@@ -81,6 +81,7 @@
     <string name="system_app_cannot_delete">System apps can\'t be uninstalled</string>
     <string name="type_a_new_app_name_first">Enter a new app name first</string>
     <string name="app_not_found">App not found</string>
+    <string name="no_app_to_handle_action">No app can handle this action</string>
     <string name="swipe_left_app_enabled">Swipe left enabled</string>
     <string name="swipe_right_app_enabled">Swipe right enabled</string>
     <string name="swipe_left_app_disabled">Swipe left disabled</string>
