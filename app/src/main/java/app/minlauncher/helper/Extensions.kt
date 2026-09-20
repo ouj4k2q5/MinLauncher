@@ -5,6 +5,7 @@ import android.app.Activity
 import android.app.AppOpsManager
 import android.app.SearchManager
 import android.app.role.RoleManager
+import android.content.ActivityNotFoundException
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
@@ -94,7 +95,12 @@ fun Context.resetLauncherViaFakeActivity() {
 fun Context.openSearch(query: String? = null) {
     val intent = Intent(Intent.ACTION_WEB_SEARCH)
     intent.putExtra(SearchManager.QUERY, query ?: "")
-    startActivity(intent)
+    try {
+        startActivity(intent)
+    } catch (e: ActivityNotFoundException) {
+        Log.e(TAG, "Failed to open search", e)
+        showToast(R.string.no_app_to_handle_action)
+    }
 }
 
 private var isEinkDevice: Boolean? = null

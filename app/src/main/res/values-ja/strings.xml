@@ -68,6 +68,7 @@
     <string name="system_app_cannot_delete">システムアプリはアンインストールできません</string>
     <string name="type_a_new_app_name_first">先に新しいアプリ名を入力してください</string>
     <string name="app_not_found">アプリが見つかりません</string>
+    <string name="no_app_to_handle_action">この操作を実行できるアプリがありません</string>
     <string name="swipe_left_app_enabled">左スワイプを有効にしました</string>
     <string name="swipe_right_app_enabled">右スワイプを有効にしました</string>
     <string name="swipe_left_app_disabled">左スワイプを無効にしました</string>
