@@ -284,10 +284,9 @@ class AppDrawerAdapter(
             appTitle.gravity = appLabelGravity
             otherProfileIndicator.isVisible = appModel.user != myUserHandle
 
-            appTitle.setOnClickListener { clickListener(appModel) }
-
-            appTitle.setOnLongClickListener {
-                if (appModel.appPackage.isNotEmpty()) {
+            if (appModel.appPackage.isNotEmpty()) {
+                appTitle.setOnClickListener { clickListener(appModel) }
+                appTitle.setOnLongClickListener {
                     appDelete.alpha =
                         when (
                             appModel is AppModel.PinnedShortcut ||
@@ -311,8 +310,11 @@ class AppDrawerAdapter(
                     appHideLayout.visibility = View.VISIBLE
                     // Only allow renaming non hidden apps
                     appRename.isVisible = flag != Constants.FLAG_HIDDEN_APPS
+                    true
                 }
-                true
+            } else {
+                appTitle.setOnClickListener(null)
+                appTitle.setOnLongClickListener(null)
             }
 
             // Configure rename behavior
