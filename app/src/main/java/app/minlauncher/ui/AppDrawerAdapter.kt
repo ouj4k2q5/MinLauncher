@@ -34,7 +34,7 @@ class AppDrawerAdapter(
     private val appClickListener: (AppModel) -> Unit,
     private val appInfoListener: (AppModel) -> Unit,
     private val appDeleteListener: (AppModel) -> Unit,
-    private val appHideListener: (AppModel, Int) -> Unit,
+    private val appHideListener: (AppModel) -> Unit,
     private val appRenameListener: (AppModel, String) -> Unit,
     private val privateSpaceToggleListener: () -> Unit = {},
     private val privateSpaceSettingsListener: () -> Unit = {},
@@ -77,11 +77,10 @@ class AppDrawerAdapter(
     private val appFilter = createAppFilter()
     private val myUserHandle = android.os.Process.myUserHandle()
 
-    var appsList: MutableList<AppModel> = mutableListOf()
-    var appFilteredList: MutableList<AppModel> = mutableListOf()
+    private var appsList: List<AppModel> = mutableListOf()
 
     override fun getItemViewType(position: Int): Int =
-        when (appFilteredList.getOrNull(position)) {
+        when (getItem(position)) {
             is AppModel.PrivateSpaceHeader -> VIEW_TYPE_PRIVATE_HEADER
             else -> VIEW_TYPE_APP
         }
@@ -115,8 +114,8 @@ class AppDrawerAdapter(
         position: Int,
     ) {
         try {
-            if (appFilteredList.isEmpty() || position == RecyclerView.NO_POSITION) return
-            val appModel = appFilteredList[holder.bindingAdapterPosition]
+            if (position == RecyclerView.NO_POSITION) return
+            val appModel = getItem(position)
             when (holder) {
                 is PrivateSpaceHeaderViewHolder -> {
                     holder.bind(
@@ -152,13 +151,14 @@ class AppDrawerAdapter(
                 isBangSearch = charSearch?.startsWith("!") ?: false
                 autoLaunch = allowAutoLaunch && (charSearch?.startsWith(" ")?.not() ?: true)
 
+                val source = appsList.toList()
                 val appFilteredList = (
                     if (charSearch.isNullOrBlank()) {
-                        appsList
+                        source
                     } else {
-                        appsList.filter { app ->
+                        source.filter { app ->
                             app !is AppModel.PrivateSpaceHeader && appLabelMatches(app.appLabel, charSearch)
-                        } as MutableList<AppModel>
+                        }
                     }
                 )
 
@@ -173,9 +173,8 @@ class AppDrawerAdapter(
                 results: FilterResults?,
             ) {
                 results?.values?.let {
-                    val items = it as MutableList<AppModel>
-                    appFilteredList = items
-                    submitList(appFilteredList) {
+                    val items = it as List<AppModel>
+                    submitList(items) {
                         autoLaunch()
                     }
                 }
@@ -189,10 +188,10 @@ class AppDrawerAdapter(
                 autoLaunch &&
                 isBangSearch.not() &&
                 flag == Constants.FLAG_LAUNCH_APP &&
-                appFilteredList.isNotEmpty() &&
-                appFilteredList[0] !is AppModel.PrivateSpaceHeader
+                currentList.isNotEmpty() &&
+                currentList[0] !is AppModel.PrivateSpaceHeader
             ) {
-                appClickListener(appFilteredList[0])
+                appClickListener(currentList[0])
             }
         } catch (e: Exception) {
             Log.e(TAG, "Failed to auto launch app", e)
@@ -203,20 +202,21 @@ class AppDrawerAdapter(
         appLabel: String,
         charSearch: CharSequence,
     ): Boolean {
+        fun normalize(value: CharSequence): String =
+            Normalizer
+                .normalize(value, Normalizer.Form.NFD)
+                .replace(diacriticsRegex, "")
+                .replace(separatorsRegex, "")
+
         if (appLabel.contains(charSearch.trim(), true)) return true
-        val query = charSearch.normalizeForSearch()
-        return query.isNotEmpty() && appLabel.normalizeForSearch().contains(query, true)
+        val query = normalize(charSearch)
+        return query.isNotEmpty() && normalize(appLabel).contains(query, true)
     }
 
-    private fun CharSequence.normalizeForSearch(): String =
-        Normalizer
-            .normalize(this, Normalizer.Form.NFD)
-            .replace(diacriticsRegex, "")
-            .replace(separatorsRegex, "")
-
-    fun setAppList(appsList: MutableList<AppModel>) {
+    fun setAppList(appsList: List<AppModel>) {
         // Add empty app for bottom padding in recyclerview and assign to list
-        appsList.add(
+        val list = appsList.toMutableList()
+        list.add(
             AppModel.App(
                 appLabel = "",
                 key = null,
@@ -226,13 +226,17 @@ class AppDrawerAdapter(
                 user = android.os.Process.myUserHandle(),
             ),
         )
-        this.appsList = appsList
-        this.appFilteredList = appsList
-        submitList(appsList)
+        this.appsList = list
+        submitList(list.toList())
+    }
+
+    fun removeApp(appModel: AppModel) {
+        appsList = appsList.filterNot { it == appModel }
+        submitList(currentList.filterNot { it == appModel })
     }
 
     fun launchFirstInList() {
-        val first = appFilteredList.firstOrNull { it !is AppModel.PrivateSpaceHeader }
+        val first = currentList.firstOrNull { it !is AppModel.PrivateSpaceHeader }
         if (first != null) appClickListener(first)
     }
 
@@ -264,7 +268,7 @@ class AppDrawerAdapter(
             clickListener: (AppModel) -> Unit,
             appDeleteListener: (AppModel) -> Unit,
             appInfoListener: (AppModel) -> Unit,
-            appHideListener: (AppModel, Int) -> Unit,
+            appHideListener: (AppModel) -> Unit,
             appRenameListener: (AppModel, String) -> Unit,
         ) = with(binding) {
             appHideLayout.visibility = View.GONE
@@ -386,7 +390,7 @@ class AppDrawerAdapter(
                 renameLayout.visibility = View.GONE
                 appTitle.visibility = View.VISIBLE
             }
-            appHide.setOnClickListener { appHideListener(appModel, bindingAdapterPosition) }
+            appHide.setOnClickListener { appHideListener(appModel) }
         }
 
         private fun getAppName(

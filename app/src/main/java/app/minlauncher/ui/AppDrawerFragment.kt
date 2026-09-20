@@ -201,14 +201,12 @@ class AppDrawerFragment : BaseFragment() {
                     }
                     viewModel.getAppList()
                 },
-                appHideListener = { appModel, position ->
+                appHideListener = { appModel ->
                     if (appModel is AppModel.PinnedShortcut) {
                         requireContext().showToast(getString(R.string.hide_pinned_shortcut_not_supported))
                         return@AppDrawerAdapter
                     }
-                    adapter.appFilteredList.removeAt(position)
-                    adapter.notifyItemRemoved(position)
-                    adapter.appsList.remove(appModel)
+                    adapter.removeApp(appModel)
 
                     val newSet = mutableSetOf<String>()
                     newSet.addAll(prefs.hiddenApps)
@@ -284,7 +282,7 @@ class AppDrawerFragment : BaseFragment() {
         if (flag == Constants.FLAG_HIDDEN_APPS) {
             viewModel.hiddenApps.observe(viewLifecycleOwner) {
                 it?.let {
-                    adapter.setAppList(it.toMutableList())
+                    adapter.setAppList(it)
                 }
             }
         } else {
