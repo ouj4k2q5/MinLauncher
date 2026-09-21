@@ -15,9 +15,14 @@ YELLOW='\033[1;33m'
 RED='\033[1;31m'
 NC='\033[0m' # No Color
 
-# Upstream Olauncher commit this fork was taken from. Tags reachable from it belong to
-# upstream, not to this fork, and are ignored when working out the current version.
-FORK_BASE="1d438f8"
+# Ask a y/N question; succeeds only on y/Y, so callers abort on anything else.
+confirm() {
+echo -e "${YELLOW}$1${NC}"
+read -n 1 -r answer_raw
+echo
+answer=$(printf "%s" "$answer_raw" | tr '[:upper:]' '[:lower:]')
+[[ $answer =~ ^[Yy]$ ]]
+}
 
 # Display usage information
 show_usage() {
@@ -43,9 +48,12 @@ echo ""
 echo -e "${GREEN}Notes:${NC}"
 echo -e "  - versionCode is major*10000 + minor*100 + patch, so minor and patch must"
 echo -e "    stay below 100. This matches the calculation in release.yml."
-echo -e "  - Upstream Olauncher tags (reachable from ${FORK_BASE}) are ignored."
-echo -e "  - This commits version.properties, tags that commit, and pushes both to"
-echo -e "    the current branch, so it needs write access to push to."
+echo -e "  - Expects the F-Droid changelog metadata/en-US/changelogs/<versionCode>.txt"
+echo -e "    for the new version to already exist and be committed."
+echo -e "  - This makes two commits: the version.properties bump, then an F-Droid"
+echo -e "    recipe update (docs/f-droid/) whose Builds entry references the bump"
+echo -e "    commit's full hash. The tag points at the recipe commit, and both are"
+echo -e "    pushed to the current branch, so it needs write access to push to."
 echo ""
 echo -e "=================================================================================="
 echo ""
@@ -91,6 +99,10 @@ echo -e "${YELLOW}Pushing a tag would not build or publish anything.${NC}"
 exit 1
 fi
 
+# Draft of the fdroiddata build recipe. The script keeps it in sync with each release:
+# a new Builds entry and the CurrentVersion* fields.
+FDROID_RECIPE="docs/f-droid/io.github.ouj4k2q5.minlauncher"
+
 # Working tree must be clean, or the tag would not describe what was built
 if ! git diff-index --quiet HEAD --; then
 echo -e "${RED}Error: Your working tree is not clean. Please commit or stash your changes first.${NC}"
@@ -104,13 +116,9 @@ CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
 DEFAULT_BRANCH=$(git symbolic-ref --quiet --short refs/remotes/origin/HEAD 2>/dev/null | sed 's|^origin/||' || true)
 if [ -n "$DEFAULT_BRANCH" ] && [ "$CURRENT_BRANCH" != "$DEFAULT_BRANCH" ]; then
 echo -e "${YELLOW}Warning: tagging from '$CURRENT_BRANCH', not the default branch '$DEFAULT_BRANCH'.${NC}"
-echo -e "${YELLOW}Do you want to continue? (y/N)${NC}"
-read -n 1 -r branch_answer_raw
-echo
-branch_answer=$(printf "%s" "$branch_answer_raw" | tr '[:upper:]' '[:lower:]')
-if [[ ! $branch_answer =~ ^[Yy]$ ]]; then
-  echo -e "${RED}Aborting.${NC}"
-  exit 1
+if ! confirm "Do you want to continue? (y/N)"; then
+ echo -e "${RED}Aborting.${NC}"
+ exit 1
 fi
 fi
 
@@ -121,10 +129,10 @@ echo -e "${YELLOW}Warning: could not fetch from origin; remote checks may be sta
 if git show-ref --verify --quiet "refs/remotes/origin/$CURRENT_BRANCH"; then
 UNPUSHED=$(git rev-list --count "origin/$CURRENT_BRANCH..HEAD")
 if [ "$UNPUSHED" -gt 0 ]; then
-  echo -e "${RED}Error: '$CURRENT_BRANCH' has $UNPUSHED unpushed commit(s).${NC}"
-  echo -e "${YELLOW}The workflow builds the tagged commit from the remote, so push first:${NC}"
-  echo -e "${YELLOW}  git push origin $CURRENT_BRANCH${NC}"
-  exit 1
+ echo -e "${RED}Error: '$CURRENT_BRANCH' has $UNPUSHED unpushed commit(s).${NC}"
+ echo -e "${YELLOW}The workflow builds the tagged commit from the remote, so push first:${NC}"
+ echo -e "${YELLOW}  git push origin $CURRENT_BRANCH${NC}"
+ exit 1
 fi
 else
 echo -e "${RED}Error: remote branch 'origin/$CURRENT_BRANCH' does not exist.${NC}"
@@ -132,24 +140,14 @@ echo -e "${YELLOW}Push the branch before tagging: git push -u origin $CURRENT_BR
 exit 1
 fi
 
-# Find this fork's latest release tag. Upstream's 70-odd tags are all reachable from the
-# fork base, so --no-merged separates them without needing them to be deleted. Doing this
-# with one git call rather than merge-base per tag matters: the per-tag form took ~50s
-# against upstream's tag count.
-LATEST_TAG=$(git tag --list 'v*' --no-merged "$FORK_BASE" --sort=-v:refname \
+# Find the latest release tag. Every v* tag in this repository belongs to this fork.
+LATEST_TAG=$(git tag --list 'v*' --sort=-v:refname \
 | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | head -1 || true)
 
 if [ -n "$LATEST_TAG" ]; then
-echo -e "${BLUE}Latest release tag for this fork: ${YELLOW}${LATEST_TAG}${NC}"
+echo -e "${BLUE}Latest release tag: ${YELLOW}${LATEST_TAG}${NC}"
 else
-echo -e "${BLUE}No release tag for this fork yet — this would be the first.${NC}"
-UPSTREAM_TAG_COUNT=$(git tag --list 'v*' --merged "$FORK_BASE" | wc -l | tr -d ' ')
-if [ "$UPSTREAM_TAG_COUNT" -gt 0 ]; then
-  echo -e "${YELLOW}Note: $UPSTREAM_TAG_COUNT upstream Olauncher tag(s) are still present and being ignored.${NC}"
-  echo -e "${YELLOW}To clear them from this fork's tag list:${NC}"
-  echo -e "${YELLOW}  git tag -d \$(git tag)${NC}"
-  echo -e "${YELLOW}  git ls-remote --tags origin | awk '{print \":\"\$2}' | xargs -n50 git push origin${NC}"
-fi
+echo -e "${BLUE}No release tag yet — this would be the first.${NC}"
 fi
 
 # Work out the new version
@@ -164,21 +162,21 @@ fi
 
 case "$ACTION" in
 major)
-  MAJOR=$((CUR_MAJOR + 1)); MINOR=0; PATCH=0
-  ;;
+ MAJOR=$((CUR_MAJOR + 1)); MINOR=0; PATCH=0
+ ;;
 minor)
-  MAJOR=$CUR_MAJOR; MINOR=$((CUR_MINOR + 1)); PATCH=0
-  ;;
+ MAJOR=$CUR_MAJOR; MINOR=$((CUR_MINOR + 1)); PATCH=0
+ ;;
 patch)
-  MAJOR=$CUR_MAJOR; MINOR=$CUR_MINOR; PATCH=$((CUR_PATCH + 1))
-  ;;
+ MAJOR=$CUR_MAJOR; MINOR=$CUR_MINOR; PATCH=$((CUR_PATCH + 1))
+ ;;
 custom)
-  if [[ ! "$VERSION_ARG" =~ ^([0-9]+)\.([0-9]+)\.([0-9]+)$ ]]; then
-    echo -e "${RED}Error: version must be X.Y.Z (e.g., 1.0.0), got '$VERSION_ARG'${NC}"
-    exit 1
-  fi
-  MAJOR="${BASH_REMATCH[1]}"; MINOR="${BASH_REMATCH[2]}"; PATCH="${BASH_REMATCH[3]}"
-  ;;
+ if [[ ! "$VERSION_ARG" =~ ^([0-9]+)\.([0-9]+)\.([0-9]+)$ ]]; then
+   echo -e "${RED}Error: version must be X.Y.Z (e.g., 1.0.0), got '$VERSION_ARG'${NC}"
+   exit 1
+ fi
+ MAJOR="${BASH_REMATCH[1]}"; MINOR="${BASH_REMATCH[2]}"; PATCH="${BASH_REMATCH[3]}"
+ ;;
 esac
 
 NEW_VERSION="$MAJOR.$MINOR.$PATCH"
@@ -196,9 +194,9 @@ NEW_VERSION_CODE=$(( MAJOR * 10000 + MINOR * 100 + PATCH ))
 if [ -n "$LATEST_TAG" ]; then
 CUR_VERSION_CODE=$(( CUR_MAJOR * 10000 + CUR_MINOR * 100 + CUR_PATCH ))
 if (( NEW_VERSION_CODE <= CUR_VERSION_CODE )); then
-  echo -e "${RED}Error: versionCode would not increase: $CUR_VERSION_CODE -> $NEW_VERSION_CODE${NC}"
-  echo -e "${YELLOW}Android refuses to install an update with a lower versionCode.${NC}"
-  exit 1
+ echo -e "${RED}Error: versionCode would not increase: $CUR_VERSION_CODE -> $NEW_VERSION_CODE${NC}"
+ echo -e "${YELLOW}Android refuses to install an update with a lower versionCode.${NC}"
+ exit 1
 fi
 fi
 
@@ -210,6 +208,24 @@ fi
 if git ls-remote --tags --exit-code origin "refs/tags/$NEW_TAG" >/dev/null 2>&1; then
 echo -e "${RED}Error: tag '$NEW_TAG' already exists on origin.${NC}"
 exit 1
+fi
+
+if [ ! -f "$FDROID_RECIPE" ]; then
+echo -e "${RED}Error: F-Droid recipe draft not found at $FDROID_RECIPE${NC}"
+exit 1
+fi
+
+# F-Droid reads the changelog for a version from the tagged commit, so it has to be
+# committed before this script runs (the working tree is clean at this point).
+CHANGELOG_FILE="metadata/en-US/changelogs/$NEW_VERSION_CODE.txt"
+if [ ! -f "$CHANGELOG_FILE" ]; then
+echo -e "${YELLOW}Warning: F-Droid changelog '$CHANGELOG_FILE' does not exist.${NC}"
+echo -e "${YELLOW}F-Droid will show no per-version changelog for $NEW_TAG.${NC}"
+echo -e "${YELLOW}To write one: abort, create the file, commit it, and re-run this script.${NC}"
+if ! confirm "Release without a changelog? (y/N)"; then
+ echo -e "${RED}Aborting.${NC}"
+ exit 1
+fi
 fi
 
 GIT_USER=$(git config user.name || echo "unknown")
@@ -225,14 +241,18 @@ echo -e "${GREEN}Base commit:${NC} $BASE_COMMIT_SHA ($BASE_COMMIT_SUBJECT)"
 echo -e "${GREEN}Branch:${NC}      $CURRENT_BRANCH"
 echo -e "${GREEN}Artifact:${NC}    MinLauncher-$NEW_VERSION.apk"
 echo ""
-echo -e "${BLUE}version.properties will be updated and committed on top of the base commit;${NC}"
-echo -e "${BLUE}the tag points at that new commit, not the base commit above.${NC}"
+echo -e "${BLUE}Two commits will be made on top of the base commit: first the version.properties${NC}"
+echo -e "${BLUE}bump, then an F-Droid recipe update whose Builds entry references the bump${NC}"
+echo -e "${BLUE}commit's full hash. The tag points at the recipe commit, and F-Droid builds the${NC}"
+echo -e "${BLUE}commit recorded in the recipe's entry (the bump commit).${NC}"
 
 if [ "$DRY_RUN" = true ]; then
 echo -e "${BLUE}DRY RUN MODE - No changes will be made${NC}"
 echo -e "${GREEN}Would execute:${NC}"
 echo -e "  sed -i -E 's/^versionName=.*/versionName=$NEW_VERSION/; s/^versionCode=.*/versionCode=$NEW_VERSION_CODE/' version.properties"
 echo -e "  git commit version.properties -m \"chore: release $NEW_TAG\""
+echo -e "  insert a Builds entry (commit: <full hash of that commit>) and update CurrentVersion* in $FDROID_RECIPE"
+echo -e "  git commit $FDROID_RECIPE -m \"chore: record $NEW_TAG in the F-Droid recipe\""
 echo -e "  git tag -a \"$NEW_TAG\" -m \"...\""
 echo -e "  git push --atomic origin \"$CURRENT_BRANCH\" \"$NEW_TAG\""
 echo -e "${BLUE}Dry run completed successfully${NC}"
@@ -242,11 +262,7 @@ fi
 echo -e "${RED}This pushes a tag, which starts a release build and publishes a GitHub Release.${NC}"
 echo -e "${YELLOW}It needs the KEYSTORE_BASE64, KEYSTORE_PASSWORD, KEY_ALIAS and KEY_PASSWORD${NC}"
 echo -e "${YELLOW}secrets to be configured, or the workflow will fail at the signing step.${NC}"
-echo -e "${RED}Proceed? (y/N)${NC}"
-read -n 1 -r answer_raw
-echo
-answer=$(printf "%s" "$answer_raw" | tr '[:upper:]' '[:lower:]')
-if [[ ! $answer =~ ^[Yy]$ ]]; then
+if ! confirm "Proceed? (y/N)"; then
 echo -e "${RED}Aborting.${NC}"
 exit 1
 fi
@@ -260,11 +276,50 @@ version.properties
 rm -f version.properties.bak
 
 if ! git commit version.properties -m "chore: release $NEW_TAG"; then
-echo -e "${RED}Error: failed to commit version.properties${NC}"
+echo -e "${RED}Error: failed to commit the version bump${NC}"
 git checkout -- version.properties
 exit 1
 fi
-echo -e "${GREEN}Successfully committed the version bump${NC}"
+
+# The F-Droid build metadata reference asks for the full commit hash in the commit
+# field, not a tag name. The hash only exists once the version bump commit above
+# does, which is why a release is two commits: the bump (recorded in the recipe),
+# then the recipe update itself, with the tag landing on the recipe commit so the
+# tagged tree still carries the new version.
+RELEASE_COMMIT=$(git rev-parse HEAD)
+
+# The new Builds entry goes on top (fdroiddata convention: newest first) and CurrentVersion*
+# move to this release.
+if ! awk -v name="$NEW_VERSION" -v code="$NEW_VERSION_CODE" -v sha="$RELEASE_COMMIT" '
+ !inserted && $0 == "Builds:" {
+   print
+   print " - versionName: " name
+   print "   versionCode: " code
+   print "   commit: " sha
+   print "   gradle:"
+   print "     - yes"
+   inserted = 1
+   next
+ }
+ /^CurrentVersion:/ { print "CurrentVersion: " name; next }
+ /^CurrentVersionCode:/ { print "CurrentVersionCode: " code; next }
+ { print }
+' "$FDROID_RECIPE" > "$FDROID_RECIPE.new" || ! grep -q "^ - versionName: $NEW_VERSION$" "$FDROID_RECIPE.new"; then
+echo -e "${RED}Error: failed to add a Builds entry for $NEW_VERSION to $FDROID_RECIPE${NC}"
+rm -f "$FDROID_RECIPE.new"
+echo -e "${YELLOW}Undoing the version bump commit with: git reset --hard HEAD~1${NC}"
+git reset --hard HEAD~1
+exit 1
+fi
+mv "$FDROID_RECIPE.new" "$FDROID_RECIPE"
+
+if ! git commit "$FDROID_RECIPE" -m "chore: record $NEW_TAG in the F-Droid recipe"; then
+echo -e "${RED}Error: failed to commit the recipe update${NC}"
+echo -e "${YELLOW}Undoing the version bump commit with: git reset --hard HEAD~1${NC}"
+git reset --hard HEAD~1
+exit 1
+fi
+echo -e "${GREEN}Successfully committed the version bump and recipe update${NC}"
 
 read -r COMMIT_SHA COMMIT_SUBJECT < <(git log -1 --format='%h %s')
 TAG_MESSAGE="Release $NEW_TAG
@@ -278,19 +333,22 @@ tagged by:   $GIT_USER <$GIT_EMAIL> at $(date '+%Y-%m-%d %H:%M:%S %z')"
 echo -e "${GREEN}Creating tag ${YELLOW}${NEW_TAG}${NC}"
 if ! git tag -a "$NEW_TAG" -m "$TAG_MESSAGE"; then
 echo -e "${RED}Error: failed to create tag '$NEW_TAG'${NC}"
+echo -e "${YELLOW}Both release commits exist locally but no tag was created. Undo with:${NC}"
+echo -e "${YELLOW}  git reset --hard HEAD~2${NC}"
 exit 1
 fi
 echo -e "${GREEN}Successfully created tag '${YELLOW}${NEW_TAG}${GREEN}'${NC}"
 
-# Pushed together and atomically: either both the version bump commit and the tag
-# land on the remote, or neither does, so there is no window with one but not the other.
+# Pushed together and atomically: either the two release commits and the tag
+# land on the remote, or none of them does, so there is no window with some but not all.
 echo -e "${BLUE}Pushing ${CURRENT_BRANCH} and the tag to remote...${NC}"
 if ! git push --atomic origin "$CURRENT_BRANCH" "$NEW_TAG"; then
 echo -e "${RED}Error: failed to push '$CURRENT_BRANCH' and '$NEW_TAG'${NC}"
-echo -e "${YELLOW}Both exist locally but were not pushed. Retry with:${NC}"
+echo -e "${YELLOW}The release commits and the tag exist locally but were not pushed.${NC}"
+echo -e "${YELLOW}Retry with:${NC}"
 echo -e "${YELLOW}  git push --atomic origin $CURRENT_BRANCH $NEW_TAG${NC}"
 echo -e "${YELLOW}Or undo them locally:${NC}"
-echo -e "${YELLOW}  git tag -d $NEW_TAG && git reset --hard HEAD~1${NC}"
+echo -e "${YELLOW}  git tag -d $NEW_TAG && git reset --hard HEAD~2${NC}"
 exit 1
 fi
 echo -e "${GREEN}Successfully pushed ${CURRENT_BRANCH} and tag '${YELLOW}${NEW_TAG}${GREEN}' to remote${NC}"

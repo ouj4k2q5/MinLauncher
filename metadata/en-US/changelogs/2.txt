@@ -1,0 +1,1 @@
+Internal modernization release: Gradle 8.13 to 9 upgrade, deprecated API replacements, Duration-based coroutine delays, and code cleanup. The application namespace is now app.minlauncher, and the released version is sourced from version.properties so F-Droid can detect updates from tags.
