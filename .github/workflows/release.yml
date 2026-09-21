@@ -51,17 +51,18 @@ jobs:
           fi
           version_code=$(( major * 10000 + minor * 100 + patch ))
           
-          # version.properties is committed by scripts/tag-release.sh as part of the
-          # tagged commit, and is what a plain `gradle assembleRelease` (as F-Droid's
+          # version.properties is bumped by hand on the release branch before the
+          # tag is pushed, and is what a plain `gradle assembleRelease` (as F-Droid's
           # build server runs it, with no -P properties) resolves the version from.
-          # Asserting it matches the tag here catches a tag pushed without that script.
+          # Asserting it matches the tag here catches a tag pushed outside the
+          # release procedure.
           read -r committed_name committed_code < <(awk -F= '
             $1 == "versionName" { n = $2 }
             $1 == "versionCode" { c = $2 }
             END { print n, c }
           ' version.properties)
           if [[ "$committed_name" != "$version" || "$committed_code" != "$version_code" ]]; then
-            echo "::error::version.properties ($committed_name/$committed_code) does not match tag $TAG ($version/$version_code); use scripts/tag-release.sh to tag"
+            echo "::error::version.properties ($committed_name/$committed_code) does not match tag $TAG ($version/$version_code); follow the release procedure in docs/releasing.md"
             exit 1
           fi
           

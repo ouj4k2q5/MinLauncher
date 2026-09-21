@@ -25,10 +25,14 @@ Description: MinLauncher is a personal fork of Olauncher with the same goal:
 RepoType: git
 Repo: https://github.com/ouj4k2q5/Minlauncher.git
 
-# Kept in sync with each release by scripts/tag-release.sh (newest Builds entry on
-# top, CurrentVersion* moved to it). Entries reference the release commit's full
-# hash, as F-Droid's build metadata reference asks (not a tag name); app/build.gradle.kts
-# reads version.properties directly, so no prebuild step is needed to inject the version.
+# Snapshot of the metadata as submitted to fdroiddata (see docs/f-droid.md); not
+# kept in sync with each release. New versions are detected automatically from
+# version.properties in the tagged revision via UpdateCheckMode: Tags /
+# UpdateCheckData / AutoUpdateMode: Version, so Builds entries for later versions
+# are added on the fdroiddata side — do not add them here. The entry below
+# references the release commit's full hash, as F-Droid's build metadata reference
+# asks (not a tag name); app/build.gradle.kts reads version.properties directly,
+# so no prebuild step is needed to inject the version.
 Builds:
  - versionName: 0.0.2
    versionCode: 2
