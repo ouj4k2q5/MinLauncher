@@ -27,10 +27,13 @@ the tag:
 
 Tags must be `vMAJOR.MINOR.PATCH`. The version code is `major * 10000 + minor *
 100 + patch`; minor and patch must be below 100. Before tagging, the script
-commits the new version to [`version.properties`](../version.properties) and
-pushes that commit to the current branch — `release.yml` checks this matches
-the tag and fails otherwise, so a tag can't be created any other way than
-through this script:
+makes two commits: the new version in
+[`version.properties`](../version.properties), then an updated `Builds:` entry
+in the [F-Droid recipe draft](f-droid.md) referencing the first commit's full
+hash (F-Droid's metadata reference asks for the full commit hash rather than a
+tag name). The tag lands on the second commit, and both are pushed —
+`release.yml` checks the tagged `version.properties` matches the tag and fails
+otherwise, so a tag can't be created any other way than through this script:
 
 ```bash
 git tag -a v1.0.0 -m "Release v1.0.0"  # fails in CI: version.properties still says the old version
@@ -59,6 +62,9 @@ Keep the keystore outside the repository. Add these repository secrets under
 | `KEY_PASSWORD` | Key password |
 
 Adding required reviewers to the `release` GitHub environment makes a tag push wait
-for approval before publishing. A GitHub fork may retain upstream tags; removing
-those inherited tags keeps this fork's release list clear, but is not required by
-`tag-release.sh`.
+for approval before publishing.
+
+Each release also carries an F-Droid changelog:
+[`metadata/en-US/changelogs/<versionCode>.txt`](../metadata/en-US/changelogs/).
+F-Droid reads it from the tagged commit, so create and commit it *before* running
+`tag-release.sh`; the script warns and asks for confirmation when it is missing.

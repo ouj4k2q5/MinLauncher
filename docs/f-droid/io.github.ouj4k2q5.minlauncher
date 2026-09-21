@@ -25,14 +25,14 @@ Description: MinLauncher is a personal fork of Olauncher with the same goal:
 RepoType: git
 Repo: https://github.com/ouj4k2q5/Minlauncher.git
 
-# TODO before submitting: fill in versionName/versionCode/commit/CurrentVersion*
-# for a tag created *after* version.properties started being committed by
-# scripts/tag-release.sh (v0.0.1 predates it — see docs/f-droid.md). app/build.gradle.kts
-# reads version.properties directly, so no prebuild step is needed to inject it.
+# Kept in sync with each release by scripts/tag-release.sh (newest Builds entry on
+# top, CurrentVersion* moved to it). Entries reference the release commit's full
+# hash, as F-Droid's build metadata reference asks (not a tag name); app/build.gradle.kts
+# reads version.properties directly, so no prebuild step is needed to inject the version.
 Builds:
- - versionName: 0.0.1
-   versionCode: 1
-   commit: b9bf0dfb9527bb3b7a95bc4c307e5abc6c684ccd
+ - versionName: 0.0.2
+   versionCode: 2
+   commit: 31833711a45d5830a52e9172f5c9524a06d4d007
    gradle:
      - yes
 
@@ -42,5 +42,5 @@ UpdateCheckMode: Tags
 # to version.properties, instead of the default AndroidManifest.xml/build.gradle.kts
 # scan (which would only find a Gradle property reference, not a literal).
 UpdateCheckData: version.properties|versionCode=(\d+)|version.properties|versionName=(.+)
-CurrentVersion: 0.0.1
-CurrentVersionCode: 1
+CurrentVersion: 0.0.2
+CurrentVersionCode: 2

@@ -51,8 +51,11 @@ Only JUnit 4 JVM tests exist locally; there is no emulator/instrumentation setup
   move versioning into injected build properties. Local override:
   `./gradlew assembleDebug -PappVersionName=1.2.3 -PappVersionCode=10203`.
 - Releases happen **only** via `./scripts/tag-release.sh [patch|minor|major|custom x.y.z]`
-  from a clean, pushed tree. It commits `version.properties` and pushes the tag;
-  `release.yml` fails if the tag and `version.properties` disagree. Never tag manually.
+  from a clean, pushed tree. It commits `version.properties`, then a `Builds:` entry in
+  the F-Droid recipe draft (`docs/f-droid/`) referencing that commit's full hash
+  (two commits total), tags the second commit, and pushes both;
+  `release.yml` fails if the tag and `version.properties` disagree. It expects
+  `metadata/en-US/changelogs/<versionCode>.txt` to exist beforehand. Never tag manually.
 - Release signing comes from env vars (`KEYSTORE_PATH`, `KEYSTORE_PASSWORD`,
   `KEY_ALIAS`, `KEY_PASSWORD`). Without them, `assembleRelease` still works but
   produces an unsigned, uninstallable APK — that's expected, not a build error.
