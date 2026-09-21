@@ -50,12 +50,18 @@ Only JUnit 4 JVM tests exist locally; there is no emulator/instrumentation setup
   (`major*10000 + minor*100 + patch`). The literal is required by F-Droid; do not
   move versioning into injected build properties. Local override:
   `./gradlew assembleDebug -PappVersionName=1.2.3 -PappVersionCode=10203`.
-- Releases happen **only** via `./scripts/tag-release.sh [patch|minor|major|custom x.y.z]`
-  from a clean, pushed tree. It commits `version.properties`, then a `Builds:` entry in
-  the F-Droid recipe draft (`docs/f-droid/`) referencing that commit's full hash
-  (two commits total), tags the second commit, and pushes both;
-  `release.yml` fails if the tag and `version.properties` disagree. It expects
-  `metadata/en-US/changelogs/<versionCode>.txt` to exist beforehand. Never tag manually.
+- Release procedure (mostly manual, see `docs/releasing.md`): create branch
+  `release/vX.Y.Z` from main, bump `version.properties`, write
+  `metadata/en-US/changelogs/<versionCode>.txt`, commit and push, then run
+  `./scripts/tag-release.sh` from that branch. It validates the procedure
+  (branch/version/tag consistency, clean and pushed tree, versionCode
+  monotonic, changelog present) and pushes the annotated tag, which triggers
+  `release.yml`. Afterwards, merge the release branch into `main` via PR.
+  Never tag manually.
+- The F-Droid recipe draft at `docs/f-droid/io.github.ouj4k2q5.minlauncher` is
+  a snapshot of the metadata as submitted to fdroiddata — do not add `Builds:`
+  entries to it; new releases are picked up automatically via
+  `UpdateCheckMode: Tags`.
 - Release signing comes from env vars (`KEYSTORE_PATH`, `KEYSTORE_PASSWORD`,
   `KEY_ALIAS`, `KEY_PASSWORD`). Without them, `assembleRelease` still works but
   produces an unsigned, uninstallable APK — that's expected, not a build error.

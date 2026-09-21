@@ -10,9 +10,9 @@ works differently from [`release.yml`](../.github/workflows/release.yml):
   unrelated to F-Droid distribution.
 - The recipe that tells F-Droid how to build the app lives in a separate
   repository, [`fdroiddata`](https://gitlab.com/fdroid/fdroiddata), not here.
-  A draft of that recipe is kept at
-  [`docs/f-droid/io.github.ouj4k2q5.minlauncher`](f-droid/io.github.ouj4k2q5.minlauncher)
-  to copy into a merge request there.
+  A snapshot of the recipe as submitted there is kept at
+  [`docs/f-droid/io.github.ouj4k2q5.minlauncher`](f-droid/io.github.ouj4k2q5.minlauncher);
+  it is not updated per release.
 - What *does* live in this repository is the metadata F-Droid reads directly
   from source: [`metadata/en-US/`](../metadata/en-US/) (title, descriptions,
   changelogs, and screenshots — the same
@@ -30,13 +30,13 @@ version — it does not run Gradle and cannot resolve a property reference.
 
 So the version needs to exist as a literal, checked-in value, not only as
 something computed from the tag at build time. [`version.properties`](../version.properties)
-is that literal: [`scripts/tag-release.sh`](../scripts/tag-release.sh) commits
-the new `versionName`/`versionCode` to it *before* creating the tag, so the
-tagged commit already carries the correct version in source. `app/build.gradle.kts`
+is that literal: the release procedure (see [Releasing](releasing.md)) commits
+the new `versionName`/`versionCode` *before* the tag is pushed, so the tagged
+commit already carries the correct version in source. `app/build.gradle.kts`
 reads it as the default (an explicit `-P` override still wins, for local
 testing — see [Development](development.md)), and `release.yml` asserts it
-matches the tag before building, so a tag pushed without going through
-`tag-release.sh` fails loudly instead of shipping a mislabeled build.
+matches the tag before building, so a tag pushed outside the release flow
+fails loudly instead of shipping a mislabeled build.
 The draft recipe's `UpdateCheckData` field points F-Droid's checker at this
 same file.
 
@@ -47,34 +47,30 @@ same file.
 2. Test it with F-Droid's build tooling (`fdroid build` / `fdroid checkupdates`)
    before submitting. This has not been tested against real F-Droid build
    tooling.
-3. The recipe's `Builds:` entries are maintained by [`tag-release.sh`](../scripts/tag-release.sh):
-   each release adds an entry referencing the version-bump commit's full hash
-   (F-Droid's build metadata reference asks for the full commit hash, not a tag
-   name), and moves `CurrentVersion`/`CurrentVersionCode`. A release is therefore
-   two commits — the version bump, then the recipe update — with the tag on the
-   second. The first entry (`v0.0.2`) is a tag
-   created *after* `version.properties` started being committed by the script, so
-   it builds correctly under F-Droid's plain `gradle` step (earlier tags
-   predating that file would not).
+3. The draft recipe is a snapshot of the metadata as submitted to fdroiddata —
+   it is not updated per release. The single `Builds:` entry references the
+   release commit's full hash (F-Droid's build metadata reference asks for the
+   full commit hash, not a tag name), and builds correctly under F-Droid's
+   plain `gradle` step (earlier tags predating `version.properties` would not).
 4. Open a merge request against `fdroiddata` with the recipe.
 
 ## Ongoing maintenance
 
 Once accepted, `UpdateCheckMode: Tags` plus the `UpdateCheckData` pointer at
 `version.properties` means F-Droid's tooling can detect new `vMAJOR.MINOR.PATCH`
-tags (the same tags `scripts/tag-release.sh` already creates) directly from
-that literal file and add a new build entry — no MR needed here for routine
-releases, *if* this detection is confirmed working per step 2 above. The
-recipe still needs a follow-up MR if the build process itself changes in a
+tags (the same tags `scripts/tag-release.sh` pushes) directly from that literal
+file and add the new `Builds:` entry on the fdroiddata side — no MR needed there
+for routine releases, *if* this detection is confirmed working per step 2 above.
+The recipe still needs a follow-up MR if the build process itself changes in a
 way F-Droid's build environment can't handle (for example, a new dependency
-source, or a Gradle/AGP upgrade).
+source, or a Gradle/AGP upgrade); the draft in this repository then serves as
+the starting point.
 
-Per release, `tag-release.sh` commits a new `Builds:` entry and moves
-`CurrentVersion`/`CurrentVersionCode` in the draft recipe (as a second commit on
-top of the version bump), and it expects
+Each release still needs
 [`metadata/en-US/changelogs/<versionCode>.txt`](../metadata/en-US/changelogs/)
-(the changelog F-Droid shows for that version) to already exist and be
-committed — write it before tagging.
+(the changelog F-Droid shows for that version) to exist and be committed in the
+tagged commit — `tag-release.sh` warns when it is missing. Write it before
+tagging.
 
 ## Screenshots
 

@@ -13,27 +13,39 @@ those pins.
 
 ## Create a release
 
-Use [`scripts/tag-release.sh`](../scripts/tag-release.sh) from a clean, pushed
-working tree. It validates the same release conditions before creating and pushing
-the tag:
+The procedure is deliberately manual; [`scripts/tag-release.sh`](../scripts/tag-release.sh)
+only validates it and pushes the tag. In order:
 
-```bash
-./scripts/tag-release.sh custom 1.0.0
-./scripts/tag-release.sh patch
-./scripts/tag-release.sh minor
-./scripts/tag-release.sh major
-./scripts/tag-release.sh --dry-run patch
-```
+1. Create and switch to a release branch named after the version:
+  ```bash
+  git switch -c release/v0.0.3
+  ```
+2. Bump [`version.properties`](../version.properties): `versionName` and
+   `versionCode` (`major * 10000 + minor * 100 + patch`; minor and patch stay
+   below 100).
+3. Write the F-Droid changelog
+   [`metadata/en-US/changelogs/<versionCode>.txt`](../metadata/en-US/changelogs/).
+4. Commit and push the branch.
+5. Run the script from the branch:
+  ```bash
+  ./scripts/tag-release.sh --dry-run   # validate only
+  ./scripts/tag-release.sh            # create and push the tag
+  ```
 
-Tags must be `vMAJOR.MINOR.PATCH`. The version code is `major * 10000 + minor *
-100 + patch`; minor and patch must be below 100. Before tagging, the script
-makes two commits: the new version in
-[`version.properties`](../version.properties), then an updated `Builds:` entry
-in the [F-Droid recipe draft](f-droid.md) referencing the first commit's full
-hash (F-Droid's metadata reference asks for the full commit hash rather than a
-tag name). The tag lands on the second commit, and both are pushed —
-`release.yml` checks the tagged `version.properties` matches the tag and fails
-otherwise, so a tag can't be created any other way than through this script:
+The script checks: the tree is clean, the branch is `release/vX.Y.Z` and pushed
+(not just locally, and not behind the remote), `version.properties` actually
+changed relative to `origin/main`, the branch name, `version.properties` and the
+future tag all carry the same version, the version code is valid and larger than
+the latest tag's, the tag does not exist yet, and the changelog is committed.
+Then it pushes the annotated tag, which triggers `release.yml`.
+
+6. Merge the release branch into `main` via a pull request:
+  ```bash
+  gh pr create --base main --head release/v0.0.3
+  ```
+
+A tag pushed any other way still fails in `release.yml`, which asserts the
+tagged `version.properties` matches the tag:
 
 ```bash
 git tag -a v1.0.0 -m "Release v1.0.0"  # fails in CI: version.properties still says the old version

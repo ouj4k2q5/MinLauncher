@@ -8,10 +8,16 @@ root = true
 charset = utf-8
 end_of_line = lf
 insert_final_newline = true
+indent_style = space
 
 [*.{kt,kts}]
 indent_size = 4
 max_line_length = 120
 
-[*.{gradle,properties,md,yml,yaml}]
+[*.{gradle,properties,md}]
 indent_size = 4
+
+# All YAML in this repository (.github/, config/detekt/) is 2-space indented;
+# a 4-space setting here made editors re-indent workflows incorrectly.
+[*.{yml,yaml}]
+indent_size = 2
