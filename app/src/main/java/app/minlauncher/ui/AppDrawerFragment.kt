@@ -168,7 +168,7 @@ class AppDrawerFragment : BaseFragment() {
                     if (flag == Constants.FLAG_LAUNCH_APP || flag == Constants.FLAG_HIDDEN_APPS) {
                         findNavController().popBackStack(R.id.mainFragment, false)
                     } else {
-                        findNavController().popBackStack()
+                        exitDrawer()
                     }
                 },
                 appInfoListener = {
@@ -219,13 +219,18 @@ class AppDrawerFragment : BaseFragment() {
 
                     prefs.hiddenApps = newSet
                     if (newSet.isEmpty()) {
-                        findNavController().popBackStack()
+                        exitDrawer()
                     }
                     if (prefs.firstHide) {
                         binding.search.hideKeyboard()
                         prefs.firstHide = false
                         viewModel.showDialog.postValue(Constants.Dialog.HIDDEN)
-                        findNavController().navigate(R.id.action_appListFragment_to_settingsFragment2)
+                        // The drawer may have just been popped above; navigate only
+                        // while it is still the current destination, otherwise the
+                        // action cannot be resolved from the new current destination.
+                        if (findNavController().currentDestination?.id == R.id.appListFragment) {
+                            findNavController().navigate(R.id.action_appListFragment_to_settingsFragment2)
+                        }
                     }
                     viewModel.getAppList()
                     viewModel.getHiddenApps()
@@ -345,7 +350,7 @@ class AppDrawerFragment : BaseFragment() {
                 Constants.FLAG_SET_HOME_APP_7 -> prefs.appName7 = name
                 Constants.FLAG_SET_HOME_APP_8 -> prefs.appName8 = name
             }
-            findNavController().popBackStack()
+            exitDrawer()
         }
     }
 
@@ -380,7 +385,15 @@ class AppDrawerFragment : BaseFragment() {
         }
 
     private fun exitDrawer() {
-        findNavController().popBackStack()
+        // Pop only while the drawer is still the current destination: popBackStack()
+        // updates the nav back stack synchronously, so a second invocation from the
+        // same gesture (a later MOVE event of one drag, or a double tap during the
+        // exit animation) becomes a no-op instead of popping further entries and
+        // corrupting the back stack.
+        val controller = findNavController()
+        if (controller.currentDestination?.id == R.id.appListFragment) {
+            controller.popBackStack()
+        }
     }
 
     override fun onStart() {

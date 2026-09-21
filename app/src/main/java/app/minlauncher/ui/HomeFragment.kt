@@ -582,23 +582,35 @@ class HomeFragment :
         includeHiddenApps: Boolean = false,
     ) {
         viewModel.getAppList(includeHiddenApps)
-        try {
-            findNavController().navigate(
-                R.id.action_mainFragment_to_appListFragment,
-                bundleOf(
-                    Constants.Key.FLAG to flag,
-                    Constants.Key.RENAME to rename,
-                ),
-            )
-        } catch (e: Exception) {
-            findNavController().navigate(
-                R.id.appListFragment,
-                bundleOf(
-                    Constants.Key.FLAG to flag,
-                    Constants.Key.RENAME to rename,
-                ),
-            )
-            Log.e(TAG, "Failed to navigate to app list", e)
+        val controller = findNavController()
+        if (controller.currentDestination == null) {
+            // The nav back stack was emptied by some earlier corruption; rebuild it
+            // from the start destination first, otherwise the drawer would be added
+            // as an orphan fragment with no way back to the home screen.
+            controller.navigate(R.id.mainFragment)
+        }
+        when (controller.currentDestination?.id) {
+            R.id.mainFragment ->
+                controller.navigate(
+                    R.id.action_mainFragment_to_appListFragment,
+                    bundleOf(
+                        Constants.Key.FLAG to flag,
+                        Constants.Key.RENAME to rename,
+                    ),
+                )
+
+            R.id.appListFragment ->
+                Log.w(
+                    TAG,
+                    "Ignoring app list request (flag=$flag, rename=$rename) " +
+                        "while the app list is already open",
+                )
+
+            else ->
+                Log.w(
+                    TAG,
+                    "Ignoring app list request from destination ${controller.currentDestination?.id}",
+                )
         }
     }
 
