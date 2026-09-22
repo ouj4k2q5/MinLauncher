@@ -15,7 +15,7 @@ A minimal, ad-free, offline Android home screen launcher
 
 </div>
 
-MinLauncher is a personal, unofficial fork of
+MinLauncher is a fork of
 [Olauncher](https://github.com/tanujnotes/Olauncher), with all promotional
 content and network access removed.
 
@@ -47,7 +47,6 @@ Technical and maintenance documentation is collected in [docs/](docs/README.md):
 - [Releasing](docs/releasing.md)
 - [Privacy and permissions](docs/privacy.md)
 - [Changes from Olauncher](docs/fork-changes.md)
-- [F-Droid](docs/f-droid.md)
 
 ## Contributing
 
@@ -62,8 +61,3 @@ Improvements that also apply to the original project are best contributed
 
 Licensed under [GNU GPL v3](LICENSE), the same license as Olauncher. The full
 license text is in [`LICENSE`](LICENSE).
-
-All credit for the original design and implementation goes to
-[tanujnotes](https://github.com/tanujnotes). If you find the original useful,
-consider supporting its author through [GitHub Sponsors](https://github.com/sponsors/tanujnotes)
-or [Buy Me a Coffee](https://www.buymeacoffee.com/tanujnotes).
