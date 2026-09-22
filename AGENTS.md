@@ -58,10 +58,6 @@ Only JUnit 4 JVM tests exist locally; there is no emulator/instrumentation setup
   monotonic, changelog present) and pushes the annotated tag, which triggers
   `release.yml`. Afterwards, merge the release branch into `main` via PR.
   Never tag manually.
-- The F-Droid recipe draft at `docs/f-droid/io.github.ouj4k2q5.minlauncher` is
-  a snapshot of the metadata as submitted to fdroiddata — do not add `Builds:`
-  entries to it; new releases are picked up automatically via
-  `UpdateCheckMode: Tags`.
 - Release signing comes from env vars (`KEYSTORE_PATH`, `KEYSTORE_PASSWORD`,
   `KEY_ALIAS`, `KEY_PASSWORD`). Without them, `assembleRelease` still works but
   produces an unsigned, uninstallable APK — that's expected, not a build error.
