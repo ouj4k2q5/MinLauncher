@@ -54,6 +54,11 @@ android {
         localeFilters += setOf("en", "ja")
     }
 
+    dependenciesInfo {
+        includeInApk = false
+        includeInBundle = true
+    }
+
     // Credentials come from the environment rather than being written here, so nothing
     // secret ends up in the repository. The release workflow decodes the keystore from a
     // secret and points KEYSTORE_PATH at it. Passing them as environment variables rather
