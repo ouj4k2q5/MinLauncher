@@ -73,5 +73,5 @@ Published release APKs include a SLSA build provenance attestation. Verify a
 download before installing it with:
 
 ```bash
-gh attestation verify MinLauncher-1.0.0.apk --repo ouj4k2q5/MinLauncher
+gh attestation verify MinLauncher-0.0.3.apk --repo ouj4k2q5/MinLauncher
 ```
