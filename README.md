@@ -21,7 +21,11 @@ content and network access removed.
 
 ## Get it
 
-Download an APK from [GitHub Releases](https://github.com/ouj4k2q5/MinLauncher/releases).
+[<img src="https://fdroid.gitlab.io/artwork/badge/get-it-on.svg"
+    alt="Get it on F-Droid"
+    height="80">](https://f-droid.org/packages/io.github.ouj4k2q5.minlauncher)
+
+Download an APK from [F-Droid](https://f-droid.org/ja/packages/io.github.ouj4k2q5.minlauncher) or [GitHub Releases](https://github.com/ouj4k2q5/MinLauncher/releases).
 To build from source or verify a release attestation, see the
 [development guide](docs/development.md).
 
