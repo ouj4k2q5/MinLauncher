@@ -1,11 +1,11 @@
 [versions]
 appcompat = "1.7.0"
 coreKtx = "1.16.0"
-coroutines = "1.7.3"
+coroutines = "1.11.0"
 detekt = "1.23.8"
 agp = "9.4.0"
 ktlintGradle = "14.2.0"
-kotlinStdlib = "2.2.10"
+kotlinStdlib = "2.4.20"
 lifecycle = "2.9.0"
 navigationFragmentKtx = "2.9.0"
 recyclerview = "1.4.0"
