@@ -44,7 +44,7 @@ jobs:
           # No `cache: gradle` here: setup-gradle below owns the Gradle User Home cache
           # and the two interfere with each other.
 
-      - uses: gradle/actions/setup-gradle@9c971963bec38e04b3d30dcc455b5382be2fdbfb # v6.3.0
+      - uses: gradle/actions/setup-gradle@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6.4.0
         # Wrapper validation is built in, so no separate wrapper-validation step is
         # needed. Caching is on by default and only writes from the default branch.
 
