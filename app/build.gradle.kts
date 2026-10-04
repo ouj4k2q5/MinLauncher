@@ -54,6 +54,13 @@ android {
         localeFilters += setOf("en", "ja")
     }
 
+    testOptions {
+        unitTests {
+            // Lets Robolectric tests read res/ assets (strings, themes, etc.).
+            isIncludeAndroidResources = true
+        }
+    }
+
     dependenciesInfo {
         includeInApk = false
         includeInBundle = true
@@ -128,4 +135,7 @@ dependencies {
     implementation(libs.navigation.fragment.ktx)
 
     testImplementation(libs.junit)
+    testImplementation(libs.robolectric)
+    testImplementation(libs.androidx.test.core.ktx)
+    testImplementation(libs.androidx.test.ext.junit)
 }
