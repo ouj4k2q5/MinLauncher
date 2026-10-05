@@ -4,16 +4,24 @@ import android.content.Context
 import android.content.pm.ActivityInfo
 import android.content.pm.LauncherApps
 import android.os.Process
+import android.os.SystemClock
 import android.os.UserHandle
 import android.provider.Settings
+import android.view.MotionEvent
+import android.view.View
 import androidx.core.os.bundleOf
 import androidx.test.core.app.ActivityScenario
 import androidx.test.core.app.ApplicationProvider
+import androidx.test.espresso.UiController
+import androidx.test.espresso.ViewAction
+import androidx.test.espresso.action.GeneralLocation
+import androidx.test.espresso.matcher.ViewMatchers.isDisplayed
 import app.minlauncher.data.AppModel
 import app.minlauncher.data.Constants
 import app.minlauncher.data.Prefs
 import app.minlauncher.helper.FakeAppListProvider
 import app.minlauncher.testing.TestMainActivity
+import org.hamcrest.Matcher
 import org.robolectric.Shadows.shadowOf
 
 private const val TEST_PACKAGE_PREFIX = "app.minlauncher.ui.fixture"
@@ -71,6 +79,62 @@ fun ActivityScenario<TestMainActivity>.openDrawer(
 
 /** The app under test, for asserting persisted state from within a test. */
 fun testPrefs(): Prefs = Prefs(ApplicationProvider.getApplicationContext())
+
+/**
+ * Performs a long press that stays down long enough for
+ * [app.minlauncher.listener.ViewSwipeTouchListener], which fires its
+ * onLongClick only after an additional LONG_PRESS_DELAY_MS posted on top of
+ * the system long-press timeout. Espresso's built-in longClick() holds only
+ * the system timeout, so the listener's delayed task would be cancelled by
+ * the ACTION_UP before it runs.
+ */
+fun holdLongPress(durationMs: Long = Constants.LONG_PRESS_DELAY_MS + 500L): ViewAction =
+    object : ViewAction {
+        override fun getConstraints(): Matcher<View> = isDisplayed()
+
+        override fun getDescription(): String = "hold a long press for $durationMs ms"
+
+        override fun perform(
+            uiController: UiController,
+            view: View,
+        ) {
+            val coords = GeneralLocation.CENTER.calculateCoordinates(view)
+            val downTime = SystemClock.uptimeMillis()
+            uiController.injectMotionEvent(
+                MotionEvent.obtain(
+                    downTime,
+                    downTime,
+                    MotionEvent.ACTION_DOWN,
+                    coords[0],
+                    coords[1],
+                    1f,
+                    1f,
+                    0,
+                    1f,
+                    1f,
+                    0,
+                    0,
+                ),
+            )
+            uiController.loopMainThreadForAtLeast(durationMs)
+            uiController.injectMotionEvent(
+                MotionEvent.obtain(
+                    downTime,
+                    SystemClock.uptimeMillis(),
+                    MotionEvent.ACTION_UP,
+                    coords[0],
+                    coords[1],
+                    1f,
+                    1f,
+                    0,
+                    1f,
+                    1f,
+                    0,
+                    0,
+                ),
+            )
+        }
+    }
 
 private fun seedLauncherApps(
     context: Context,
