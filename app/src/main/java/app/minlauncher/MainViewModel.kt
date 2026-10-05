@@ -405,7 +405,6 @@ class MainViewModel(
         }
     }
 
-
     fun isMinLauncherDefault() {
         isMinLauncherDefault.value = isMinLauncherDefault(appContext)
     }
