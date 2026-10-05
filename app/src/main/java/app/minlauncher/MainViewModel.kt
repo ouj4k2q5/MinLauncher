@@ -15,9 +15,10 @@ import androidx.lifecycle.viewModelScope
 import app.minlauncher.data.AppModel
 import app.minlauncher.data.Constants
 import app.minlauncher.data.Prefs
+import app.minlauncher.helper.AppListProvider
+import app.minlauncher.helper.RealAppListProvider
 import app.minlauncher.helper.SingleLiveEvent
 import app.minlauncher.helper.formattedTimeSpent
-import app.minlauncher.helper.getAppsList
 import app.minlauncher.helper.getPrivateSpaceApps
 import app.minlauncher.helper.getPrivateSpaceUserHandle
 import app.minlauncher.helper.hasBeenMinutes
@@ -34,7 +35,13 @@ private const val TAG = "MainViewModel"
 
 class MainViewModel(
     application: Application,
+    private val appListProvider: AppListProvider,
 ) : AndroidViewModel(application) {
+    // Secondary constructor for ViewModelProvider's default factory, which can
+    // only call the (Application) constructor; production always wants the real
+    // provider, tests inject a fake through the primary constructor.
+    constructor(application: Application) : this(application, RealAppListProvider)
+
     private val appContext by lazy { application.applicationContext }
     private val prefs = Prefs(appContext)
     private var screenTimeJob: Job? = null
@@ -384,7 +391,8 @@ class MainViewModel(
 
     fun getAppList(includeHiddenApps: Boolean = false) {
         viewModelScope.launch {
-            val apps = getAppsList(appContext, prefs, includeRegularApps = true, includeHiddenApps)
+            val apps =
+                appListProvider.getAppsList(appContext, prefs, includeRegularApps = true, includeHiddenApps)
             appList.value = apps
         }
         getPrivateSpaceAppList()
@@ -393,9 +401,10 @@ class MainViewModel(
     fun getHiddenApps() {
         viewModelScope.launch {
             hiddenApps.value =
-                getAppsList(appContext, prefs, includeRegularApps = false, includeHiddenApps = true)
+                appListProvider.getAppsList(appContext, prefs, includeRegularApps = false, includeHiddenApps = true)
         }
     }
+
 
     fun isMinLauncherDefault() {
         isMinLauncherDefault.value = isMinLauncherDefault(appContext)

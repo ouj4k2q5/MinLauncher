@@ -55,13 +55,6 @@ fun Context.showToast(
     Toast.makeText(this, getString(stringResource), duration).show()
 }
 
-suspend fun getAppsList(
-    context: Context,
-    prefs: Prefs,
-    includeRegularApps: Boolean = true,
-    includeHiddenApps: Boolean = false,
-): List<AppModel> = RealAppListProvider.getAppsList(context, prefs, includeRegularApps, includeHiddenApps)
-
 fun isPackageInstalled(
     context: Context,
     packageName: String,
