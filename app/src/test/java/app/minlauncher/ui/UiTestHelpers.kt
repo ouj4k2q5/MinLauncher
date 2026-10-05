@@ -48,9 +48,11 @@ fun fakeApps(vararg labels: String): List<AppModel.App> = labels.map { fakeApp(i
  */
 fun launchLauncher(
     apps: List<AppModel.App> = emptyList(),
+    hidden: List<AppModel.App> = emptyList(),
     seed: Prefs.() -> Unit = {},
 ): ActivityScenario<TestMainActivity> {
-    TestMainActivity.testAppListProvider = FakeAppListProvider(regularApps = apps)
+    TestMainActivity.testAppListProvider =
+        FakeAppListProvider(regularApps = apps, hiddenApps = hidden)
     val context = ApplicationProvider.getApplicationContext<Context>()
     seedLauncherApps(context, apps)
     disableSystemAnimations(context)
