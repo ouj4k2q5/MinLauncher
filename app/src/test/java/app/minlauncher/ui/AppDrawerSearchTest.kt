@@ -9,6 +9,8 @@ import androidx.test.espresso.assertion.ViewAssertions.matches
 import androidx.test.espresso.matcher.ViewMatchers.isDisplayed
 import androidx.test.espresso.matcher.ViewMatchers.withId
 import androidx.test.espresso.matcher.ViewMatchers.withText
+import app.minlauncher.testing.TestMainActivity
+import org.junit.After
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
@@ -18,6 +20,11 @@ import org.robolectric.annotation.Config
 @Config(sdk = [35])
 @RunWith(RobolectricTestRunner::class)
 class AppDrawerSearchTest {
+    @After
+    fun clearTestAppListProvider() {
+        TestMainActivity.testAppListProvider = null
+    }
+
     private val apps = fakeApps("Browser", "Camera", "Mail", "Maps", "Music")
 
     @Test

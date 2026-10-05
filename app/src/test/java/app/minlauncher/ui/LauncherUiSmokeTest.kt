@@ -6,6 +6,8 @@ import androidx.test.espresso.matcher.ViewMatchers.isDisplayed
 import androidx.test.espresso.matcher.ViewMatchers.withId
 import androidx.test.espresso.matcher.ViewMatchers.withText
 import app.minlauncher.R
+import app.minlauncher.testing.TestMainActivity
+import org.junit.After
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
@@ -15,6 +17,11 @@ import org.robolectric.annotation.Config
 @Config(sdk = [35])
 @RunWith(RobolectricTestRunner::class)
 class LauncherUiSmokeTest {
+    @After
+    fun clearTestAppListProvider() {
+        TestMainActivity.testAppListProvider = null
+    }
+
     @Test
     fun `home screen is shown after launch`() {
         launchLauncher(fakeApps("Browser", "Camera", "Mail")).use {

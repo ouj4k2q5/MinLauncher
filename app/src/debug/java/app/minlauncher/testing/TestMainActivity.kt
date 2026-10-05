@@ -52,7 +52,9 @@ class TestMainActivity : AppCompatActivity() {
     companion object {
         /**
          * Set by tests before launching this activity; falls back to the real
-         * provider so nothing special happens outside UI tests.
+         * provider so nothing special happens outside UI tests. UI tests clear
+         * it in an @After because Robolectric reuses the sandbox classloader,
+         * so the static would otherwise leak into later tests.
          */
         var testAppListProvider: AppListProvider? = null
     }

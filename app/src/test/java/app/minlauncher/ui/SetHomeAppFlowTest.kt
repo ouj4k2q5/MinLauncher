@@ -6,6 +6,8 @@ import androidx.test.espresso.assertion.ViewAssertions.doesNotExist
 import androidx.test.espresso.assertion.ViewAssertions.matches
 import androidx.test.espresso.matcher.ViewMatchers.isDisplayed
 import androidx.test.espresso.matcher.ViewMatchers.withText
+import app.minlauncher.testing.TestMainActivity
+import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Test
@@ -17,6 +19,11 @@ import org.robolectric.annotation.Config
 @Config(sdk = [35])
 @RunWith(RobolectricTestRunner::class)
 class SetHomeAppFlowTest {
+    @After
+    fun clearTestAppListProvider() {
+        TestMainActivity.testAppListProvider = null
+    }
+
     @Test
     fun `long press on a home slot opens select mode and saves the chosen app to the slot`() {
         val browser = fakeApp("Browser")

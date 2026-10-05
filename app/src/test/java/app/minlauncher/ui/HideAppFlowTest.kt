@@ -11,7 +11,9 @@ import androidx.test.espresso.matcher.ViewMatchers.withId
 import androidx.test.espresso.matcher.ViewMatchers.withText
 import app.minlauncher.R
 import app.minlauncher.data.Constants
+import app.minlauncher.testing.TestMainActivity
 import org.hamcrest.Matchers.allOf
+import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -22,6 +24,11 @@ import org.robolectric.annotation.Config
 @Config(sdk = [35])
 @RunWith(RobolectricTestRunner::class)
 class HideAppFlowTest {
+    @After
+    fun clearTestAppListProvider() {
+        TestMainActivity.testAppListProvider = null
+    }
+
     @Test
     fun `hiding an app removes it from the drawer and records it in prefs`() {
         val camera = fakeApp("Camera")
