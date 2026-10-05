@@ -49,31 +49,27 @@ object RealAppListProvider : AppListProvider {
                             prefs
                                 .getAppRenameLabel(app.applicationInfo.packageName)
                                 .ifBlank { app.label.toString() }
-                        val appModel =
-                            AppModel.App(
-                                appLabel = appLabelShown,
-                                key = collator.getCollationKey(app.label.toString()),
+                        if (shouldIncludeApp(
+                                selfPackage = BuildConfig.APPLICATION_ID,
                                 appPackage = app.applicationInfo.packageName,
-                                activityClassName = app.componentName.className,
-                                isNew =
-                                    (System.currentTimeMillis() - app.firstInstallTime) <
-                                        Constants.ONE_HOUR_IN_MILLIS,
-                                user = profile,
+                                userKey = profile.toString(),
+                                hiddenApps = hiddenApps,
+                                includeRegularApps = includeRegularApps,
+                                includeHiddenApps = includeHiddenApps,
                             )
-
-                        // if the current app is not MinLauncher
-                        if (app.applicationInfo.packageName != BuildConfig.APPLICATION_ID) {
-                            // is this a hidden app?
-                            if (hiddenApps.contains(app.applicationInfo.packageName + "|" + profile.toString())) {
-                                if (includeHiddenApps) {
-                                    appList.add(appModel)
-                                }
-                            } else {
-                                // this is a regular app
-                                if (includeRegularApps) {
-                                    appList.add(appModel)
-                                }
-                            }
+                        ) {
+                            appList.add(
+                                AppModel.App(
+                                    appLabel = appLabelShown,
+                                    key = collator.getCollationKey(app.label.toString()),
+                                    appPackage = app.applicationInfo.packageName,
+                                    activityClassName = app.componentName.className,
+                                    isNew =
+                                        (System.currentTimeMillis() - app.firstInstallTime) <
+                                            Constants.ONE_HOUR_IN_MILLIS,
+                                    user = profile,
+                                ),
+                            )
                         }
                     }
                 }
