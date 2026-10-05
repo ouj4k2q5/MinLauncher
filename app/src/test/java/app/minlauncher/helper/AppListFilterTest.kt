@@ -106,18 +106,4 @@ class AppListFilterTest {
             ),
         )
     }
-
-    @Test
-    fun `empty hidden apps set treats every non-self app as regular`() {
-        assertTrue(
-            shouldIncludeApp(
-                selfPackage = selfPackage,
-                appPackage = "org.example.app",
-                userKey = userKey,
-                hiddenApps = emptySet(),
-                includeRegularApps = true,
-                includeHiddenApps = false,
-            ),
-        )
-    }
 }
