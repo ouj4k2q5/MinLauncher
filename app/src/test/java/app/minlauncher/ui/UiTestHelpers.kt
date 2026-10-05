@@ -14,6 +14,7 @@ import androidx.test.core.app.ActivityScenario
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.espresso.UiController
 import androidx.test.espresso.ViewAction
+import androidx.test.espresso.action.CoordinatesProvider
 import androidx.test.espresso.action.GeneralLocation
 import androidx.test.espresso.matcher.ViewMatchers.isDisplayed
 import app.minlauncher.data.AppModel
@@ -90,7 +91,10 @@ fun testPrefs(): Prefs = Prefs(ApplicationProvider.getApplicationContext())
  * the system timeout, so the listener's delayed task would be cancelled by
  * the ACTION_UP before it runs.
  */
-fun holdLongPress(durationMs: Long = Constants.LONG_PRESS_DELAY_MS + 500L): ViewAction =
+fun holdLongPress(
+    at: CoordinatesProvider = GeneralLocation.CENTER,
+    durationMs: Long = Constants.LONG_PRESS_DELAY_MS + 500L,
+): ViewAction =
     object : ViewAction {
         override fun getConstraints(): Matcher<View> = isDisplayed()
 
@@ -100,7 +104,7 @@ fun holdLongPress(durationMs: Long = Constants.LONG_PRESS_DELAY_MS + 500L): View
             uiController: UiController,
             view: View,
         ) {
-            val coords = GeneralLocation.CENTER.calculateCoordinates(view)
+            val coords = at.calculateCoordinates(view)
             val downTime = SystemClock.uptimeMillis()
             uiController.injectMotionEvent(
                 MotionEvent.obtain(
