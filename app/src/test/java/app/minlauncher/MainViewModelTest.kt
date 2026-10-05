@@ -3,19 +3,23 @@ package app.minlauncher
 import android.app.Application
 import android.os.Process
 import android.view.Gravity
+import androidx.activity.ComponentActivity
 import androidx.arch.core.executor.testing.InstantTaskExecutorRule
+import androidx.lifecycle.ViewModelProvider
 import androidx.test.core.app.ApplicationProvider
 import app.minlauncher.data.AppModel
 import app.minlauncher.data.Constants
 import app.minlauncher.data.Prefs
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.robolectric.Robolectric
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
@@ -176,6 +180,16 @@ class MainViewModelTest {
         viewModel.firstOpen(false)
 
         assertEquals(false, viewModel.firstOpen.value)
+    }
+
+    @Test
+    fun `default factory path constructs MainViewModel`() {
+        // The (Application) secondary constructor must keep working because
+        // ViewModelProvider's default factory (used by MainActivity and the
+        // fragments) can only call that constructor.
+        val activity = Robolectric.buildActivity(ComponentActivity::class.java).setup().get()
+        val vm = ViewModelProvider(activity)[MainViewModel::class.java]
+        assertNotNull(vm)
     }
 
     @Test
