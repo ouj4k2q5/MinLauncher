@@ -9,6 +9,7 @@ import android.os.UserHandle
 import android.provider.Settings
 import android.view.MotionEvent
 import android.view.View
+import android.view.ViewConfiguration
 import androidx.core.os.bundleOf
 import androidx.test.core.app.ActivityScenario
 import androidx.test.core.app.ApplicationProvider
@@ -93,7 +94,7 @@ fun testPrefs(): Prefs = Prefs(ApplicationProvider.getApplicationContext())
  */
 fun holdLongPress(
     at: CoordinatesProvider = GeneralLocation.CENTER,
-    durationMs: Long = Constants.LONG_PRESS_DELAY_MS + 500L,
+    durationMs: Long = Constants.LONG_PRESS_DELAY_MS + ViewConfiguration.getLongPressTimeout(),
 ): ViewAction =
     object : ViewAction {
         override fun getConstraints(): Matcher<View> = isDisplayed()
