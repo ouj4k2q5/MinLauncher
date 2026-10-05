@@ -142,6 +142,27 @@ fun holdLongPress(
         }
     }
 
+/**
+ * Pumps the main looper long enough for results posted by background
+ * executors (e.g. AsyncListDiffer's diff) to land, so a following
+ * doesNotExist() verifies removal deterministically. not(isDisplayed())
+ * is not enough for this: a row opened in the long-press menu is already
+ * INVISIBLE, so it would pass even if removal never happened.
+ */
+fun waitForPostedWork(durationMs: Long = 250L): ViewAction =
+    object : ViewAction {
+        override fun getConstraints(): Matcher<View> = isDisplayed()
+
+        override fun getDescription(): String = "wait for posted background work for $durationMs ms"
+
+        override fun perform(
+            uiController: UiController,
+            view: View,
+        ) {
+            uiController.loopMainThreadForAtLeast(durationMs)
+        }
+    }
+
 private fun seedLauncherApps(
     context: Context,
     apps: List<AppModel.App>,

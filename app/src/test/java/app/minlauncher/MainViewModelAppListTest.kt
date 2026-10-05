@@ -5,6 +5,7 @@ import android.os.Process
 import androidx.arch.core.executor.testing.InstantTaskExecutorRule
 import androidx.test.core.app.ApplicationProvider
 import app.minlauncher.data.AppModel
+import app.minlauncher.data.Prefs
 import app.minlauncher.helper.FakeAppListProvider
 import org.junit.Assert.assertEquals
 import org.junit.Before
@@ -56,6 +57,11 @@ class MainViewModelAppListTest {
         viewModel = MainViewModel(application, FakeAppListProvider(regularApps = listOf(appA, appB, appC)))
     }
 
+    /** Hides the given apps in the prefs, as the fake provider's world reads them. */
+    private fun markHidden(vararg apps: AppModel.App) {
+        Prefs(application).hiddenApps = apps.mapTo(mutableSetOf()) { "${it.appPackage}|${it.user}" }
+    }
+
     @Test
     fun `getAppList exposes the provider's regular apps`() {
         viewModel.getAppList()
@@ -65,6 +71,7 @@ class MainViewModelAppListTest {
 
     @Test
     fun `getHiddenApps exposes the provider's hidden apps`() {
+        markHidden(appA)
         viewModel = MainViewModel(application, FakeAppListProvider(hiddenApps = listOf(appA)))
 
         viewModel.getHiddenApps()
@@ -74,6 +81,7 @@ class MainViewModelAppListTest {
 
     @Test
     fun `getAppList with includeHiddenApps combines regular and hidden apps`() {
+        markHidden(appA, appC)
         viewModel =
             MainViewModel(
                 application,
@@ -87,6 +95,7 @@ class MainViewModelAppListTest {
 
     @Test
     fun `getAppList without includeHiddenApps excludes hidden apps`() {
+        markHidden(appA, appC)
         viewModel =
             MainViewModel(
                 application,
