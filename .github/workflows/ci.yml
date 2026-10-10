@@ -27,15 +27,15 @@ jobs:
 
       - name: detekt baseline must not grow
           # The baseline is a ratchet (see docs/development.md): it may shrink but
-          # never grow. config/detekt/baseline-max holds the allowed entry count.
+        # never grow. config/detekt/baseline-max holds the allowed entry count.
         run: |
-            COUNT=$(grep -c '<ID>' app/detekt-baseline.xml)
-            MAX=$(grep -m1 -oE '[0-9]+' config/detekt/baseline-max)
-            echo "detekt baseline entries: $COUNT (allowed: $MAX)"
-            if [ "$COUNT" -gt "$MAX" ]; then
-            echo "::error::detekt baseline grew ($MAX -> $COUNT). Fix the new violations instead of baselining them, or raise config/detekt/baseline-max in this commit so the change gets reviewed."
-            exit 1
-            fi
+          COUNT=$(grep -c '<ID>' app/detekt-baseline.xml)
+          MAX=$(grep -m1 -oE '[0-9]+' config/detekt/baseline-max)
+          echo "detekt baseline entries: $COUNT (allowed: $MAX)"
+          if [ "$COUNT" -gt "$MAX" ]; then
+          echo "::error::detekt baseline grew ($MAX -> $COUNT). Fix the new violations instead of baselining them, or raise config/detekt/baseline-max in this commit so the change gets reviewed."
+          exit 1
+          fi
 
       - uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
         with:
@@ -53,9 +53,11 @@ jobs:
         # surface in the release build, and release.yml depends on it succeeding.
         # ktlintCheck and detekt enforce the Kotlin code style (.editorconfig) and
         # static analysis (config/detekt) on top of the built-in Android lint.
+        # verifyRoborazziDebug fails when a screenshot no longer matches the committed
+        # baseline in app/roborazzi (plain `test` silently skips the capture).
         # --continue so a failing task (e.g. test) doesn't hide later failures in
         # detekt/ktlintCheck; reports are uploaded either way via if: always().
-        run: ./gradlew --stacktrace --continue test lint detekt ktlintCheck assembleDebug assembleRelease
+        run: ./gradlew --stacktrace --continue test verifyRoborazziDebug lint detekt ktlintCheck assembleDebug assembleRelease
 
       - name: Upload reports
         # Reports are most useful precisely when the build failed.
