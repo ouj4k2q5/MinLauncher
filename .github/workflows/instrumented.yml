@@ -33,8 +33,16 @@ jobs:
           # and the two interfere with each other.
 
       - uses: gradle/actions/setup-gradle@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6.4.0
-        # Wrapper validation is built in. The Gradle User Home cache also carries the
-        # downloaded aosp-atd system image between runs where possible.
+        # Wrapper validation is built in. The Gradle User Home cache carries the
+        # wrapper and dependencies between runs; the aosp-atd system image installs
+        # into $ANDROID_HOME, which is not cached, so every run re-downloads it.
+
+      # The runner image pre-accepts licenses only for the SDK components it
+      # preinstalls (emulator, platform-tools, ...). The aosp-atd system image is
+      # not among them, so AGP's automatic SDK install in pixel2api30Setup fails
+      # with LicenceNotAcceptedException unless they are accepted here first.
+      - name: Accept Android SDK licenses
+        run: yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses > /dev/null
 
       # ubuntu-latest runners expose /dev/kvm, which the headless ATD image needs.
       - name: Run instrumented smoke tests
