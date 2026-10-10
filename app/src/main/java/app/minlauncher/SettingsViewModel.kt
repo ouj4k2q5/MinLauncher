@@ -20,7 +20,6 @@ class SettingsViewModel(
     val isMinLauncherDefault get() = repository.isMinLauncherDefault
     val homeAppAlignment get() = repository.homeAppAlignment
     val updateSwipeApps get() = repository.updateSwipeApps
-    val resetLauncherLiveData get() = repository.resetLauncherLiveData
 
     fun isMinLauncherDefault() = repository.isMinLauncherDefault()
 
@@ -34,5 +33,7 @@ class SettingsViewModel(
 
     fun getAppList(includeHiddenApps: Boolean = false) = repository.getAppList(includeHiddenApps)
 
-    fun postDialog(dialog: String) = repository.showDialog.postValue(dialog)
+    fun postDialog(dialog: String) = repository.postDialog(dialog)
+
+    fun requestResetLauncher() = repository.requestResetLauncher()
 }

@@ -18,7 +18,9 @@ import android.view.WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS
 import androidx.activity.OnBackPressedCallback
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.NavController
 import androidx.navigation.findNavController
 import app.minlauncher.data.Constants
@@ -34,6 +36,7 @@ import app.minlauncher.helper.setPlainWallpaperByTheme
 import app.minlauncher.helper.showLauncherSelector
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.launch
 import kotlin.time.Duration.Companion.milliseconds
 
@@ -89,7 +92,7 @@ class MainActivity : AppCompatActivity() {
         if (prefs.firstOpen) {
             prefs.firstOpen = false
             prefs.firstOpenTime = System.currentTimeMillis()
-            repository.resetLauncherLiveData.call()
+            repository.requestResetLauncher()
         }
 
         initClickListeners()
@@ -212,14 +215,14 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun initObservers() {
-        repository.resetLauncherLiveData.observe(this) {
+        collectOnStarted(repository.resetLauncher) {
             if (isDefaultLauncher()) {
                 resetLauncherViaFakeActivity()
             } else {
                 showLauncherSelector(Constants.REQUEST_CODE_LAUNCHER_SELECTOR)
             }
         }
-        repository.showDialog.observe(this) {
+        collectOnStarted(repository.showDialog) {
             when (it) {
                 Constants.Dialog.ABOUT -> {
                     showMessageDialog(R.string.app_name, R.string.welcome_to_minlauncher_settings, R.string.okay) {
@@ -242,6 +245,22 @@ class MainActivity : AppCompatActivity() {
                         startActivity(Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS))
                     }
                 }
+            }
+        }
+    }
+
+    /**
+     * Collects [flow] while this activity is at least STARTED, cancelling and
+     * restarting collection across stop/start cycles. Activity counterpart of
+     * [app.minlauncher.ui.BaseFragment.collectOnStart].
+     */
+    private fun <T> collectOnStarted(
+        flow: Flow<T>,
+        block: (T) -> Unit,
+    ) {
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                flow.collect { block(it) }
             }
         }
     }

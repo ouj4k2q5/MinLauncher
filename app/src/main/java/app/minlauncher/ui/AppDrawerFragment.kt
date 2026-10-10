@@ -238,7 +238,7 @@ class AppDrawerFragment : BaseFragment() {
                     if (prefs.firstHide) {
                         binding.search.hideKeyboard()
                         prefs.firstHide = false
-                        viewModel.showDialog.postValue(Constants.Dialog.HIDDEN)
+                        viewModel.postDialog(Constants.Dialog.HIDDEN)
                         // The drawer may have just been popped above; navigate only
                         // while it is still the current destination, otherwise the
                         // action cannot be resolved from the new current destination.

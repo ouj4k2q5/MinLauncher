@@ -36,7 +36,6 @@ class HomeViewModel(
     val isMinLauncherDefault get() = repository.isMinLauncherDefault
     val homeAppAlignment get() = repository.homeAppAlignment
     val toggleDateTime get() = repository.toggleDateTime
-    val resetLauncherLiveData get() = repository.resetLauncherLiveData
     val screenTimeValue = MutableStateFlow<String?>(null)
 
     fun isMinLauncherDefault() = repository.isMinLauncherDefault()
@@ -47,6 +46,8 @@ class HomeViewModel(
     ) = repository.selectedApp(appModel, flag)
 
     fun getAppList(includeHiddenApps: Boolean = false) = repository.getAppList(includeHiddenApps)
+
+    fun requestResetLauncher() = repository.requestResetLauncher()
 
     fun getTodaysScreenTime() {
         if (prefs.screenTimeLastUpdated.hasBeenMinutes(1).not()) return

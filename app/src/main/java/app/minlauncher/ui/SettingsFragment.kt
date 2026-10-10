@@ -110,7 +110,7 @@ class SettingsFragment :
             R.id.minlauncherHiddenApps -> showHiddenApps()
             R.id.screenTimeOnOff -> toggleScreenTime()
             R.id.appInfo -> openAppInfo(requireContext(), Process.myUserHandle(), BuildConfig.APPLICATION_ID)
-            R.id.setLauncher -> viewModel.resetLauncherLiveData.call()
+            R.id.setLauncher -> viewModel.requestResetLauncher()
             R.id.toggleLock -> toggleLockMode()
             // Home button for recents feature disabled
             // R.id.homeButtonRecents -> toggleHomeButtonRecents()

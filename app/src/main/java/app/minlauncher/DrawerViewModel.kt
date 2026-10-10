@@ -2,7 +2,6 @@ package app.minlauncher
 
 import android.app.Application
 import android.content.Intent
-import android.provider.Settings
 import androidx.lifecycle.AndroidViewModel
 import app.minlauncher.data.AppModel
 import app.minlauncher.data.LauncherRepository
@@ -28,7 +27,8 @@ class DrawerViewModel(
     val privateSpaceApps get() = repository.privateSpaceApps
     val privateSpaceLocked get() = repository.privateSpaceLocked
     val privateSpaceAvailable get() = repository.privateSpaceAvailable
-    val showDialog get() = repository.showDialog
+
+    fun postDialog(dialog: String) = repository.postDialog(dialog)
 
     fun selectedApp(
         appModel: AppModel,
@@ -50,7 +50,7 @@ class DrawerViewModel(
             appContext.startActivity(intent)
         } catch (_: Exception) {
             try {
-                val intent = Intent(Settings.ACTION_SECURITY_SETTINGS)
+                val intent = Intent(android.provider.Settings.ACTION_SECURITY_SETTINGS)
                 intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                 appContext.startActivity(intent)
             } catch (_: Exception) {

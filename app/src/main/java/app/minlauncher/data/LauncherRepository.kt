@@ -9,7 +9,6 @@ import android.os.UserManager
 import android.util.Log
 import app.minlauncher.R
 import app.minlauncher.helper.AppListProvider
-import app.minlauncher.helper.SingleLiveEvent
 import app.minlauncher.helper.getPrivateSpaceApps
 import app.minlauncher.helper.getPrivateSpaceUserHandle
 import app.minlauncher.helper.isMinLauncherDefault
@@ -18,7 +17,9 @@ import app.minlauncher.helper.showToast
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
 
 private const val TAG = "LauncherRepository"
@@ -51,8 +52,19 @@ class LauncherRepository(
     // Suppress backToHomeScreen during Private Space lock/unlock auth
     var isPrivateSpaceToggling = false
 
-    val showDialog = SingleLiveEvent<String>()
-    val resetLauncherLiveData = SingleLiveEvent<Unit?>()
+    private val _showDialog = Channel<String>(Channel.BUFFERED)
+    val showDialog = _showDialog.receiveAsFlow()
+
+    private val _resetLauncher = Channel<Unit>(Channel.BUFFERED)
+    val resetLauncher = _resetLauncher.receiveAsFlow()
+
+    fun postDialog(dialog: String) {
+        _showDialog.trySend(dialog)
+    }
+
+    fun requestResetLauncher() {
+        _resetLauncher.trySend(Unit)
+    }
 
     fun getAppList(includeHiddenApps: Boolean = false) {
         scope.launch {

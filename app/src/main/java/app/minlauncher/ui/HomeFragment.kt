@@ -118,7 +118,7 @@ class HomeFragment :
             // R.id.recents -> {}
             R.id.clock -> openClock(requireContext())
             R.id.date -> openCalendar(requireContext())
-            R.id.setDefaultLauncher -> viewModel.resetLauncherLiveData.call()
+            R.id.setDefaultLauncher -> viewModel.requestResetLauncher()
             R.id.tvScreenTime -> openScreenTimeDigitalWellbeing()
 
             else -> {
