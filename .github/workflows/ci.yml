@@ -26,7 +26,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: detekt baseline must not grow
-          # The baseline is a ratchet (see docs/development.md): it may shrink but
+        # The baseline is a ratchet (see docs/development.md): it may shrink but
         # never grow. config/detekt/baseline-max holds the allowed entry count.
         run: |
           COUNT=$(grep -c '<ID>' app/detekt-baseline.xml)
@@ -65,9 +65,13 @@ jobs:
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: reports
+          # app/build/intermediates/roborazzi/ holds the *_actual.png / *_compare.png
+          # diff images that verifyRoborazziDebug produces when a screenshot no
+          # longer matches its baseline.
           path: |
             app/build/reports/
             app/build/test-results/
+            app/build/intermediates/roborazzi/
           if-no-files-found: warn
 
       - name: Upload debug APK
