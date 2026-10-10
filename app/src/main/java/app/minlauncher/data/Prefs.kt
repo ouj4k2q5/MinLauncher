@@ -8,6 +8,7 @@ import androidx.core.content.edit
 
 class Prefs(
     context: Context,
+    val settings: AppSettingsStore? = null,
 ) {
     private companion object {
         private const val PREFS_FILENAME = "app.minlauncher"

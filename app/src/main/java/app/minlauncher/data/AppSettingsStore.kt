@@ -33,6 +33,7 @@ import kotlinx.coroutines.runBlocking
 class AppSettingsStore(
     context: Context,
     private val scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO),
+    dataStoreFileName: String = DATASTORE_FILE,
 ) {
     companion object {
         /** Must equal Prefs' PREFS_FILENAME so SharedPreferencesMigration reads the old file. */
@@ -45,7 +46,7 @@ class AppSettingsStore(
         PreferenceDataStoreFactory.create(
             scope = scope,
             migrations = listOf(SharedPreferencesMigration(context, LEGACY_PREFS_NAME)),
-            produceFile = { context.filesDir.resolve("datastore/$DATASTORE_FILE.preferences_pb") },
+            produceFile = { context.filesDir.resolve("datastore/$dataStoreFileName.preferences_pb") },
         )
 
     @Volatile
