@@ -15,7 +15,6 @@ import kotlinx.coroutines.withTimeout
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertThrows
-import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
@@ -35,6 +34,11 @@ class AppSettingsStoreMigrationTest {
     private val stringSetKey = stringSetPreferencesKey("HIDDEN_APPS")
     private val dynamicKey = stringPreferencesKey("com.example.app")
 
+    // The real LauncherApp warms up its own AppSettingsStore on the default
+    // file in onCreate, so a test store must use its own file name to avoid
+    // "multiple DataStores active for the same file".
+    private fun newStore() = AppSettingsStore(context, dataStoreFileName = "migration-test")
+
     private fun seedLegacyPrefs() {
         context
             .getSharedPreferences(AppSettingsStore.LEGACY_PREFS_NAME, Context.MODE_PRIVATE)
@@ -46,13 +50,14 @@ class AppSettingsStoreMigrationTest {
             .putString("APP_NAME_1", "Phone")
             .putStringSet("HIDDEN_APPS", setOf("com.hidden.app", "com.also.hidden"))
             .putString("com.example.app", "My Renamed App")
+            .putBoolean(LockModePreservingMigration.LOCK_MODE, true)
             .commit()
     }
 
     @Test
     fun `full migration brings every legacy SharedPreferences value into DataStore`() {
         seedLegacyPrefs()
-        val store = AppSettingsStore(context)
+        val store = newStore()
         store.warmUp()
 
         assertEquals(false, store[boolKey])
@@ -67,11 +72,14 @@ class AppSettingsStoreMigrationTest {
     @Test
     fun `migrated keys are removed from the legacy SharedPreferences file`() {
         seedLegacyPrefs()
-        val store = AppSettingsStore(context)
+        val store = newStore()
         store.warmUp()
 
         val legacy = context.getSharedPreferences(AppSettingsStore.LEGACY_PREFS_NAME, Context.MODE_PRIVATE)
-        assertTrue("migrated keys should be cleaned up from SharedPreferences", legacy.all.isEmpty())
+        // Everything except LOCK_MODE is migrated away; LOCK_MODE survives for
+        // the :serviceProcess write path and is NOT imported into the DataStore.
+        assertEquals(setOf(LockModePreservingMigration.LOCK_MODE), legacy.all.keys)
+        assertNull(store[booleanPreferencesKey(LockModePreservingMigration.LOCK_MODE)])
     }
 
     @Test
@@ -83,7 +91,7 @@ class AppSettingsStoreMigrationTest {
             .edit()
             .clear()
             .commit()
-        val store = AppSettingsStore(context)
+        val store = newStore()
         store.warmUp()
 
         assertNull(store[boolKey])
@@ -93,7 +101,7 @@ class AppSettingsStoreMigrationTest {
 
     @Test
     fun `set updates the snapshot immediately and persists asynchronously`() {
-        val store = AppSettingsStore(context)
+        val store = newStore()
         store.warmUp()
 
         store.set(stringKey, "Camera")
@@ -119,7 +127,7 @@ class AppSettingsStoreMigrationTest {
     @Test
     fun `stringSet values are unmodifiable on read`() {
         seedLegacyPrefs()
-        val store = AppSettingsStore(context)
+        val store = newStore()
         store.warmUp()
 
         val read = store[stringSetKey]
