@@ -44,9 +44,23 @@ jobs:
       - name: Accept Android SDK licenses
         run: yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses > /dev/null
 
-      # ubuntu-latest runners expose /dev/kvm, which the headless ATD image needs.
+      # /dev/kvm exists on GitHub-hosted Linux runners (public repos) but is
+      # root:kvm 0660, and the runner user is not in the kvm group
+      # (actions/runner-images#8542), so the emulator cannot open it and fails
+      # with "x86 emulation currently requires hardware acceleration!". Open
+      # the device to all users via a udev rule — the standard workaround from
+      # the android-emulator-runner docs.
+      - name: Enable KVM access
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+          ls -l /dev/kvm
+
+      # swiftshader_indirect pins the software GPU, per the managed-devices
+      # docs for CI hosts without a GPU.
       - name: Run instrumented smoke tests
-        run: ./gradlew --stacktrace pixel2api30DebugAndroidTest
+        run: ./gradlew --stacktrace pixel2api30DebugAndroidTest -Pandroid.testoptions.manageddevices.emulator.gpu=swiftshader_indirect
 
       - name: Upload test reports
         if: always()
