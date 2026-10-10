@@ -37,7 +37,7 @@
         <ID>TooGenericExceptionCaught:Extensions.kt$e: Exception</ID>
         <ID>TooGenericExceptionCaught:HomeFragment.kt$HomeFragment$e: Exception</ID>
         <ID>TooGenericExceptionCaught:HomeFragment.kt$HomeFragment.&lt;no name provided&gt;$e: Exception</ID>
-        <ID>TooGenericExceptionCaught:MainViewModel.kt$MainViewModel$e: Exception</ID>
+        <ID>TooGenericExceptionCaught:LauncherRepository.kt$LauncherRepository$e: Exception</ID>
         <ID>TooGenericExceptionCaught:MyAccessibilityService.kt$MyAccessibilityService$e: Exception</ID>
         <ID>TooGenericExceptionCaught:OnSwipeTouchListener.kt$OnSwipeTouchListener.GestureListener$exception: Exception</ID>
         <ID>TooGenericExceptionCaught:Utils.kt$e: Exception</ID>

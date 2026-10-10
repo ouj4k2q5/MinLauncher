@@ -5,33 +5,24 @@ import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.content.pm.LauncherApps
-import android.os.Build
 import android.os.UserHandle
-import android.os.UserManager
-import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.viewModelScope
 import app.minlauncher.data.AppModel
 import app.minlauncher.data.Constants
+import app.minlauncher.data.LauncherRepository
 import app.minlauncher.data.Prefs
 import app.minlauncher.helper.AppListProvider
 import app.minlauncher.helper.RealAppListProvider
-import app.minlauncher.helper.SingleLiveEvent
 import app.minlauncher.helper.formattedTimeSpent
-import app.minlauncher.helper.getPrivateSpaceApps
-import app.minlauncher.helper.getPrivateSpaceUserHandle
 import app.minlauncher.helper.hasBeenMinutes
-import app.minlauncher.helper.isMinLauncherDefault
-import app.minlauncher.helper.isPrivateSpaceLocked
 import app.minlauncher.helper.showToast
 import app.minlauncher.helper.usageStats.EventLogWrapper
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import java.util.Calendar
-
-private const val TAG = "MainViewModel"
 
 class MainViewModel(
     application: Application,
@@ -43,31 +34,35 @@ class MainViewModel(
     constructor(application: Application) : this(application, RealAppListProvider)
 
     private val appContext by lazy { application.applicationContext }
+    private val repository = LauncherRepository(appContext, appListProvider)
     private val prefs = Prefs(appContext)
     private var screenTimeJob: Job? = null
 
     val firstOpen = MutableLiveData<Boolean>()
-    val refreshHome = MutableLiveData<Boolean>()
-    val toggleDateTime = MutableLiveData<Unit>()
-    val updateSwipeApps = MutableLiveData<Any>()
-    val appList = MutableLiveData<List<AppModel>?>()
-    val hiddenApps = MutableLiveData<List<AppModel>?>()
-    val isMinLauncherDefault = MutableLiveData<Boolean>()
+    val refreshHome get() = repository.refreshHome
+    val toggleDateTime get() = repository.toggleDateTime
+    val updateSwipeApps get() = repository.updateSwipeApps
+    val appList get() = repository.appList
+    val hiddenApps get() = repository.hiddenApps
+    val isMinLauncherDefault get() = repository.isMinLauncherDefault
     val launcherResetFailed = MutableLiveData<Boolean>()
-    val homeAppAlignment = MutableLiveData<Int>()
+    val homeAppAlignment get() = repository.homeAppAlignment
     val screenTimeValue = MutableLiveData<String>()
 
-    val privateSpaceApps = MutableLiveData<List<AppModel>?>()
-    val privateSpaceLocked = MutableLiveData<Boolean>()
-    val privateSpaceAvailable = MutableLiveData<Boolean>()
+    val privateSpaceApps get() = repository.privateSpaceApps
+    val privateSpaceLocked get() = repository.privateSpaceLocked
+    val privateSpaceAvailable get() = repository.privateSpaceAvailable
 
     // Suppress backToHomeScreen during Private Space lock/unlock auth
-    var isPrivateSpaceToggling = false
+    var isPrivateSpaceToggling: Boolean
+        get() = repository.isPrivateSpaceToggling
+        set(value) {
+            repository.isPrivateSpaceToggling = value
+        }
 
-    val showDialog = SingleLiveEvent<String>()
-    val resetLauncherLiveData = SingleLiveEvent<Unit?>()
+    val showDialog get() = repository.showDialog
+    val resetLauncherLiveData get() = repository.resetLauncherLiveData
     // Home button for recents feature disabled
-    // val showRecentApps = SingleLiveEvent<Unit?>()
 
     fun selectedApp(
         appModel: AppModel,
@@ -330,24 +325,16 @@ class MainViewModel(
                 }
             }
         }
-        updateSwipeApps()
+        repository.updateSwipeApps()
     }
 
     fun firstOpen(value: Boolean) {
         firstOpen.postValue(value)
     }
 
-    fun refreshHome(appCountUpdated: Boolean) {
-        refreshHome.value = appCountUpdated
-    }
+    fun refreshHome(appCountUpdated: Boolean) = repository.refreshHome(appCountUpdated)
 
-    fun toggleDateTime() {
-        toggleDateTime.postValue(Unit)
-    }
-
-    private fun updateSwipeApps() {
-        updateSwipeApps.postValue(Unit)
-    }
+    fun toggleDateTime() = repository.toggleDateTime()
 
     private fun launchApp(
         packageName: String,
@@ -389,30 +376,13 @@ class MainViewModel(
         }
     }
 
-    fun getAppList(includeHiddenApps: Boolean = false) {
-        viewModelScope.launch {
-            val apps =
-                appListProvider.getAppsList(appContext, prefs, includeRegularApps = true, includeHiddenApps)
-            appList.value = apps
-        }
-        getPrivateSpaceAppList()
-    }
+    fun getAppList(includeHiddenApps: Boolean = false) = repository.getAppList(includeHiddenApps)
 
-    fun getHiddenApps() {
-        viewModelScope.launch {
-            hiddenApps.value =
-                appListProvider.getAppsList(appContext, prefs, includeRegularApps = false, includeHiddenApps = true)
-        }
-    }
+    fun getHiddenApps() = repository.getHiddenApps()
 
-    fun isMinLauncherDefault() {
-        isMinLauncherDefault.value = isMinLauncherDefault(appContext)
-    }
+    fun isMinLauncherDefault() = repository.isMinLauncherDefault()
 
-    fun updateHomeAlignment(gravity: Int) {
-        prefs.homeAlignment = gravity
-        homeAppAlignment.value = prefs.homeAlignment
-    }
+    fun updateHomeAlignment(gravity: Int) = repository.updateHomeAlignment(gravity)
 
     fun getTodaysScreenTime() {
         if (prefs.screenTimeLastUpdated.hasBeenMinutes(1).not()) return
@@ -447,19 +417,7 @@ class MainViewModel(
             }
     }
 
-    fun getPrivateSpaceAppList() {
-        viewModelScope.launch {
-            val handle = getPrivateSpaceUserHandle(appContext)
-            privateSpaceAvailable.value = handle != null
-            if (handle != null) {
-                privateSpaceLocked.value = isPrivateSpaceLocked(appContext, handle)
-                privateSpaceApps.value = getPrivateSpaceApps(appContext, prefs)
-            } else {
-                privateSpaceLocked.value = true
-                privateSpaceApps.value = emptyList()
-            }
-        }
-    }
+    fun getPrivateSpaceAppList() = repository.getPrivateSpaceAppList()
 
     fun openPrivateSpaceSettings() {
         try {
@@ -477,17 +435,5 @@ class MainViewModel(
         }
     }
 
-    fun togglePrivateSpaceLock() {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.VANILLA_ICE_CREAM) return
-        val handle = getPrivateSpaceUserHandle(appContext) ?: return
-        try {
-            isPrivateSpaceToggling = true
-            val userManager = appContext.getSystemService(Context.USER_SERVICE) as UserManager
-            val currentlyLocked = userManager.isQuietModeEnabled(handle)
-            userManager.requestQuietModeEnabled(!currentlyLocked, handle)
-        } catch (e: Exception) {
-            isPrivateSpaceToggling = false
-            Log.e(TAG, "Failed to toggle private space lock", e)
-        }
-    }
+    fun togglePrivateSpaceLock() = repository.togglePrivateSpaceLock()
 }
