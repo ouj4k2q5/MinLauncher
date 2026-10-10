@@ -18,10 +18,13 @@ import android.widget.TextView
 import androidx.core.os.bundleOf
 import androidx.core.view.isVisible
 import androidx.core.view.setPadding
+import androidx.fragment.app.viewModels
 import androidx.lifecycle.Observer
-import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.viewmodel.initializer
+import androidx.lifecycle.viewmodel.viewModelFactory
 import androidx.navigation.fragment.findNavController
-import app.minlauncher.MainViewModel
+import app.minlauncher.HomeViewModel
+import app.minlauncher.LauncherApp
 import app.minlauncher.R
 import app.minlauncher.data.AppModel
 import app.minlauncher.data.Constants
@@ -50,7 +53,19 @@ class HomeFragment :
     View.OnClickListener,
     View.OnLongClickListener {
     private lateinit var prefs: Prefs
-    private lateinit var viewModel: MainViewModel
+
+    // Explicit factory: under Robolectric the default factory's Application
+    // fallback can be stale across tests, so read the repository from the
+    // current activity's app. In production the activity's app is the one
+    // and only LauncherApp instance.
+    private val viewModel: HomeViewModel by viewModels {
+        viewModelFactory {
+            initializer {
+                val app = requireActivity().application
+                HomeViewModel(app, (app as LauncherApp).launcherRepository)
+            }
+        }
+    }
 
     private var viewBinding: FragmentHomeBinding? = null
     private val binding get() = viewBinding!!
@@ -79,9 +94,6 @@ class HomeFragment :
     ) {
         super.onViewCreated(view, savedInstanceState)
         prefs = Prefs(requireContext())
-        viewModel = activity?.run {
-            ViewModelProvider(this)[MainViewModel::class.java]
-        } ?: error("Fragment is not attached to an activity")
 
         initObservers()
         setHomeAlignment(prefs.homeAlignment)
