@@ -176,13 +176,6 @@ class MainViewModelTest {
     }
 
     @Test
-    fun `firstOpen posts the given value`() {
-        viewModel.firstOpen(false)
-
-        assertEquals(false, viewModel.firstOpen.value)
-    }
-
-    @Test
     fun `default factory path constructs MainViewModel`() {
         // The (Application) secondary constructor must keep working because
         // ViewModelProvider's default factory (used by MainActivity and the

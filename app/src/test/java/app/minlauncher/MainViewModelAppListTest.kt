@@ -5,6 +5,7 @@ import android.os.Process
 import androidx.arch.core.executor.testing.InstantTaskExecutorRule
 import androidx.test.core.app.ApplicationProvider
 import app.minlauncher.data.AppModel
+import app.minlauncher.data.LauncherRepository
 import app.minlauncher.data.Prefs
 import app.minlauncher.helper.FakeAppListProvider
 import org.junit.Assert.assertEquals
@@ -54,7 +55,14 @@ class MainViewModelAppListTest {
 
     @Before
     fun setUp() {
-        viewModel = MainViewModel(application, FakeAppListProvider(regularApps = listOf(appA, appB, appC)))
+        viewModel =
+            MainViewModel(
+                application,
+                LauncherRepository(
+                    application,
+                    FakeAppListProvider(regularApps = listOf(appA, appB, appC)),
+                ),
+            )
     }
 
     /** Hides the given apps in the prefs, as the fake provider's world reads them. */
@@ -72,7 +80,8 @@ class MainViewModelAppListTest {
     @Test
     fun `getHiddenApps exposes the provider's hidden apps`() {
         markHidden(appA)
-        viewModel = MainViewModel(application, FakeAppListProvider(hiddenApps = listOf(appA)))
+        viewModel =
+            MainViewModel(application, LauncherRepository(application, FakeAppListProvider(hiddenApps = listOf(appA))))
 
         viewModel.getHiddenApps()
 
@@ -85,7 +94,10 @@ class MainViewModelAppListTest {
         viewModel =
             MainViewModel(
                 application,
-                FakeAppListProvider(regularApps = listOf(appB), hiddenApps = listOf(appA, appC)),
+                LauncherRepository(
+                    application,
+                    FakeAppListProvider(regularApps = listOf(appB), hiddenApps = listOf(appA, appC)),
+                ),
             )
 
         viewModel.getAppList(includeHiddenApps = true)
@@ -99,7 +111,10 @@ class MainViewModelAppListTest {
         viewModel =
             MainViewModel(
                 application,
-                FakeAppListProvider(regularApps = listOf(appB), hiddenApps = listOf(appA, appC)),
+                LauncherRepository(
+                    application,
+                    FakeAppListProvider(regularApps = listOf(appB), hiddenApps = listOf(appA, appC)),
+                ),
             )
 
         viewModel.getAppList()

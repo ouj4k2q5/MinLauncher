@@ -89,7 +89,6 @@ class MainActivity : AppCompatActivity() {
         onBackPressedDispatcher.addCallback(this, onBackPressedCallback)
 
         if (prefs.firstOpen) {
-            viewModel.firstOpen(true)
             prefs.firstOpen = false
             prefs.firstOpenTime = System.currentTimeMillis()
             viewModel.resetLauncherLiveData.call()
@@ -307,11 +306,11 @@ class MainActivity : AppCompatActivity() {
                 if ((
                         prefs.appTheme == AppCompatDelegate.MODE_NIGHT_YES &&
                             getColorFromAttr(R.attr.primaryColor) != getColor(R.color.white)
-                    ) ||
+                        ) ||
                     (
                         prefs.appTheme == AppCompatDelegate.MODE_NIGHT_NO &&
                             getColorFromAttr(R.attr.primaryColor) != getColor(R.color.black)
-                    )
+                        )
                 ) {
                     restartLauncherOrCheckTheme(true)
                 }

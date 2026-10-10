@@ -8,14 +8,14 @@
         <ID>CyclomaticComplexMethod:AppDrawerFragment.kt$AppDrawerFragment$private fun initAdapter()</ID>
         <ID>CyclomaticComplexMethod:EventLogWrapper.kt$EventLogWrapper$fun getForegroundStatsByTimestamps( start: Long, end: Long, ): List&lt;ComponentForegroundStat&gt;</ID>
         <ID>CyclomaticComplexMethod:HomeFragment.kt$HomeFragment$private fun populateHomeScreen(appCountUpdated: Boolean)</ID>
-        <ID>CyclomaticComplexMethod:MainViewModel.kt$MainViewModel$fun selectedApp( appModel: AppModel, flag: Int, )</ID>
-        <ID>CyclomaticComplexMethod:MainViewModel.kt$MainViewModel$private fun saveHomeApp( appModel: AppModel, position: Int, )</ID>
+        <ID>CyclomaticComplexMethod:LauncherRepository.kt$LauncherRepository$fun selectedApp( appModel: AppModel, flag: Int, )</ID>
+        <ID>CyclomaticComplexMethod:LauncherRepository.kt$LauncherRepository$private fun saveHomeApp( appModel: AppModel, position: Int, )</ID>
         <ID>CyclomaticComplexMethod:SettingsFragment.kt$SettingsFragment$override fun onClick(view: View)</ID>
         <ID>LongMethod:AppDrawerAdapter.kt$AppDrawerAdapter.ViewHolder$fun bind( flag: Int, appLabelGravity: Int, myUserHandle: UserHandle, appModel: AppModel, clickListener: (AppModel) -&gt; Unit, appDeleteListener: (AppModel) -&gt; Unit, appInfoListener: (AppModel) -&gt; Unit, appHideListener: (AppModel) -&gt; Unit, appRenameListener: (AppModel, String) -&gt; Unit, )</ID>
         <ID>LongMethod:AppDrawerFragment.kt$AppDrawerFragment$private fun initAdapter()</ID>
         <ID>LongMethod:EventLogWrapper.kt$EventLogWrapper$fun getForegroundStatsByTimestamps( start: Long, end: Long, ): List&lt;ComponentForegroundStat&gt;</ID>
         <ID>LongMethod:HomeFragment.kt$HomeFragment$private fun populateHomeScreen(appCountUpdated: Boolean)</ID>
-        <ID>LongMethod:MainViewModel.kt$MainViewModel$private fun saveHomeApp( appModel: AppModel, position: Int, )</ID>
+        <ID>LongMethod:LauncherRepository.kt$LauncherRepository$private fun saveHomeApp( appModel: AppModel, position: Int, )</ID>
         <ID>LongMethod:SettingsFragment.kt$SettingsFragment$override fun onClick(view: View)</ID>
         <ID>LongParameterList:AppDrawerAdapter.kt$AppDrawerAdapter$( private var flag: Int, private val appLabelGravity: Int, private val appClickListener: (AppModel) -&gt; Unit, private val appInfoListener: (AppModel) -&gt; Unit, private val appDeleteListener: (AppModel) -&gt; Unit, private val appHideListener: (AppModel) -&gt; Unit, private val appRenameListener: (AppModel, String) -&gt; Unit, private val privateSpaceToggleListener: () -&gt; Unit = {}, private val privateSpaceSettingsListener: () -&gt; Unit = {}, )</ID>
         <ID>LongParameterList:AppDrawerAdapter.kt$AppDrawerAdapter.ViewHolder$( flag: Int, appLabelGravity: Int, myUserHandle: UserHandle, appModel: AppModel, clickListener: (AppModel) -&gt; Unit, appDeleteListener: (AppModel) -&gt; Unit, appInfoListener: (AppModel) -&gt; Unit, appHideListener: (AppModel) -&gt; Unit, appRenameListener: (AppModel, String) -&gt; Unit, )</ID>
@@ -46,7 +46,7 @@
         <ID>TooManyFunctions:Extensions.kt$app.minlauncher.helper.Extensions.kt</ID>
         <ID>TooManyFunctions:HomeFragment.kt$HomeFragment : BaseFragmentOnClickListenerOnLongClickListener</ID>
         <ID>TooManyFunctions:MainActivity.kt$MainActivity : AppCompatActivity</ID>
-        <ID>TooManyFunctions:MainViewModel.kt$MainViewModel : AndroidViewModel</ID>
+        <ID>TooManyFunctions:LauncherRepository.kt$LauncherRepository</ID>
         <ID>TooManyFunctions:SettingsFragment.kt$SettingsFragment : BaseFragmentOnClickListenerOnLongClickListener</ID>
         <ID>TooManyFunctions:Utils.kt$app.minlauncher.helper.Utils.kt</ID>
     </CurrentIssues>

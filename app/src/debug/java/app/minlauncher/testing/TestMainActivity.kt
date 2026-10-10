@@ -7,8 +7,10 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import androidx.navigation.fragment.NavHostFragment
+import app.minlauncher.LauncherApp
 import app.minlauncher.MainViewModel
 import app.minlauncher.R
+import app.minlauncher.data.LauncherRepository
 import app.minlauncher.data.Prefs
 import app.minlauncher.helper.AppListProvider
 import app.minlauncher.helper.RealAppListProvider
@@ -16,14 +18,18 @@ import app.minlauncher.helper.RealAppListProvider
 /**
  * Debug-only host activity for JVM UI tests. It mirrors just enough of
  * [app.minlauncher.MainActivity] for the real fragments to run: the real
- * navigation graph and a [MainViewModel] whose [app.minlauncher.helper.AppListProvider]
- * is swappable from tests through [testAppListProvider].
+ * navigation graph and the launcher's app-scoped [LauncherRepository] whose
+ * [app.minlauncher.helper.AppListProvider] is swappable from tests through
+ * [testAppListProvider]. The repository is replaced before any ViewModel is
+ * created, so every fragment observes the test's fake world.
  *
  * The extra [MainViewModel.getHiddenApps] call covers the hidden-apps drawer
  * which in production is fed by SettingsFragment.
  */
 class TestMainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
+        (application as LauncherApp).launcherRepository =
+            LauncherRepository(application, testAppListProvider ?: RealAppListProvider)
         AppCompatDelegate.setDefaultNightMode(Prefs(this).appTheme)
         super.onCreate(savedInstanceState)
         if (supportFragmentManager.findFragmentById(android.R.id.content) == null) {
@@ -38,14 +44,16 @@ class TestMainActivity : AppCompatActivity() {
         }
     }
 
+    // The default factory's AndroidViewModelFactory falls back to a static
+    // Application under Robolectric, which goes stale across tests because the
+    // sandbox reuses the classloader. Constructing through this activity's own
+    // application keeps the repository the one swapped in onCreate above.
     override val defaultViewModelProviderFactory: ViewModelProvider.Factory
         get() =
             viewModelFactory {
                 initializer {
-                    MainViewModel(
-                        this[ViewModelProvider.AndroidViewModelFactory.APPLICATION_KEY]!!,
-                        testAppListProvider ?: RealAppListProvider,
-                    )
+                    val app = application
+                    MainViewModel(app, (app as LauncherApp).launcherRepository)
                 }
             }
 

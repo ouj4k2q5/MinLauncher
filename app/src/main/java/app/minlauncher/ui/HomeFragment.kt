@@ -685,7 +685,6 @@ class HomeFragment :
                 super.onLongClick()
                 try {
                     findNavController().navigate(R.id.action_mainFragment_to_settingsFragment)
-                    viewModel.firstOpen(false)
                 } catch (e: Exception) {
                     Log.e(TAG, "Failed to navigate to settings fragment", e)
                 }
