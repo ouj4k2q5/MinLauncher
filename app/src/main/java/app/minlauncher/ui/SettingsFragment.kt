@@ -234,13 +234,13 @@ class SettingsFragment :
             viewModel.postDialog(Constants.Dialog.ABOUT)
             prefs.firstSettingsOpen = false
         }
-        viewModel.isMinLauncherDefault.observe(viewLifecycleOwner) {
+        collectOnStart(viewModel.isMinLauncherDefault) {
             if (it) binding.setLauncher.text = getString(R.string.change_default_launcher)
         }
-        viewModel.homeAppAlignment.observe(viewLifecycleOwner) {
+        collectOnStart(viewModel.homeAppAlignment) {
             populateAlignment()
         }
-        viewModel.updateSwipeApps.observe(viewLifecycleOwner) {
+        collectOnStart(viewModel.updateSwipeApps) {
             populateSwipeApps()
         }
     }

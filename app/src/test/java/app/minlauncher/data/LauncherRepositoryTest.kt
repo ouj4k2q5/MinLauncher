@@ -3,7 +3,6 @@ package app.minlauncher.data
 import android.app.Application
 import android.os.Process
 import android.view.Gravity
-import androidx.arch.core.executor.testing.InstantTaskExecutorRule
 import androidx.test.core.app.ApplicationProvider
 import app.minlauncher.helper.FakeAppListProvider
 import kotlinx.coroutines.CoroutineScope
@@ -11,10 +10,8 @@ import kotlinx.coroutines.Dispatchers
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
-import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
-import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
@@ -24,9 +21,6 @@ import org.robolectric.annotation.Config
 @Config(sdk = [35])
 @RunWith(RobolectricTestRunner::class)
 class LauncherRepositoryTest {
-    @get:Rule
-    val instantTaskExecutorRule = InstantTaskExecutorRule()
-
     private val application = ApplicationProvider.getApplicationContext<Application>()
     private val prefs = Prefs(application)
     private lateinit var repository: LauncherRepository
@@ -258,7 +252,7 @@ class LauncherRepositoryTest {
 
         assertEquals("", prefs.appName1)
         assertEquals("", prefs.appPackage1)
-        assertNull(repository.refreshHome.value)
+        assertEquals(false, repository.refreshHome.value)
     }
 
     @Test

@@ -19,7 +19,6 @@ import androidx.core.os.bundleOf
 import androidx.core.view.isVisible
 import androidx.core.view.setPadding
 import androidx.fragment.app.viewModels
-import androidx.lifecycle.Observer
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import androidx.navigation.fragment.findNavController
@@ -165,27 +164,24 @@ class HomeFragment :
             binding.firstRunTips.visibility = View.GONE
         }
 
-        viewModel.refreshHome.observe(viewLifecycleOwner) {
+        collectOnStart(viewModel.refreshHome) {
             populateHomeScreen(it)
         }
-        viewModel.isMinLauncherDefault.observe(
-            viewLifecycleOwner,
-            Observer {
-                if (it != true) {
-                    prefs.homeBottomAlignment = false
-                    setHomeAlignment()
-                }
-                if (binding.firstRunTips.isVisible) return@Observer
-                binding.setDefaultLauncher.isVisible = it.not() && prefs.hideSetDefaultLauncher.not()
-            },
-        )
-        viewModel.homeAppAlignment.observe(viewLifecycleOwner) {
+        collectOnStart(viewModel.isMinLauncherDefault) {
+            if (it != true) {
+                prefs.homeBottomAlignment = false
+                setHomeAlignment()
+            }
+            if (binding.firstRunTips.isVisible) return@collectOnStart
+            binding.setDefaultLauncher.isVisible = it.not() && prefs.hideSetDefaultLauncher.not()
+        }
+        collectOnStart(viewModel.homeAppAlignment) {
             setHomeAlignment(it)
         }
-        viewModel.toggleDateTime.observe(viewLifecycleOwner) {
+        collectOnStart(viewModel.toggleDateTime) {
             populateDateTime()
         }
-        viewModel.screenTimeValue.observe(viewLifecycleOwner) {
+        collectOnStart(viewModel.screenTimeValue) {
             it?.let { binding.tvScreenTime.text = it }
         }
         // Home button for recents feature disabled

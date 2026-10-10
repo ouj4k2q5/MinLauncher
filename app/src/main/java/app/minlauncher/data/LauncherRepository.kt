@@ -7,7 +7,6 @@ import android.os.Build
 import android.os.UserHandle
 import android.os.UserManager
 import android.util.Log
-import androidx.lifecycle.MutableLiveData
 import app.minlauncher.R
 import app.minlauncher.helper.AppListProvider
 import app.minlauncher.helper.SingleLiveEvent
@@ -19,12 +18,13 @@ import app.minlauncher.helper.showToast
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 
 private const val TAG = "LauncherRepository"
 
 /**
- * Shared-state holder for the launcher's screens. Owns the LiveData backing
+ * Shared-state holder for the launcher's screens. Owns the StateFlow backing
  * fields and the state-mutating functions; MainActivity and the screen
  * ViewModels (HomeViewModel, DrawerViewModel, SettingsViewModel) delegate to
  * it.
@@ -36,17 +36,17 @@ class LauncherRepository(
 ) {
     private val prefs = Prefs(appContext)
 
-    val refreshHome = MutableLiveData<Boolean>()
-    val toggleDateTime = MutableLiveData<Unit>()
-    val updateSwipeApps = MutableLiveData<Any>()
-    val appList = MutableLiveData<List<AppModel>?>()
-    val hiddenApps = MutableLiveData<List<AppModel>?>()
-    val isMinLauncherDefault = MutableLiveData<Boolean>()
-    val homeAppAlignment = MutableLiveData<Int>()
+    val refreshHome = MutableStateFlow<Boolean>(false)
+    val toggleDateTime = MutableStateFlow<Unit?>(null)
+    val updateSwipeApps = MutableStateFlow<Any?>(null)
+    val appList = MutableStateFlow<List<AppModel>?>(null)
+    val hiddenApps = MutableStateFlow<List<AppModel>?>(null)
+    val isMinLauncherDefault = MutableStateFlow<Boolean>(false)
+    val homeAppAlignment = MutableStateFlow(prefs.homeAlignment)
 
-    val privateSpaceApps = MutableLiveData<List<AppModel>?>()
-    val privateSpaceLocked = MutableLiveData<Boolean>()
-    val privateSpaceAvailable = MutableLiveData<Boolean>()
+    val privateSpaceApps = MutableStateFlow<List<AppModel>?>(null)
+    val privateSpaceLocked = MutableStateFlow<Boolean>(true)
+    val privateSpaceAvailable = MutableStateFlow<Boolean>(false)
 
     // Suppress backToHomeScreen during Private Space lock/unlock auth
     var isPrivateSpaceToggling = false
@@ -84,11 +84,11 @@ class LauncherRepository(
     }
 
     fun toggleDateTime() {
-        toggleDateTime.postValue(Unit)
+        toggleDateTime.value = Unit
     }
 
     fun updateSwipeApps() {
-        updateSwipeApps.postValue(Unit)
+        updateSwipeApps.value = Unit
     }
 
     fun getPrivateSpaceAppList() {

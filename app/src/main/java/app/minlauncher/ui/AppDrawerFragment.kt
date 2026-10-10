@@ -298,26 +298,24 @@ class AppDrawerFragment : BaseFragment() {
 
     private fun initObservers() {
         if (flag == Constants.FLAG_HIDDEN_APPS) {
-            viewModel.hiddenApps.observe(viewLifecycleOwner) {
-                it?.let {
-                    adapter.setAppList(it)
-                }
+            collectOnStart(viewModel.hiddenApps) {
+                it?.let { adapter.setAppList(it) }
             }
         } else {
-            viewModel.appList.observe(viewLifecycleOwner) {
+            collectOnStart(viewModel.appList) {
                 currentAppList = it
                 updateCombinedAppList()
             }
             if (flag == Constants.FLAG_LAUNCH_APP) {
-                viewModel.privateSpaceAvailable.observe(viewLifecycleOwner) {
+                collectOnStart(viewModel.privateSpaceAvailable) {
                     currentPrivateSpaceAvailable = it
                     updateCombinedAppList()
                 }
-                viewModel.privateSpaceLocked.observe(viewLifecycleOwner) {
+                collectOnStart(viewModel.privateSpaceLocked) {
                     currentPrivateSpaceLocked = it
                     updateCombinedAppList()
                 }
-                viewModel.privateSpaceApps.observe(viewLifecycleOwner) {
+                collectOnStart(viewModel.privateSpaceApps) {
                     currentPrivateSpaceApps = it
                     updateCombinedAppList()
                 }

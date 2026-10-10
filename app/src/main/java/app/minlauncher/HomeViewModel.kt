@@ -2,7 +2,6 @@ package app.minlauncher
 
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
-import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.viewModelScope
 import app.minlauncher.data.AppModel
 import app.minlauncher.data.LauncherRepository
@@ -12,6 +11,7 @@ import app.minlauncher.helper.hasBeenMinutes
 import app.minlauncher.helper.usageStats.EventLogWrapper
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 import java.util.Calendar
 
@@ -37,7 +37,7 @@ class HomeViewModel(
     val homeAppAlignment get() = repository.homeAppAlignment
     val toggleDateTime get() = repository.toggleDateTime
     val resetLauncherLiveData get() = repository.resetLauncherLiveData
-    val screenTimeValue = MutableLiveData<String>()
+    val screenTimeValue = MutableStateFlow<String?>(null)
 
     fun isMinLauncherDefault() = repository.isMinLauncherDefault()
 
@@ -74,7 +74,7 @@ class HomeViewModel(
                             ),
                         )
                     val viewTimeSpent = appContext.formattedTimeSpent(timeSpent)
-                    screenTimeValue.postValue(viewTimeSpent)
+                    screenTimeValue.value = viewTimeSpent
                     prefs.screenTimeLastUpdated = endTime
                 } catch (_: SecurityException) {
                 }
