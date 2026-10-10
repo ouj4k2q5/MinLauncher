@@ -19,13 +19,13 @@ file("$rootDir/version.properties").inputStream().use { versionProps.load(it) }
 val appVersionName =
     (
         project.findProperty("appVersionName") ?: versionProps.getProperty("versionName")
-            ?: error("version.properties is missing versionName")
-    ).toString()
+        ?: error("version.properties is missing versionName")
+        ).toString()
 val appVersionCode =
     (
         project.findProperty("appVersionCode") ?: versionProps.getProperty("versionCode")
-            ?: error("version.properties is missing versionCode")
-    ).toString().toInt()
+        ?: error("version.properties is missing versionCode")
+        ).toString().toInt()
 
 android {
     compileSdk {
@@ -141,7 +141,6 @@ dependencies {
 
     // Android lifecycle
     implementation(libs.lifecycle.runtime.ktx)
-    implementation(libs.lifecycle.livedata.ktx)
     implementation(libs.lifecycle.viewmodel.ktx)
 
     // Navigation
@@ -151,7 +150,6 @@ dependencies {
     testImplementation(libs.robolectric)
     testImplementation(libs.androidx.test.core.ktx)
     testImplementation(libs.androidx.test.ext.junit)
-    testImplementation(libs.androidx.arch.core.testing)
     testImplementation(libs.espresso.core)
     testImplementation(libs.roborazzi)
 
