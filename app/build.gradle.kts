@@ -138,6 +138,7 @@ dependencies {
     implementation(libs.core.ktx)
     implementation(libs.appcompat)
     implementation(libs.recyclerview)
+    implementation(libs.datastore.preferences)
 
     // Android lifecycle
     implementation(libs.lifecycle.runtime.ktx)
