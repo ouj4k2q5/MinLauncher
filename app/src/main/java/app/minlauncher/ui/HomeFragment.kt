@@ -55,6 +55,15 @@ class HomeFragment :
     private var viewBinding: FragmentHomeBinding? = null
     private val binding get() = viewBinding!!
 
+    companion object {
+        /**
+         * Test seam: the home-screen date line is rendered from the wall clock,
+         * which would make screenshot baselines day-dependent. Tests can point
+         * this at a fixed date; production behavior is unchanged.
+         */
+        internal var dateProvider: () -> Date = { Date() }
+    }
+
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
@@ -237,7 +246,7 @@ class HomeFragment :
         val locale = Locale.getDefault()
         val datePattern = DateFormat.getBestDateTimePattern(locale, "EEEMMMd")
         val dateFormat = SimpleDateFormat(datePattern, locale)
-        var dateText = dateFormat.format(Date())
+        var dateText = dateFormat.format(dateProvider())
 
         if (!prefs.showStatusBar) {
             val battery =
