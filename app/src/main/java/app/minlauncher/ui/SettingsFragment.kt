@@ -13,11 +13,14 @@ import android.widget.Toast
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.os.bundleOf
 import androidx.core.view.isVisible
-import androidx.lifecycle.ViewModelProvider
+import androidx.fragment.app.viewModels
+import androidx.lifecycle.viewmodel.initializer
+import androidx.lifecycle.viewmodel.viewModelFactory
 import androidx.navigation.fragment.findNavController
 import app.minlauncher.BuildConfig
-import app.minlauncher.MainViewModel
+import app.minlauncher.LauncherApp
 import app.minlauncher.R
+import app.minlauncher.SettingsViewModel
 import app.minlauncher.data.Constants
 import app.minlauncher.data.Prefs
 import app.minlauncher.databinding.FragmentSettingsBinding
@@ -37,7 +40,19 @@ class SettingsFragment :
     View.OnClickListener,
     View.OnLongClickListener {
     private lateinit var prefs: Prefs
-    private lateinit var viewModel: MainViewModel
+
+    // Explicit factory: under Robolectric the default factory's Application
+    // fallback can be stale across tests, so read the repository from the
+    // current activity's app. In production the activity's app is the one
+    // and only LauncherApp instance.
+    private val viewModel: SettingsViewModel by viewModels {
+        viewModelFactory {
+            initializer {
+                val app = requireActivity().application
+                SettingsViewModel(app, (app as LauncherApp).launcherRepository)
+            }
+        }
+    }
 
     private var viewBinding: FragmentSettingsBinding? = null
     private val binding get() = viewBinding!!
@@ -57,9 +72,6 @@ class SettingsFragment :
     ) {
         super.onViewCreated(view, savedInstanceState)
         prefs = Prefs(requireContext())
-        viewModel = activity?.run {
-            ViewModelProvider(this)[MainViewModel::class.java]
-        } ?: error("Fragment is not attached to an activity")
         viewModel.isMinLauncherDefault()
 
         binding.homeAppsNum.text = prefs.homeAppsNum.toString()
@@ -98,7 +110,7 @@ class SettingsFragment :
             R.id.minlauncherHiddenApps -> showHiddenApps()
             R.id.screenTimeOnOff -> toggleScreenTime()
             R.id.appInfo -> openAppInfo(requireContext(), Process.myUserHandle(), BuildConfig.APPLICATION_ID)
-            R.id.setLauncher -> viewModel.resetLauncherLiveData.call()
+            R.id.setLauncher -> viewModel.requestResetLauncher()
             R.id.toggleLock -> toggleLockMode()
             // Home button for recents feature disabled
             // R.id.homeButtonRecents -> toggleHomeButtonRecents()
@@ -219,16 +231,16 @@ class SettingsFragment :
 
     private fun initObservers() {
         if (prefs.firstSettingsOpen) {
-            viewModel.showDialog.postValue(Constants.Dialog.ABOUT)
+            viewModel.postDialog(Constants.Dialog.ABOUT)
             prefs.firstSettingsOpen = false
         }
-        viewModel.isMinLauncherDefault.observe(viewLifecycleOwner) {
-            if (it) binding.setLauncher.text = getString(R.string.change_default_launcher)
+        collectOnStart(viewModel.isMinLauncherDefault) {
+            if (it == true) binding.setLauncher.text = getString(R.string.change_default_launcher)
         }
-        viewModel.homeAppAlignment.observe(viewLifecycleOwner) {
+        collectOnStart(viewModel.homeAppAlignment) {
             populateAlignment()
         }
-        viewModel.updateSwipeApps.observe(viewLifecycleOwner) {
+        collectOnStart(viewModel.updateSwipeApps) {
             populateSwipeApps()
         }
     }
@@ -391,7 +403,7 @@ class SettingsFragment :
 
     private fun toggleKeyboardText() {
         if (prefs.autoShowKeyboard && prefs.keyboardMessageShown.not()) {
-            viewModel.showDialog.postValue(Constants.Dialog.KEYBOARD)
+            viewModel.postDialog(Constants.Dialog.KEYBOARD)
             prefs.keyboardMessageShown = true
         } else {
             prefs.autoShowKeyboard = !prefs.autoShowKeyboard
@@ -443,7 +455,7 @@ class SettingsFragment :
 
     private fun toggleScreenTime() {
         if (requireContext().appUsagePermissionGranted().not()) {
-            viewModel.showDialog.postValue(Constants.Dialog.DIGITAL_WELLBEING)
+            viewModel.postDialog(Constants.Dialog.DIGITAL_WELLBEING)
             return
         }
         prefs.screenTimeEnabled = !prefs.screenTimeEnabled

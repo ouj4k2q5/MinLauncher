@@ -18,8 +18,9 @@ import android.view.WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS
 import androidx.activity.OnBackPressedCallback
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
-import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.NavController
 import androidx.navigation.findNavController
 import app.minlauncher.data.Constants
@@ -35,13 +36,14 @@ import app.minlauncher.helper.setPlainWallpaperByTheme
 import app.minlauncher.helper.showLauncherSelector
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.launch
 import kotlin.time.Duration.Companion.milliseconds
 
 class MainActivity : AppCompatActivity() {
     private lateinit var prefs: Prefs
     private lateinit var navController: NavController
-    private lateinit var viewModel: MainViewModel
+    private val repository by lazy { (application as LauncherApp).launcherRepository }
     private lateinit var binding: ActivityMainBinding
     private var timerJob: Job? = null
     private var isResumed = false
@@ -69,7 +71,6 @@ class MainActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         navController = this.findNavController(R.id.nav_host_fragment)
-        viewModel = ViewModelProvider(this)[MainViewModel::class.java]
 
         val onBackPressedCallback =
             object : OnBackPressedCallback(true) {
@@ -89,15 +90,14 @@ class MainActivity : AppCompatActivity() {
         onBackPressedDispatcher.addCallback(this, onBackPressedCallback)
 
         if (prefs.firstOpen) {
-            viewModel.firstOpen(true)
             prefs.firstOpen = false
             prefs.firstOpenTime = System.currentTimeMillis()
-            viewModel.resetLauncherLiveData.call()
+            repository.requestResetLauncher()
         }
 
         initClickListeners()
-        initObservers(viewModel)
-        viewModel.getAppList()
+        initObservers()
+        repository.getAppList()
         registerShortcutCallback()
         setupOrientation()
 
@@ -110,8 +110,8 @@ class MainActivity : AppCompatActivity() {
                         context: Context?,
                         intent: Intent?,
                     ) {
-                        viewModel.isPrivateSpaceToggling = false
-                        viewModel.getPrivateSpaceAppList()
+                        repository.isPrivateSpaceToggling = false
+                        repository.getPrivateSpaceAppList()
                     }
                 }
             val filter =
@@ -131,8 +131,8 @@ class MainActivity : AppCompatActivity() {
     override fun onResume() {
         super.onResume()
         isResumed = true
-        viewModel.isPrivateSpaceToggling = false
-        viewModel.getAppList()
+        repository.isPrivateSpaceToggling = false
+        repository.getAppList()
     }
 
     private fun registerShortcutCallback() {
@@ -171,7 +171,7 @@ class MainActivity : AppCompatActivity() {
                     shortcuts: MutableList<ShortcutInfo>,
                     user: android.os.UserHandle,
                 ) {
-                    viewModel.getAppList()
+                    repository.getAppList()
                 }
             }
         launcherApps.registerCallback(launcherAppsCallback!!)
@@ -214,18 +214,15 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun initObservers(viewModel: MainViewModel) {
-        viewModel.launcherResetFailed.observe(this) {
-            openLauncherChooser(it)
-        }
-        viewModel.resetLauncherLiveData.observe(this) {
+    private fun initObservers() {
+        collectOnStarted(repository.resetLauncher) {
             if (isDefaultLauncher()) {
                 resetLauncherViaFakeActivity()
             } else {
                 showLauncherSelector(Constants.REQUEST_CODE_LAUNCHER_SELECTOR)
             }
         }
-        viewModel.showDialog.observe(this) {
+        collectOnStarted(repository.showDialog) {
             when (it) {
                 Constants.Dialog.ABOUT -> {
                     showMessageDialog(R.string.app_name, R.string.welcome_to_minlauncher_settings, R.string.okay) {
@@ -248,6 +245,22 @@ class MainActivity : AppCompatActivity() {
                         startActivity(Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS))
                     }
                 }
+            }
+        }
+    }
+
+    /**
+     * Collects [flow] while this activity is at least STARTED, cancelling and
+     * restarting collection across stop/start cycles. Activity counterpart of
+     * [app.minlauncher.ui.BaseFragment.collectOnStart].
+     */
+    private fun <T> collectOnStarted(
+        flow: Flow<T>,
+        block: (T) -> Unit,
+    ) {
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                flow.collect { block(it) }
             }
         }
     }
@@ -275,17 +288,10 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun backToHomeScreen() {
-        if (viewModel.isPrivateSpaceToggling) return
+        if (repository.isPrivateSpaceToggling) return
         binding.messageLayout.visibility = View.GONE
         if (navController.currentDestination?.id != R.id.mainFragment) {
             navController.popBackStack(R.id.mainFragment, false)
-        }
-    }
-
-    private fun openLauncherChooser(resetFailed: Boolean) {
-        if (resetFailed) {
-            val intent = Intent(Settings.ACTION_MANAGE_DEFAULT_APPS_SETTINGS)
-            startActivity(intent)
         }
     }
 

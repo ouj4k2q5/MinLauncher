@@ -1,23 +1,14 @@
-package app.minlauncher
+package app.minlauncher.data
 
-import android.app.Application
 import android.content.ComponentName
 import android.content.Context
-import android.content.Intent
 import android.content.pm.LauncherApps
 import android.os.Build
 import android.os.UserHandle
 import android.os.UserManager
 import android.util.Log
-import androidx.lifecycle.AndroidViewModel
-import androidx.lifecycle.MutableLiveData
-import androidx.lifecycle.viewModelScope
-import app.minlauncher.data.AppModel
-import app.minlauncher.data.Constants
-import app.minlauncher.data.Prefs
+import app.minlauncher.R
 import app.minlauncher.helper.AppListProvider
-import app.minlauncher.helper.RealAppListProvider
-import app.minlauncher.helper.SingleLiveEvent
 import app.minlauncher.helper.formattedTimeSpent
 import app.minlauncher.helper.getPrivateSpaceApps
 import app.minlauncher.helper.getPrivateSpaceUserHandle
@@ -26,48 +17,176 @@ import app.minlauncher.helper.isMinLauncherDefault
 import app.minlauncher.helper.isPrivateSpaceLocked
 import app.minlauncher.helper.showToast
 import app.minlauncher.helper.usageStats.EventLogWrapper
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
 import java.util.Calendar
 
-private const val TAG = "MainViewModel"
+private const val TAG = "LauncherRepository"
 
-class MainViewModel(
-    application: Application,
+/**
+ * Shared-state holder for the launcher's screens. Owns the StateFlow backing
+ * fields and the state-mutating functions; MainActivity and the screen
+ * ViewModels (HomeViewModel, DrawerViewModel, SettingsViewModel) delegate to
+ * it.
+ */
+class LauncherRepository(
+    private val appContext: Context,
     private val appListProvider: AppListProvider,
-) : AndroidViewModel(application) {
-    // Secondary constructor for ViewModelProvider's default factory, which can
-    // only call the (Application) constructor; production always wants the real
-    // provider, tests inject a fake through the primary constructor.
-    constructor(application: Application) : this(application, RealAppListProvider)
-
-    private val appContext by lazy { application.applicationContext }
+    private val scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate),
+) {
     private val prefs = Prefs(appContext)
+
+    val appList = MutableStateFlow<List<AppModel>?>(null)
+    val hiddenApps = MutableStateFlow<List<AppModel>?>(null)
+
+    // State, not an event: null until first computed, so collectors don't act
+    // on a placeholder value before isMinLauncherDefault() has run.
+    val isMinLauncherDefault = MutableStateFlow<Boolean?>(null)
+    val homeAppAlignment = MutableStateFlow(prefs.homeAlignment)
+
+    // App-scoped so the value survives activity recreation (theme change,
+    // rotation): a fragment-scoped holder would reset to null while the
+    // one-minute throttle in getTodaysScreenTime() blocks recomputation.
+    val screenTimeValue = MutableStateFlow<String?>(null)
+
+    val privateSpaceApps = MutableStateFlow<List<AppModel>?>(null)
+    val privateSpaceLocked = MutableStateFlow<Boolean>(true)
+    val privateSpaceAvailable = MutableStateFlow<Boolean>(false)
+
     private var screenTimeJob: Job? = null
-
-    val firstOpen = MutableLiveData<Boolean>()
-    val refreshHome = MutableLiveData<Boolean>()
-    val toggleDateTime = MutableLiveData<Unit>()
-    val updateSwipeApps = MutableLiveData<Any>()
-    val appList = MutableLiveData<List<AppModel>?>()
-    val hiddenApps = MutableLiveData<List<AppModel>?>()
-    val isMinLauncherDefault = MutableLiveData<Boolean>()
-    val launcherResetFailed = MutableLiveData<Boolean>()
-    val homeAppAlignment = MutableLiveData<Int>()
-    val screenTimeValue = MutableLiveData<String>()
-
-    val privateSpaceApps = MutableLiveData<List<AppModel>?>()
-    val privateSpaceLocked = MutableLiveData<Boolean>()
-    val privateSpaceAvailable = MutableLiveData<Boolean>()
 
     // Suppress backToHomeScreen during Private Space lock/unlock auth
     var isPrivateSpaceToggling = false
 
-    val showDialog = SingleLiveEvent<String>()
-    val resetLauncherLiveData = SingleLiveEvent<Unit?>()
-    // Home button for recents feature disabled
-    // val showRecentApps = SingleLiveEvent<Unit?>()
+    private val _showDialog = Channel<String>(Channel.BUFFERED)
+    val showDialog = _showDialog.receiveAsFlow()
+
+    private val _resetLauncher = Channel<Unit>(Channel.BUFFERED)
+    val resetLauncher = _resetLauncher.receiveAsFlow()
+
+    // One-shot screen signals. Unlike a StateFlow, a Channel delivers every
+    // send exactly once (no equality dedup, no conflation) and buffers events
+    // emitted while the target screen is STOPPED.
+    private val _refreshHome = Channel<Boolean>(Channel.BUFFERED)
+    val refreshHome = _refreshHome.receiveAsFlow()
+
+    private val _toggleDateTime = Channel<Unit>(Channel.BUFFERED)
+    val toggleDateTime = _toggleDateTime.receiveAsFlow()
+
+    private val _updateSwipeApps = Channel<Unit>(Channel.BUFFERED)
+    val updateSwipeApps = _updateSwipeApps.receiveAsFlow()
+
+    fun postDialog(dialog: String) {
+        _showDialog.trySend(dialog)
+    }
+
+    fun requestResetLauncher() {
+        _resetLauncher.trySend(Unit)
+    }
+
+    fun getAppList(includeHiddenApps: Boolean = false) {
+        scope.launch {
+            val apps =
+                appListProvider.getAppsList(appContext, prefs, includeRegularApps = true, includeHiddenApps)
+            appList.value = apps
+        }
+        getPrivateSpaceAppList()
+    }
+
+    fun getHiddenApps() {
+        scope.launch {
+            hiddenApps.value =
+                appListProvider.getAppsList(appContext, prefs, includeRegularApps = false, includeHiddenApps = true)
+        }
+    }
+
+    fun isMinLauncherDefault() {
+        isMinLauncherDefault.value = isMinLauncherDefault(appContext)
+    }
+
+    fun updateHomeAlignment(gravity: Int) {
+        prefs.homeAlignment = gravity
+        homeAppAlignment.value = prefs.homeAlignment
+    }
+
+    fun getTodaysScreenTime() {
+        if (prefs.screenTimeLastUpdated.hasBeenMinutes(1).not()) return
+        if (screenTimeJob?.isActive == true) return
+
+        screenTimeJob =
+            scope.launch(Dispatchers.IO) {
+                try {
+                    val eventLogWrapper = EventLogWrapper(appContext)
+                    // Start of today in millis
+                    val calendar =
+                        Calendar.getInstance().apply {
+                            set(Calendar.HOUR_OF_DAY, 0)
+                            set(Calendar.MINUTE, 0)
+                            set(Calendar.SECOND, 0)
+                            set(Calendar.MILLISECOND, 0)
+                        }
+                    val startTime = calendar.timeInMillis
+                    val endTime = System.currentTimeMillis()
+
+                    val timeSpent =
+                        eventLogWrapper.aggregateSimpleUsageStats(
+                            eventLogWrapper.aggregateForegroundStats(
+                                eventLogWrapper.getForegroundStatsByTimestamps(startTime, endTime),
+                            ),
+                        )
+                    val viewTimeSpent = appContext.formattedTimeSpent(timeSpent)
+                    screenTimeValue.value = viewTimeSpent
+                    prefs.screenTimeLastUpdated = endTime
+                } catch (_: SecurityException) {
+                }
+            }
+    }
+
+    fun refreshHome(appCountUpdated: Boolean) {
+        _refreshHome.trySend(appCountUpdated)
+    }
+
+    fun toggleDateTime() {
+        _toggleDateTime.trySend(Unit)
+    }
+
+    fun updateSwipeApps() {
+        _updateSwipeApps.trySend(Unit)
+    }
+
+    fun getPrivateSpaceAppList() {
+        scope.launch {
+            val handle = getPrivateSpaceUserHandle(appContext)
+            privateSpaceAvailable.value = handle != null
+            if (handle != null) {
+                privateSpaceLocked.value = isPrivateSpaceLocked(appContext, handle)
+                privateSpaceApps.value = getPrivateSpaceApps(appContext, prefs)
+            } else {
+                privateSpaceLocked.value = true
+                privateSpaceApps.value = emptyList()
+            }
+        }
+    }
+
+    fun togglePrivateSpaceLock() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.VANILLA_ICE_CREAM) return
+        val handle = getPrivateSpaceUserHandle(appContext) ?: return
+        try {
+            isPrivateSpaceToggling = true
+            val userManager = appContext.getSystemService(Context.USER_SERVICE) as UserManager
+            val currentlyLocked = userManager.isQuietModeEnabled(handle)
+            userManager.requestQuietModeEnabled(!currentlyLocked, handle)
+        } catch (e: Exception) {
+            isPrivateSpaceToggling = false
+            Log.e(TAG, "Failed to toggle private space lock", e)
+        }
+    }
 
     fun selectedApp(
         appModel: AppModel,
@@ -333,22 +452,6 @@ class MainViewModel(
         updateSwipeApps()
     }
 
-    fun firstOpen(value: Boolean) {
-        firstOpen.postValue(value)
-    }
-
-    fun refreshHome(appCountUpdated: Boolean) {
-        refreshHome.value = appCountUpdated
-    }
-
-    fun toggleDateTime() {
-        toggleDateTime.postValue(Unit)
-    }
-
-    private fun updateSwipeApps() {
-        updateSwipeApps.postValue(Unit)
-    }
-
     private fun launchApp(
         packageName: String,
         activityClassName: String?,
@@ -386,108 +489,6 @@ class MainViewModel(
             }
         } catch (_: Exception) {
             appContext.showToast(appContext.getString(R.string.unable_to_open_app))
-        }
-    }
-
-    fun getAppList(includeHiddenApps: Boolean = false) {
-        viewModelScope.launch {
-            val apps =
-                appListProvider.getAppsList(appContext, prefs, includeRegularApps = true, includeHiddenApps)
-            appList.value = apps
-        }
-        getPrivateSpaceAppList()
-    }
-
-    fun getHiddenApps() {
-        viewModelScope.launch {
-            hiddenApps.value =
-                appListProvider.getAppsList(appContext, prefs, includeRegularApps = false, includeHiddenApps = true)
-        }
-    }
-
-    fun isMinLauncherDefault() {
-        isMinLauncherDefault.value = isMinLauncherDefault(appContext)
-    }
-
-    fun updateHomeAlignment(gravity: Int) {
-        prefs.homeAlignment = gravity
-        homeAppAlignment.value = prefs.homeAlignment
-    }
-
-    fun getTodaysScreenTime() {
-        if (prefs.screenTimeLastUpdated.hasBeenMinutes(1).not()) return
-        if (screenTimeJob?.isActive == true) return
-
-        screenTimeJob =
-            viewModelScope.launch(Dispatchers.IO) {
-                try {
-                    val eventLogWrapper = EventLogWrapper(appContext)
-                    // Start of today in millis
-                    val calendar =
-                        Calendar.getInstance().apply {
-                            set(Calendar.HOUR_OF_DAY, 0)
-                            set(Calendar.MINUTE, 0)
-                            set(Calendar.SECOND, 0)
-                            set(Calendar.MILLISECOND, 0)
-                        }
-                    val startTime = calendar.timeInMillis
-                    val endTime = System.currentTimeMillis()
-
-                    val timeSpent =
-                        eventLogWrapper.aggregateSimpleUsageStats(
-                            eventLogWrapper.aggregateForegroundStats(
-                                eventLogWrapper.getForegroundStatsByTimestamps(startTime, endTime),
-                            ),
-                        )
-                    val viewTimeSpent = appContext.formattedTimeSpent(timeSpent)
-                    screenTimeValue.postValue(viewTimeSpent)
-                    prefs.screenTimeLastUpdated = endTime
-                } catch (_: SecurityException) {
-                }
-            }
-    }
-
-    fun getPrivateSpaceAppList() {
-        viewModelScope.launch {
-            val handle = getPrivateSpaceUserHandle(appContext)
-            privateSpaceAvailable.value = handle != null
-            if (handle != null) {
-                privateSpaceLocked.value = isPrivateSpaceLocked(appContext, handle)
-                privateSpaceApps.value = getPrivateSpaceApps(appContext, prefs)
-            } else {
-                privateSpaceLocked.value = true
-                privateSpaceApps.value = emptyList()
-            }
-        }
-    }
-
-    fun openPrivateSpaceSettings() {
-        try {
-            val intent = Intent("android.settings.PRIVATE_SPACE_SETTINGS")
-            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-            appContext.startActivity(intent)
-        } catch (_: Exception) {
-            try {
-                val intent = Intent(android.provider.Settings.ACTION_SECURITY_SETTINGS)
-                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                appContext.startActivity(intent)
-            } catch (_: Exception) {
-                appContext.showToast(appContext.getString(R.string.unable_to_open_app))
-            }
-        }
-    }
-
-    fun togglePrivateSpaceLock() {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.VANILLA_ICE_CREAM) return
-        val handle = getPrivateSpaceUserHandle(appContext) ?: return
-        try {
-            isPrivateSpaceToggling = true
-            val userManager = appContext.getSystemService(Context.USER_SERVICE) as UserManager
-            val currentlyLocked = userManager.isQuietModeEnabled(handle)
-            userManager.requestQuietModeEnabled(!currentlyLocked, handle)
-        } catch (e: Exception) {
-            isPrivateSpaceToggling = false
-            Log.e(TAG, "Failed to toggle private space lock", e)
         }
     }
 }

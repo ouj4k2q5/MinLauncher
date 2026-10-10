@@ -18,10 +18,12 @@ import android.widget.TextView
 import androidx.core.os.bundleOf
 import androidx.core.view.isVisible
 import androidx.core.view.setPadding
-import androidx.lifecycle.Observer
-import androidx.lifecycle.ViewModelProvider
+import androidx.fragment.app.viewModels
+import androidx.lifecycle.viewmodel.initializer
+import androidx.lifecycle.viewmodel.viewModelFactory
 import androidx.navigation.fragment.findNavController
-import app.minlauncher.MainViewModel
+import app.minlauncher.HomeViewModel
+import app.minlauncher.LauncherApp
 import app.minlauncher.R
 import app.minlauncher.data.AppModel
 import app.minlauncher.data.Constants
@@ -50,7 +52,19 @@ class HomeFragment :
     View.OnClickListener,
     View.OnLongClickListener {
     private lateinit var prefs: Prefs
-    private lateinit var viewModel: MainViewModel
+
+    // Explicit factory: under Robolectric the default factory's Application
+    // fallback can be stale across tests, so read the repository from the
+    // current activity's app. In production the activity's app is the one
+    // and only LauncherApp instance.
+    private val viewModel: HomeViewModel by viewModels {
+        viewModelFactory {
+            initializer {
+                val app = requireActivity().application
+                HomeViewModel(app, (app as LauncherApp).launcherRepository)
+            }
+        }
+    }
 
     private var viewBinding: FragmentHomeBinding? = null
     private val binding get() = viewBinding!!
@@ -79,9 +93,6 @@ class HomeFragment :
     ) {
         super.onViewCreated(view, savedInstanceState)
         prefs = Prefs(requireContext())
-        viewModel = activity?.run {
-            ViewModelProvider(this)[MainViewModel::class.java]
-        } ?: error("Fragment is not attached to an activity")
 
         initObservers()
         setHomeAlignment(prefs.homeAlignment)
@@ -107,7 +118,7 @@ class HomeFragment :
             // R.id.recents -> {}
             R.id.clock -> openClock(requireContext())
             R.id.date -> openCalendar(requireContext())
-            R.id.setDefaultLauncher -> viewModel.resetLauncherLiveData.call()
+            R.id.setDefaultLauncher -> viewModel.requestResetLauncher()
             R.id.tvScreenTime -> openScreenTimeDigitalWellbeing()
 
             else -> {
@@ -153,27 +164,24 @@ class HomeFragment :
             binding.firstRunTips.visibility = View.GONE
         }
 
-        viewModel.refreshHome.observe(viewLifecycleOwner) {
+        collectOnStart(viewModel.refreshHome) {
             populateHomeScreen(it)
         }
-        viewModel.isMinLauncherDefault.observe(
-            viewLifecycleOwner,
-            Observer {
-                if (it != true) {
-                    prefs.homeBottomAlignment = false
-                    setHomeAlignment()
-                }
-                if (binding.firstRunTips.isVisible) return@Observer
-                binding.setDefaultLauncher.isVisible = it.not() && prefs.hideSetDefaultLauncher.not()
-            },
-        )
-        viewModel.homeAppAlignment.observe(viewLifecycleOwner) {
+        collectOnStart(viewModel.isMinLauncherDefault) {
+            if (it == false) {
+                prefs.homeBottomAlignment = false
+                setHomeAlignment()
+            }
+            if (binding.firstRunTips.isVisible) return@collectOnStart
+            binding.setDefaultLauncher.isVisible = it == false && prefs.hideSetDefaultLauncher.not()
+        }
+        collectOnStart(viewModel.homeAppAlignment) {
             setHomeAlignment(it)
         }
-        viewModel.toggleDateTime.observe(viewLifecycleOwner) {
+        collectOnStart(viewModel.toggleDateTime) {
             populateDateTime()
         }
-        viewModel.screenTimeValue.observe(viewLifecycleOwner) {
+        collectOnStart(viewModel.screenTimeValue) {
             it?.let { binding.tvScreenTime.text = it }
         }
         // Home button for recents feature disabled
@@ -685,7 +693,6 @@ class HomeFragment :
                 super.onLongClick()
                 try {
                     findNavController().navigate(R.id.action_mainFragment_to_settingsFragment)
-                    viewModel.firstOpen(false)
                 } catch (e: Exception) {
                     Log.e(TAG, "Failed to navigate to settings fragment", e)
                 }

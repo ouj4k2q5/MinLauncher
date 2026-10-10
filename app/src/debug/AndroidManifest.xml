@@ -4,7 +4,7 @@
     <application>
 
         <!-- Hosts the launcher's real navigation graph with a test-injectable
-             MainViewModel factory; exists only in debug builds so that JVM UI
+             LauncherRepository; exists only in debug builds so that JVM UI
              tests can drive the real fragments. -->
         <activity
             android:name="app.minlauncher.testing.TestMainActivity"

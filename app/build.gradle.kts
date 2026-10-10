@@ -141,7 +141,6 @@ dependencies {
 
     // Android lifecycle
     implementation(libs.lifecycle.runtime.ktx)
-    implementation(libs.lifecycle.livedata.ktx)
     implementation(libs.lifecycle.viewmodel.ktx)
 
     // Navigation
@@ -149,9 +148,9 @@ dependencies {
 
     testImplementation(libs.junit)
     testImplementation(libs.robolectric)
+    testImplementation(libs.kotlinx.coroutines.test)
     testImplementation(libs.androidx.test.core.ktx)
     testImplementation(libs.androidx.test.ext.junit)
-    testImplementation(libs.androidx.arch.core.testing)
     testImplementation(libs.espresso.core)
     testImplementation(libs.roborazzi)
 

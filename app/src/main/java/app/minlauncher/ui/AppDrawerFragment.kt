@@ -14,12 +14,15 @@ import android.view.inputmethod.BaseInputConnection
 import android.view.inputmethod.InputMethodManager
 import android.widget.TextView
 import androidx.appcompat.widget.SearchView
-import androidx.fragment.app.activityViewModels
+import androidx.fragment.app.viewModels
+import androidx.lifecycle.viewmodel.initializer
+import androidx.lifecycle.viewmodel.viewModelFactory
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import androidx.recyclerview.widget.RecyclerView.Recycler
-import app.minlauncher.MainViewModel
+import app.minlauncher.DrawerViewModel
+import app.minlauncher.LauncherApp
 import app.minlauncher.R
 import app.minlauncher.data.AppModel
 import app.minlauncher.data.Constants
@@ -53,7 +56,18 @@ class AppDrawerFragment : BaseFragment() {
     private var currentPrivateSpaceLocked: Boolean = true
     private var currentPrivateSpaceAvailable: Boolean = false
 
-    private val viewModel: MainViewModel by activityViewModels()
+    // Explicit factory: under Robolectric the default factory's Application
+    // fallback can be stale across tests, so read the repository from the
+    // current activity's app. In production the activity's app is the one
+    // and only LauncherApp instance.
+    private val viewModel: DrawerViewModel by viewModels {
+        viewModelFactory {
+            initializer {
+                val app = requireActivity().application
+                DrawerViewModel(app, (app as LauncherApp).launcherRepository)
+            }
+        }
+    }
     private var viewBinding: FragmentAppDrawerBinding? = null
     private val binding get() = viewBinding!!
 
@@ -224,7 +238,7 @@ class AppDrawerFragment : BaseFragment() {
                     if (prefs.firstHide) {
                         binding.search.hideKeyboard()
                         prefs.firstHide = false
-                        viewModel.showDialog.postValue(Constants.Dialog.HIDDEN)
+                        viewModel.postDialog(Constants.Dialog.HIDDEN)
                         // The drawer may have just been popped above; navigate only
                         // while it is still the current destination, otherwise the
                         // action cannot be resolved from the new current destination.
@@ -283,29 +297,25 @@ class AppDrawerFragment : BaseFragment() {
     }
 
     private fun initObservers() {
-        viewModel.firstOpen.observe(viewLifecycleOwner) {
-        }
         if (flag == Constants.FLAG_HIDDEN_APPS) {
-            viewModel.hiddenApps.observe(viewLifecycleOwner) {
-                it?.let {
-                    adapter.setAppList(it)
-                }
+            collectOnStart(viewModel.hiddenApps) {
+                it?.let { adapter.setAppList(it) }
             }
         } else {
-            viewModel.appList.observe(viewLifecycleOwner) {
+            collectOnStart(viewModel.appList) {
                 currentAppList = it
                 updateCombinedAppList()
             }
             if (flag == Constants.FLAG_LAUNCH_APP) {
-                viewModel.privateSpaceAvailable.observe(viewLifecycleOwner) {
+                collectOnStart(viewModel.privateSpaceAvailable) {
                     currentPrivateSpaceAvailable = it
                     updateCombinedAppList()
                 }
-                viewModel.privateSpaceLocked.observe(viewLifecycleOwner) {
+                collectOnStart(viewModel.privateSpaceLocked) {
                     currentPrivateSpaceLocked = it
                     updateCombinedAppList()
                 }
-                viewModel.privateSpaceApps.observe(viewLifecycleOwner) {
+                collectOnStart(viewModel.privateSpaceApps) {
                     currentPrivateSpaceApps = it
                     updateCombinedAppList()
                 }
