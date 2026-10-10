@@ -2,6 +2,7 @@ package app.minlauncher.data
 
 import android.content.Context
 import androidx.datastore.preferences.core.booleanPreferencesKey
+import androidx.datastore.preferences.core.emptyPreferences
 import androidx.datastore.preferences.core.floatPreferencesKey
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.longPreferencesKey
@@ -15,6 +16,7 @@ import kotlinx.coroutines.withTimeout
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertThrows
+import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
@@ -80,6 +82,38 @@ class AppSettingsStoreMigrationTest {
         // the :serviceProcess write path and is NOT imported into the DataStore.
         assertEquals(setOf(LockModePreservingMigration.LOCK_MODE), legacy.all.keys)
         assertNull(store[booleanPreferencesKey(LockModePreservingMigration.LOCK_MODE)])
+    }
+
+    @Test
+    fun `legacy keys survive migrate and are only removed by cleanUp`() {
+        seedLegacyPrefs()
+        // Drive the DataMigration lifecycle directly: this is the crash-window
+        // contract that warmUp exercises only end-to-end.
+        val migration = LockModePreservingMigration(context)
+        val legacy = context.getSharedPreferences(AppSettingsStore.LEGACY_PREFS_NAME, Context.MODE_PRIVATE)
+
+        assertTrue(runBlocking { migration.shouldMigrate(emptyPreferences()) })
+
+        // migrate() imports values but must NOT delete them yet: if the
+        // process died before the DataStore durably committed the result, the
+        // next run has to be able to migrate again from the still-populated
+        // legacy file instead of losing the values entirely.
+        runBlocking { migration.migrate(emptyPreferences()) }
+        val expectedLegacyKeys =
+            listOf(
+                "FIRST_OPEN",
+                "HOME_APPS_NUM",
+                "HIDDEN_APPS",
+                "com.example.app",
+                LockModePreservingMigration.LOCK_MODE,
+            )
+        assertTrue(legacy.all.keys.containsAll(expectedLegacyKeys))
+
+        // cleanUp() runs after the DataStore commit: now the legacy keys go
+        // away (LOCK_MODE survives) and a re-run finds nothing to migrate.
+        runBlocking { migration.cleanUp() }
+        assertEquals(setOf(LockModePreservingMigration.LOCK_MODE), legacy.all.keys)
+        runBlocking { assertTrue(!migration.shouldMigrate(emptyPreferences())) }
     }
 
     @Test

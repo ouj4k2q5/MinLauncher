@@ -21,10 +21,12 @@ import androidx.datastore.preferences.core.stringSetPreferencesKey
  * the DataStore (one DataStore instance per file per process), so it reads and
  * writes lockModeOn directly through SharedPreferences.
  *
- * Removal happens inside [migrate] (not [cleanUp]) so a crash between migrate
- * and cleanUp cannot leave a half-migrated file; shouldMigrate then reports
- * false on the next run because only LOCK_MODE remains, keeping the migration
- * idempotent.
+ * Removal happens in [cleanUp], after DataStore has durably committed the
+ * migrated values: a crash between [migrate] and [cleanUp] leaves both the
+ * legacy file and the DataStore populated, so the next run's [shouldMigrate]
+ * is still true and the migration re-runs idempotently. Only the keys
+ * [migrate] actually imported are removed, so LOCK_MODE and unsupported
+ * values survive in the legacy file.
  */
 class LockModePreservingMigration(
     context: Context,
@@ -36,6 +38,10 @@ class LockModePreservingMigration(
 
     private val sharedPrefs =
         context.getSharedPreferences(AppSettingsStore.LEGACY_PREFS_NAME, Context.MODE_PRIVATE)
+
+    // Keys imported into the DataStore by the last [migrate] run; cleanUp()
+    // removes exactly these from the legacy file.
+    private var migratedKeys: List<String> = emptyList()
 
     override suspend fun shouldMigrate(currentData: Preferences): Boolean = sharedPrefs.all.keys.any { it != LOCK_MODE }
 
@@ -60,14 +66,18 @@ class LockModePreservingMigration(
             }
             keysToRemove.add(key)
         }
-        if (keysToRemove.isNotEmpty()) {
-            sharedPrefs.edit(commit = true) { keysToRemove.forEach { remove(it) } }
-        }
+        migratedKeys = keysToRemove
         return migrated.toPreferences()
     }
 
     override suspend fun cleanUp() {
-        // Migrated keys were already removed from SharedPreferences in migrate();
-        // if this ever ran twice, shouldMigrate would be false.
+        // Runs only after DataStore durably committed the values migrate()
+        // returned, so removing the legacy keys here is loss-free: if the
+        // process died before this point, both copies are still populated
+        // and the next run re-migrates. See class KDoc.
+        if (migratedKeys.isNotEmpty()) {
+            sharedPrefs.edit(commit = true) { migratedKeys.forEach { remove(it) } }
+            migratedKeys = emptyList()
+        }
     }
 }
