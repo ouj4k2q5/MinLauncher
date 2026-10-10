@@ -24,7 +24,6 @@ import org.junit.runner.RunWith
  */
 @RunWith(AndroidJUnit4::class)
 class MainActivitySmokeTest {
-
     @Before
     fun setUp() {
         disableSystemAnimations()

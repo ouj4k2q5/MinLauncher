@@ -79,8 +79,7 @@ internal fun holdLongPress(
  */
 internal fun waitForRecyclerViewItems(timeoutMs: Long = 10_000L): ViewAction =
     object : ViewAction {
-        override fun getConstraints(): Matcher<View> =
-            ViewMatchers.isAssignableFrom(RecyclerView::class.java)
+        override fun getConstraints(): Matcher<View> = ViewMatchers.isAssignableFrom(RecyclerView::class.java)
 
         override fun getDescription(): String = "wait up to $timeoutMs ms for the list to receive items"
 
