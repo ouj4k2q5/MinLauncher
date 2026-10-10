@@ -6,6 +6,7 @@ import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.test.core.app.ApplicationProvider
+import app.minlauncher.LauncherApp
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
@@ -67,8 +68,6 @@ class PrefsDataStoreFacadeTest {
         store.set(intPreferencesKey("HOME_APPS_NUM"), 7)
         store.set(booleanPreferencesKey("FIRST_OPEN"), false)
 
-        // RED today: Prefs is still SharedPreferences-backed, so it reads the
-        // defaults ("", 4, true) instead of these values.
         assertEquals("FromDataStore", prefs.appName1)
         assertEquals(7, prefs.homeAppsNum)
         assertEquals(false, prefs.firstOpen)
@@ -85,10 +84,8 @@ class PrefsDataStoreFacadeTest {
 
         prefs.appName1 = "Camera"
 
-        // Poll the authoritative DataStore read; a single first() can race the
-        // in-flight edit (see AppSettingsStoreMigrationTest). RED today: the
-        // setter writes SharedPreferences, so the DataStore never sees the
-        // value and the withTimeout trips.
+        // Poll the authoritative DataStore read; a single first() can race
+        // the in-flight edit (see AppSettingsStoreMigrationTest).
         runBlocking {
             withTimeout(5_000) {
                 while (store.dataStore.data.first()[stringPreferencesKey("APP_NAME_1")] != "Camera") {
@@ -101,10 +98,11 @@ class PrefsDataStoreFacadeTest {
     @Test
     fun `lockModeOn writes stay in SharedPreferences`() {
         val store = newStore()
-        // Warm up first so the store's one-time migration runs against the
-        // empty legacy file; otherwise it could race the write below and
-        // migrate LOCK_MODE away (cleanUp deletes migrated keys). This mirrors
-        // production, where the Application warms up before any Prefs write.
+        // Warm up first so the one-time migration runs before this test's own
+        // SharedPreferences write, mirroring production where the Application
+        // warms up before any Prefs access. (LOCK_MODE itself can never
+        // migrate away: migrate() skips it and cleanUp() only removes keys
+        // that were actually imported.)
         store.warmUp()
         val prefs = Prefs(context, store)
 
@@ -127,5 +125,54 @@ class PrefsDataStoreFacadeTest {
         assertEquals("", prefs.appName1)
         assertTrue(prefs.hiddenApps.isEmpty())
         assertEquals(false, prefs.lockModeOn)
+    }
+
+    @Test
+    fun `appActivityClassName null removes the key from the DataStore`() {
+        val store = newStore()
+        store.warmUp()
+        val prefs = Prefs(context, store)
+
+        prefs.appActivityClassName1 = "com.example/.MainActivity"
+        prefs.appActivityClassName1 = null
+
+        // Getter falls back to "" once the key is gone.
+        assertEquals("", prefs.appActivityClassName1)
+
+        // The durable state drops the key too (DataStore has no null values,
+        // so clearing means removing).
+        runBlocking {
+            withTimeout(5_000) {
+                val activityKey = stringPreferencesKey("APP_ACTIVITY_CLASS_NAME_1")
+                while (store.dataStore.data
+                        .first()
+                        .contains(activityKey)
+                ) {
+                    delay(10)
+                }
+            }
+        }
+    }
+
+    @Test
+    fun `dynamic rename labels round-trip through the facade`() {
+        val store = newStore()
+        store.warmUp()
+        val prefs = Prefs(context, store)
+
+        prefs.setAppRenameLabel("com.example.app", "My Renamed App")
+        assertEquals("My Renamed App", prefs.getAppRenameLabel("com.example.app"))
+        assertEquals("", prefs.getAppRenameLabel("com.other.app"))
+    }
+
+    @Test
+    fun `Prefs without an injected store resolves the Application's AppSettingsStore`() {
+        val app = ApplicationProvider.getApplicationContext<Context>()
+        val appStore = (app as LauncherApp).appSettings
+
+        appStore.set(stringPreferencesKey("APP_NAME_1"), "FromAppStore")
+
+        // Same store instance: the facade immediately sees the write.
+        assertEquals("FromAppStore", Prefs(app).appName1)
     }
 }
