@@ -4,6 +4,7 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.ktlint)
     alias(libs.plugins.detekt)
+    alias(libs.plugins.roborazzi)
 }
 
 // version.properties holds the released version as a literal committed by
@@ -140,4 +141,5 @@ dependencies {
     testImplementation(libs.androidx.test.ext.junit)
     testImplementation(libs.androidx.arch.core.testing)
     testImplementation(libs.espresso.core)
+    testImplementation(libs.roborazzi)
 }
