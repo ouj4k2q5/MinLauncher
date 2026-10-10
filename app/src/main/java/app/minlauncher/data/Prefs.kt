@@ -5,504 +5,562 @@ import android.content.SharedPreferences
 import android.view.Gravity
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.content.edit
+import androidx.datastore.preferences.core.booleanPreferencesKey
+import androidx.datastore.preferences.core.floatPreferencesKey
+import androidx.datastore.preferences.core.intPreferencesKey
+import androidx.datastore.preferences.core.longPreferencesKey
+import androidx.datastore.preferences.core.stringPreferencesKey
+import androidx.datastore.preferences.core.stringSetPreferencesKey
+import app.minlauncher.LauncherApp
 
+/**
+ * Settings facade over a snapshot cache of the Preferences DataStore (see
+ * [AppSettingsStore]): synchronous reads come from a @Volatile snapshot
+ * seeded by LauncherApp.onCreate warmUp and kept fresh by a background
+ * collector; writes update the snapshot optimistically and persist
+ * asynchronously via the store. Only [lockModeOn] still touches
+ * SharedPreferences directly (see below).
+ */
 class Prefs(
     context: Context,
+    val settings: AppSettingsStore? = null,
 ) {
+    // Lazy so the :serviceProcess (which only writes lockModeOn via
+    // SharedPreferences) never instantiates the DataStore: one file must
+    // have at most one DataStore instance per process, and the service
+    // process must not contend with the main process's store.
+    private val store by lazy {
+        settings ?: (context.applicationContext as LauncherApp).appSettings
+    }
+
+    // lockModeOn stays on SharedPreferences because MyAccessibilityService,
+    // running in :serviceProcess, writes it cross-process and must never
+    // touch the DataStore.
+    private val sharedPrefs: SharedPreferences =
+        context.getSharedPreferences(PREFS_FILENAME, Context.MODE_PRIVATE)
+
     private companion object {
         private const val PREFS_FILENAME = "app.minlauncher"
 
-        private const val FIRST_OPEN = "FIRST_OPEN"
-        private const val FIRST_OPEN_TIME = "FIRST_OPEN_TIME"
-        private const val FIRST_SETTINGS_OPEN = "FIRST_SETTINGS_OPEN"
-        private const val FIRST_HIDE = "FIRST_HIDE"
-        private const val LOCK_MODE = "LOCK_MODE"
-        private const val HOME_APPS_NUM = "HOME_APPS_NUM"
-        private const val AUTO_SHOW_KEYBOARD = "AUTO_SHOW_KEYBOARD"
-        private const val KEYBOARD_MESSAGE = "KEYBOARD_MESSAGE"
-        private const val SOLID_WALLPAPER = "SOLID_WALLPAPER"
-        private const val HOME_ALIGNMENT = "HOME_ALIGNMENT"
-        private const val HOME_BOTTOM_ALIGNMENT = "HOME_BOTTOM_ALIGNMENT"
-        private const val APP_LABEL_ALIGNMENT = "APP_LABEL_ALIGNMENT"
-        private const val STATUS_BAR = "STATUS_BAR"
-        private const val DATE_TIME_VISIBILITY = "DATE_TIME_VISIBILITY"
-        private const val SWIPE_LEFT_ENABLED = "SWIPE_LEFT_ENABLED"
-        private const val SWIPE_RIGHT_ENABLED = "SWIPE_RIGHT_ENABLED"
-        private const val HIDDEN_APPS = "HIDDEN_APPS"
-        private const val HIDDEN_APPS_UPDATED = "HIDDEN_APPS_UPDATED"
-        private const val APP_THEME = "APP_THEME"
-        private const val TEXT_SIZE_SCALE = "TEXT_SIZE_SCALE"
-        private const val BOLD_FONT = "BOLD_FONT"
-        private const val HIDE_SET_DEFAULT_LAUNCHER = "HIDE_SET_DEFAULT_LAUNCHER"
-        private const val SCREEN_TIME_LAST_UPDATED = "SCREEN_TIME_LAST_UPDATED"
-        private const val SCREEN_TIME_ENABLED = "SCREEN_TIME_ENABLED"
-        private const val LAUNCHER_RESTART_TIMESTAMP = "LAUNCHER_RECREATE_TIMESTAMP"
+        // Typed DataStore keys; the key NAME strings must match the legacy
+        // SharedPreferences keys byte-for-byte so the one-time migration maps
+        // them 1:1.
+        private val FIRST_OPEN = booleanPreferencesKey("FIRST_OPEN")
+        private val FIRST_OPEN_TIME = longPreferencesKey("FIRST_OPEN_TIME")
+        private val FIRST_SETTINGS_OPEN = booleanPreferencesKey("FIRST_SETTINGS_OPEN")
+        private val FIRST_HIDE = booleanPreferencesKey("FIRST_HIDE")
+        private val AUTO_SHOW_KEYBOARD = booleanPreferencesKey("AUTO_SHOW_KEYBOARD")
+        private val KEYBOARD_MESSAGE = booleanPreferencesKey("KEYBOARD_MESSAGE")
+        private val SOLID_WALLPAPER = booleanPreferencesKey("SOLID_WALLPAPER")
+        private val HOME_APPS_NUM = intPreferencesKey("HOME_APPS_NUM")
+        private val HOME_ALIGNMENT = intPreferencesKey("HOME_ALIGNMENT")
+        private val HOME_BOTTOM_ALIGNMENT = booleanPreferencesKey("HOME_BOTTOM_ALIGNMENT")
+        private val APP_LABEL_ALIGNMENT = intPreferencesKey("APP_LABEL_ALIGNMENT")
+        private val STATUS_BAR = booleanPreferencesKey("STATUS_BAR")
+        private val DATE_TIME_VISIBILITY = intPreferencesKey("DATE_TIME_VISIBILITY")
+        private val SWIPE_LEFT_ENABLED = booleanPreferencesKey("SWIPE_LEFT_ENABLED")
+        private val SWIPE_RIGHT_ENABLED = booleanPreferencesKey("SWIPE_RIGHT_ENABLED")
+        private val HIDDEN_APPS = stringSetPreferencesKey("HIDDEN_APPS")
+        private val HIDDEN_APPS_UPDATED = booleanPreferencesKey("HIDDEN_APPS_UPDATED")
+        private val APP_THEME = intPreferencesKey("APP_THEME")
+        private val TEXT_SIZE_SCALE = floatPreferencesKey("TEXT_SIZE_SCALE")
+        private val BOLD_FONT = booleanPreferencesKey("BOLD_FONT")
+        private val HIDE_SET_DEFAULT_LAUNCHER = booleanPreferencesKey("HIDE_SET_DEFAULT_LAUNCHER")
+        private val SCREEN_TIME_LAST_UPDATED = longPreferencesKey("SCREEN_TIME_LAST_UPDATED")
+        private val SCREEN_TIME_ENABLED = booleanPreferencesKey("SCREEN_TIME_ENABLED")
+        private val LAUNCHER_RESTART_TIMESTAMP = longPreferencesKey("LAUNCHER_RECREATE_TIMESTAMP")
         // Home button for recents feature disabled
-        // private val HOME_BUTTON_SHOW_RECENTS = "HOME_BUTTON_SHOW_RECENTS"
+        // private val HOME_BUTTON_SHOW_RECENTS = booleanPreferencesKey("HOME_BUTTON_SHOW_RECENTS")
 
-        private const val APP_NAME_1 = "APP_NAME_1"
-        private const val APP_NAME_2 = "APP_NAME_2"
-        private const val APP_NAME_3 = "APP_NAME_3"
-        private const val APP_NAME_4 = "APP_NAME_4"
-        private const val APP_NAME_5 = "APP_NAME_5"
-        private const val APP_NAME_6 = "APP_NAME_6"
-        private const val APP_NAME_7 = "APP_NAME_7"
-        private const val APP_NAME_8 = "APP_NAME_8"
-        private const val APP_PACKAGE_1 = "APP_PACKAGE_1"
-        private const val APP_PACKAGE_2 = "APP_PACKAGE_2"
-        private const val APP_PACKAGE_3 = "APP_PACKAGE_3"
-        private const val APP_PACKAGE_4 = "APP_PACKAGE_4"
-        private const val APP_PACKAGE_5 = "APP_PACKAGE_5"
-        private const val APP_PACKAGE_6 = "APP_PACKAGE_6"
-        private const val APP_PACKAGE_7 = "APP_PACKAGE_7"
-        private const val APP_PACKAGE_8 = "APP_PACKAGE_8"
-        private const val APP_ACTIVITY_CLASS_NAME_1 = "APP_ACTIVITY_CLASS_NAME_1"
-        private const val APP_ACTIVITY_CLASS_NAME_2 = "APP_ACTIVITY_CLASS_NAME_2"
-        private const val APP_ACTIVITY_CLASS_NAME_3 = "APP_ACTIVITY_CLASS_NAME_3"
-        private const val APP_ACTIVITY_CLASS_NAME_4 = "APP_ACTIVITY_CLASS_NAME_4"
-        private const val APP_ACTIVITY_CLASS_NAME_5 = "APP_ACTIVITY_CLASS_NAME_5"
-        private const val APP_ACTIVITY_CLASS_NAME_6 = "APP_ACTIVITY_CLASS_NAME_6"
-        private const val APP_ACTIVITY_CLASS_NAME_7 = "APP_ACTIVITY_CLASS_NAME_7"
-        private const val APP_ACTIVITY_CLASS_NAME_8 = "APP_ACTIVITY_CLASS_NAME_8"
-        private const val APP_USER_1 = "APP_USER_1"
-        private const val APP_USER_2 = "APP_USER_2"
-        private const val APP_USER_3 = "APP_USER_3"
-        private const val APP_USER_4 = "APP_USER_4"
-        private const val APP_USER_5 = "APP_USER_5"
-        private const val APP_USER_6 = "APP_USER_6"
-        private const val APP_USER_7 = "APP_USER_7"
-        private const val APP_USER_8 = "APP_USER_8"
+        private val APP_NAME_1 = stringPreferencesKey("APP_NAME_1")
+        private val APP_NAME_2 = stringPreferencesKey("APP_NAME_2")
+        private val APP_NAME_3 = stringPreferencesKey("APP_NAME_3")
+        private val APP_NAME_4 = stringPreferencesKey("APP_NAME_4")
+        private val APP_NAME_5 = stringPreferencesKey("APP_NAME_5")
+        private val APP_NAME_6 = stringPreferencesKey("APP_NAME_6")
+        private val APP_NAME_7 = stringPreferencesKey("APP_NAME_7")
+        private val APP_NAME_8 = stringPreferencesKey("APP_NAME_8")
+        private val APP_PACKAGE_1 = stringPreferencesKey("APP_PACKAGE_1")
+        private val APP_PACKAGE_2 = stringPreferencesKey("APP_PACKAGE_2")
+        private val APP_PACKAGE_3 = stringPreferencesKey("APP_PACKAGE_3")
+        private val APP_PACKAGE_4 = stringPreferencesKey("APP_PACKAGE_4")
+        private val APP_PACKAGE_5 = stringPreferencesKey("APP_PACKAGE_5")
+        private val APP_PACKAGE_6 = stringPreferencesKey("APP_PACKAGE_6")
+        private val APP_PACKAGE_7 = stringPreferencesKey("APP_PACKAGE_7")
+        private val APP_PACKAGE_8 = stringPreferencesKey("APP_PACKAGE_8")
+        private val APP_ACTIVITY_CLASS_NAME_1 = stringPreferencesKey("APP_ACTIVITY_CLASS_NAME_1")
+        private val APP_ACTIVITY_CLASS_NAME_2 = stringPreferencesKey("APP_ACTIVITY_CLASS_NAME_2")
+        private val APP_ACTIVITY_CLASS_NAME_3 = stringPreferencesKey("APP_ACTIVITY_CLASS_NAME_3")
+        private val APP_ACTIVITY_CLASS_NAME_4 = stringPreferencesKey("APP_ACTIVITY_CLASS_NAME_4")
+        private val APP_ACTIVITY_CLASS_NAME_5 = stringPreferencesKey("APP_ACTIVITY_CLASS_NAME_5")
+        private val APP_ACTIVITY_CLASS_NAME_6 = stringPreferencesKey("APP_ACTIVITY_CLASS_NAME_6")
+        private val APP_ACTIVITY_CLASS_NAME_7 = stringPreferencesKey("APP_ACTIVITY_CLASS_NAME_7")
+        private val APP_ACTIVITY_CLASS_NAME_8 = stringPreferencesKey("APP_ACTIVITY_CLASS_NAME_8")
+        private val APP_USER_1 = stringPreferencesKey("APP_USER_1")
+        private val APP_USER_2 = stringPreferencesKey("APP_USER_2")
+        private val APP_USER_3 = stringPreferencesKey("APP_USER_3")
+        private val APP_USER_4 = stringPreferencesKey("APP_USER_4")
+        private val APP_USER_5 = stringPreferencesKey("APP_USER_5")
+        private val APP_USER_6 = stringPreferencesKey("APP_USER_6")
+        private val APP_USER_7 = stringPreferencesKey("APP_USER_7")
+        private val APP_USER_8 = stringPreferencesKey("APP_USER_8")
 
-        private const val APP_NAME_SWIPE_LEFT = "APP_NAME_SWIPE_LEFT"
-        private const val APP_NAME_SWIPE_RIGHT = "APP_NAME_SWIPE_RIGHT"
-        private const val APP_PACKAGE_SWIPE_LEFT = "APP_PACKAGE_SWIPE_LEFT"
-        private const val APP_PACKAGE_SWIPE_RIGHT = "APP_PACKAGE_SWIPE_RIGHT"
-        private const val APP_ACTIVITY_CLASS_NAME_SWIPE_LEFT = "APP_ACTIVITY_CLASS_NAME_SWIPE_LEFT"
-        private const val APP_ACTIVITY_CLASS_NAME_SWIPE_RIGHT = "APP_ACTIVITY_CLASS_NAME_SWIPE_RIGHT"
-        private const val APP_USER_SWIPE_LEFT = "APP_USER_SWIPE_LEFT"
-        private const val APP_USER_SWIPE_RIGHT = "APP_USER_SWIPE_RIGHT"
+        private val APP_NAME_SWIPE_LEFT = stringPreferencesKey("APP_NAME_SWIPE_LEFT")
+        private val APP_NAME_SWIPE_RIGHT = stringPreferencesKey("APP_NAME_SWIPE_RIGHT")
+        private val APP_PACKAGE_SWIPE_LEFT = stringPreferencesKey("APP_PACKAGE_SWIPE_LEFT")
+        private val APP_PACKAGE_SWIPE_RIGHT = stringPreferencesKey("APP_PACKAGE_SWIPE_RIGHT")
+        private val APP_ACTIVITY_CLASS_NAME_SWIPE_LEFT = stringPreferencesKey("APP_ACTIVITY_CLASS_NAME_SWIPE_LEFT")
+        private val APP_ACTIVITY_CLASS_NAME_SWIPE_RIGHT = stringPreferencesKey("APP_ACTIVITY_CLASS_NAME_SWIPE_RIGHT")
+        private val APP_USER_SWIPE_LEFT = stringPreferencesKey("APP_USER_SWIPE_LEFT")
+        private val APP_USER_SWIPE_RIGHT = stringPreferencesKey("APP_USER_SWIPE_RIGHT")
 
-        private const val IS_SHORTCUT_1 = "IS_SHORTCUT_1"
-        private const val SHORTCUT_ID_1 = "SHORTCUT_ID_1"
-        private const val IS_SHORTCUT_2 = "IS_SHORTCUT_2"
-        private const val SHORTCUT_ID_2 = "SHORTCUT_ID_2"
-        private const val IS_SHORTCUT_3 = "IS_SHORTCUT_3"
-        private const val SHORTCUT_ID_3 = "SHORTCUT_ID_3"
-        private const val IS_SHORTCUT_4 = "IS_SHORTCUT_4"
-        private const val SHORTCUT_ID_4 = "SHORTCUT_ID_4"
-        private const val IS_SHORTCUT_5 = "IS_SHORTCUT_5"
-        private const val SHORTCUT_ID_5 = "SHORTCUT_ID_5"
-        private const val IS_SHORTCUT_6 = "IS_SHORTCUT_6"
-        private const val SHORTCUT_ID_6 = "SHORTCUT_ID_6"
-        private const val IS_SHORTCUT_7 = "IS_SHORTCUT_7"
-        private const val SHORTCUT_ID_7 = "SHORTCUT_ID_7"
-        private const val IS_SHORTCUT_8 = "IS_SHORTCUT_8"
-        private const val SHORTCUT_ID_8 = "SHORTCUT_ID_8"
+        private val IS_SHORTCUT_1 = booleanPreferencesKey("IS_SHORTCUT_1")
+        private val SHORTCUT_ID_1 = stringPreferencesKey("SHORTCUT_ID_1")
+        private val IS_SHORTCUT_2 = booleanPreferencesKey("IS_SHORTCUT_2")
+        private val SHORTCUT_ID_2 = stringPreferencesKey("SHORTCUT_ID_2")
+        private val IS_SHORTCUT_3 = booleanPreferencesKey("IS_SHORTCUT_3")
+        private val SHORTCUT_ID_3 = stringPreferencesKey("SHORTCUT_ID_3")
+        private val IS_SHORTCUT_4 = booleanPreferencesKey("IS_SHORTCUT_4")
+        private val SHORTCUT_ID_4 = stringPreferencesKey("SHORTCUT_ID_4")
+        private val IS_SHORTCUT_5 = booleanPreferencesKey("IS_SHORTCUT_5")
+        private val SHORTCUT_ID_5 = stringPreferencesKey("SHORTCUT_ID_5")
+        private val IS_SHORTCUT_6 = booleanPreferencesKey("IS_SHORTCUT_6")
+        private val SHORTCUT_ID_6 = stringPreferencesKey("SHORTCUT_ID_6")
+        private val IS_SHORTCUT_7 = booleanPreferencesKey("IS_SHORTCUT_7")
+        private val SHORTCUT_ID_7 = stringPreferencesKey("SHORTCUT_ID_7")
+        private val IS_SHORTCUT_8 = booleanPreferencesKey("IS_SHORTCUT_8")
+        private val SHORTCUT_ID_8 = stringPreferencesKey("SHORTCUT_ID_8")
 
-        private const val SHORTCUT_ID_SWIPE_LEFT = "SHORTCUT_ID_SWIPE_LEFT"
-        private const val IS_SHORTCUT_SWIPE_LEFT = "IS_SHORTCUT_SWIPE_LEFT"
-        private const val SHORTCUT_ID_SWIPE_RIGHT = "SHORTCUT_ID_SWIPE_RIGHT"
-        private const val IS_SHORTCUT_SWIPE_RIGHT = "IS_SHORTCUT_SWIPE_RIGHT"
+        private val SHORTCUT_ID_SWIPE_LEFT = stringPreferencesKey("SHORTCUT_ID_SWIPE_LEFT")
+        private val IS_SHORTCUT_SWIPE_LEFT = booleanPreferencesKey("IS_SHORTCUT_SWIPE_LEFT")
+        private val SHORTCUT_ID_SWIPE_RIGHT = stringPreferencesKey("SHORTCUT_ID_SWIPE_RIGHT")
+        private val IS_SHORTCUT_SWIPE_RIGHT = booleanPreferencesKey("IS_SHORTCUT_SWIPE_RIGHT")
     }
 
-    private val sharedPrefs: SharedPreferences = context.getSharedPreferences(PREFS_FILENAME, Context.MODE_PRIVATE)
-
     var firstOpen: Boolean
-        get() = sharedPrefs.getBoolean(FIRST_OPEN, true)
-        set(value) = sharedPrefs.edit { putBoolean(FIRST_OPEN, value).apply() }
+        get() = store[FIRST_OPEN] ?: true
+        set(value) = store.set(FIRST_OPEN, value)
 
     var firstOpenTime: Long
-        get() = sharedPrefs.getLong(FIRST_OPEN_TIME, 0L)
-        set(value) = sharedPrefs.edit { putLong(FIRST_OPEN_TIME, value).apply() }
+        get() = store[FIRST_OPEN_TIME] ?: 0L
+        set(value) = store.set(FIRST_OPEN_TIME, value)
 
     var firstSettingsOpen: Boolean
-        get() = sharedPrefs.getBoolean(FIRST_SETTINGS_OPEN, true)
-        set(value) = sharedPrefs.edit { putBoolean(FIRST_SETTINGS_OPEN, value).apply() }
+        get() = store[FIRST_SETTINGS_OPEN] ?: true
+        set(value) = store.set(FIRST_SETTINGS_OPEN, value)
 
     var firstHide: Boolean
-        get() = sharedPrefs.getBoolean(FIRST_HIDE, true)
-        set(value) = sharedPrefs.edit { putBoolean(FIRST_HIDE, value).apply() }
+        get() = store[FIRST_HIDE] ?: true
+        set(value) = store.set(FIRST_HIDE, value)
 
     var lockModeOn: Boolean
-        get() = sharedPrefs.getBoolean(LOCK_MODE, false)
-        set(value) = sharedPrefs.edit { putBoolean(LOCK_MODE, value).apply() }
+        get() = sharedPrefs.getBoolean(LockModePreservingMigration.LOCK_MODE, false)
+        set(value) = sharedPrefs.edit { putBoolean(LockModePreservingMigration.LOCK_MODE, value).apply() }
 
     var autoShowKeyboard: Boolean
-        get() = sharedPrefs.getBoolean(AUTO_SHOW_KEYBOARD, true)
-        set(value) = sharedPrefs.edit { putBoolean(AUTO_SHOW_KEYBOARD, value).apply() }
+        get() = store[AUTO_SHOW_KEYBOARD] ?: true
+        set(value) = store.set(AUTO_SHOW_KEYBOARD, value)
 
     var keyboardMessageShown: Boolean
-        get() = sharedPrefs.getBoolean(KEYBOARD_MESSAGE, false)
-        set(value) = sharedPrefs.edit { putBoolean(KEYBOARD_MESSAGE, value).apply() }
+        get() = store[KEYBOARD_MESSAGE] ?: false
+        set(value) = store.set(KEYBOARD_MESSAGE, value)
 
     /** When on, the app paints a solid wallpaper matching the current theme. */
     var solidWallpaper: Boolean
-        get() = sharedPrefs.getBoolean(SOLID_WALLPAPER, false)
-        set(value) = sharedPrefs.edit { putBoolean(SOLID_WALLPAPER, value).apply() }
+        get() = store[SOLID_WALLPAPER] ?: false
+        set(value) = store.set(SOLID_WALLPAPER, value)
 
     var homeAppsNum: Int
-        get() = sharedPrefs.getInt(HOME_APPS_NUM, 4)
-        set(value) = sharedPrefs.edit { putInt(HOME_APPS_NUM, value).apply() }
+        get() = store[HOME_APPS_NUM] ?: 4
+        set(value) = store.set(HOME_APPS_NUM, value)
 
     var homeAlignment: Int
-        get() = sharedPrefs.getInt(HOME_ALIGNMENT, Gravity.START)
-        set(value) = sharedPrefs.edit { putInt(HOME_ALIGNMENT, value).apply() }
+        get() = store[HOME_ALIGNMENT] ?: Gravity.START
+        set(value) = store.set(HOME_ALIGNMENT, value)
 
     var homeBottomAlignment: Boolean
-        get() = sharedPrefs.getBoolean(HOME_BOTTOM_ALIGNMENT, false)
-        set(value) = sharedPrefs.edit { putBoolean(HOME_BOTTOM_ALIGNMENT, value).apply() }
+        get() = store[HOME_BOTTOM_ALIGNMENT] ?: false
+        set(value) = store.set(HOME_BOTTOM_ALIGNMENT, value)
 
     var appLabelAlignment: Int
-        get() = sharedPrefs.getInt(APP_LABEL_ALIGNMENT, Gravity.START)
-        set(value) = sharedPrefs.edit { putInt(APP_LABEL_ALIGNMENT, value).apply() }
+        get() = store[APP_LABEL_ALIGNMENT] ?: Gravity.START
+        set(value) = store.set(APP_LABEL_ALIGNMENT, value)
 
     var showStatusBar: Boolean
-        get() = sharedPrefs.getBoolean(STATUS_BAR, false)
-        set(value) = sharedPrefs.edit { putBoolean(STATUS_BAR, value).apply() }
+        get() = store[STATUS_BAR] ?: false
+        set(value) = store.set(STATUS_BAR, value)
 
     var dateTimeVisibility: Int
-        get() = sharedPrefs.getInt(DATE_TIME_VISIBILITY, Constants.DateTime.ON)
-        set(value) = sharedPrefs.edit { putInt(DATE_TIME_VISIBILITY, value).apply() }
+        get() = store[DATE_TIME_VISIBILITY] ?: Constants.DateTime.ON
+        set(value) = store.set(DATE_TIME_VISIBILITY, value)
 
     var swipeLeftEnabled: Boolean
-        get() = sharedPrefs.getBoolean(SWIPE_LEFT_ENABLED, true)
-        set(value) = sharedPrefs.edit { putBoolean(SWIPE_LEFT_ENABLED, value).apply() }
+        get() = store[SWIPE_LEFT_ENABLED] ?: true
+        set(value) = store.set(SWIPE_LEFT_ENABLED, value)
 
     var swipeRightEnabled: Boolean
-        get() = sharedPrefs.getBoolean(SWIPE_RIGHT_ENABLED, true)
-        set(value) = sharedPrefs.edit { putBoolean(SWIPE_RIGHT_ENABLED, value).apply() }
+        get() = store[SWIPE_RIGHT_ENABLED] ?: true
+        set(value) = store.set(SWIPE_RIGHT_ENABLED, value)
 
     var appTheme: Int
-        get() = sharedPrefs.getInt(APP_THEME, AppCompatDelegate.MODE_NIGHT_YES)
-        set(value) = sharedPrefs.edit { putInt(APP_THEME, value).apply() }
+        get() = store[APP_THEME] ?: AppCompatDelegate.MODE_NIGHT_YES
+        set(value) = store.set(APP_THEME, value)
 
     var textSizeScale: Float
-        get() = sharedPrefs.getFloat(TEXT_SIZE_SCALE, 1.0f)
-        set(value) = sharedPrefs.edit { putFloat(TEXT_SIZE_SCALE, value).apply() }
+        get() = store[TEXT_SIZE_SCALE] ?: 1.0f
+        set(value) = store.set(TEXT_SIZE_SCALE, value)
 
     var boldFont: Boolean
-        get() = sharedPrefs.getBoolean(BOLD_FONT, false)
-        set(value) = sharedPrefs.edit { putBoolean(BOLD_FONT, value).apply() }
+        get() = store[BOLD_FONT] ?: false
+        set(value) = store.set(BOLD_FONT, value)
 
     var hideSetDefaultLauncher: Boolean
-        get() = sharedPrefs.getBoolean(HIDE_SET_DEFAULT_LAUNCHER, false)
-        set(value) = sharedPrefs.edit { putBoolean(HIDE_SET_DEFAULT_LAUNCHER, value).apply() }
+        get() = store[HIDE_SET_DEFAULT_LAUNCHER] ?: false
+        set(value) = store.set(HIDE_SET_DEFAULT_LAUNCHER, value)
 
     var screenTimeLastUpdated: Long
-        get() = sharedPrefs.getLong(SCREEN_TIME_LAST_UPDATED, 0L)
-        set(value) = sharedPrefs.edit { putLong(SCREEN_TIME_LAST_UPDATED, value).apply() }
+        get() = store[SCREEN_TIME_LAST_UPDATED] ?: 0L
+        set(value) = store.set(SCREEN_TIME_LAST_UPDATED, value)
 
     /** Whether the screen time text is shown on the home screen (needs usage access). */
     var screenTimeEnabled: Boolean
-        get() = sharedPrefs.getBoolean(SCREEN_TIME_ENABLED, true)
-        set(value) = sharedPrefs.edit { putBoolean(SCREEN_TIME_ENABLED, value).apply() }
+        get() = store[SCREEN_TIME_ENABLED] ?: true
+        set(value) = store.set(SCREEN_TIME_ENABLED, value)
 
     var launcherRestartTimestamp: Long
-        get() = sharedPrefs.getLong(LAUNCHER_RESTART_TIMESTAMP, 0L)
-        set(value) = sharedPrefs.edit { putLong(LAUNCHER_RESTART_TIMESTAMP, value).apply() }
+        get() = store[LAUNCHER_RESTART_TIMESTAMP] ?: 0L
+        set(value) = store.set(LAUNCHER_RESTART_TIMESTAMP, value)
 
     // Home button for recents feature disabled
     // var homeButtonShowRecents: Boolean
-    //     get() = sharedPrefs.getBoolean(HOME_BUTTON_SHOW_RECENTS, false)
-    //     set(value) = sharedPrefs.edit { putBoolean(HOME_BUTTON_SHOW_RECENTS, value).apply() }
+    //     get() = store[HOME_BUTTON_SHOW_RECENTS] ?: false
+    //     set(value) = store.set(HOME_BUTTON_SHOW_RECENTS, value)
 
     var hiddenApps: MutableSet<String>
-        get() = sharedPrefs.getStringSet(HIDDEN_APPS, mutableSetOf()) as MutableSet<String>
-        set(value) = sharedPrefs.edit { putStringSet(HIDDEN_APPS, value).apply() }
+        get() = store[HIDDEN_APPS]?.toMutableSet() ?: mutableSetOf()
+        set(value) = store.set(HIDDEN_APPS, value)
 
     var hiddenAppsUpdated: Boolean
-        get() = sharedPrefs.getBoolean(HIDDEN_APPS_UPDATED, false)
-        set(value) = sharedPrefs.edit { putBoolean(HIDDEN_APPS_UPDATED, value).apply() }
+        get() = store[HIDDEN_APPS_UPDATED] ?: false
+        set(value) = store.set(HIDDEN_APPS_UPDATED, value)
 
     var appName1: String
-        get() = sharedPrefs.getString(APP_NAME_1, "").toString()
-        set(value) = sharedPrefs.edit { putString(APP_NAME_1, value).apply() }
+        get() = store[APP_NAME_1] ?: ""
+        set(value) = store.set(APP_NAME_1, value)
 
     var appName2: String
-        get() = sharedPrefs.getString(APP_NAME_2, "").toString()
-        set(value) = sharedPrefs.edit { putString(APP_NAME_2, value).apply() }
+        get() = store[APP_NAME_2] ?: ""
+        set(value) = store.set(APP_NAME_2, value)
 
     var appName3: String
-        get() = sharedPrefs.getString(APP_NAME_3, "").toString()
-        set(value) = sharedPrefs.edit { putString(APP_NAME_3, value).apply() }
+        get() = store[APP_NAME_3] ?: ""
+        set(value) = store.set(APP_NAME_3, value)
 
     var appName4: String
-        get() = sharedPrefs.getString(APP_NAME_4, "").toString()
-        set(value) = sharedPrefs.edit { putString(APP_NAME_4, value).apply() }
+        get() = store[APP_NAME_4] ?: ""
+        set(value) = store.set(APP_NAME_4, value)
 
     var appName5: String
-        get() = sharedPrefs.getString(APP_NAME_5, "").toString()
-        set(value) = sharedPrefs.edit { putString(APP_NAME_5, value).apply() }
+        get() = store[APP_NAME_5] ?: ""
+        set(value) = store.set(APP_NAME_5, value)
 
     var appName6: String
-        get() = sharedPrefs.getString(APP_NAME_6, "").toString()
-        set(value) = sharedPrefs.edit { putString(APP_NAME_6, value).apply() }
+        get() = store[APP_NAME_6] ?: ""
+        set(value) = store.set(APP_NAME_6, value)
 
     var appName7: String
-        get() = sharedPrefs.getString(APP_NAME_7, "").toString()
-        set(value) = sharedPrefs.edit { putString(APP_NAME_7, value).apply() }
+        get() = store[APP_NAME_7] ?: ""
+        set(value) = store.set(APP_NAME_7, value)
 
     var appName8: String
-        get() = sharedPrefs.getString(APP_NAME_8, "").toString()
-        set(value) = sharedPrefs.edit { putString(APP_NAME_8, value).apply() }
+        get() = store[APP_NAME_8] ?: ""
+        set(value) = store.set(APP_NAME_8, value)
 
     var appPackage1: String
-        get() = sharedPrefs.getString(APP_PACKAGE_1, "").toString()
-        set(value) = sharedPrefs.edit { putString(APP_PACKAGE_1, value).apply() }
+        get() = store[APP_PACKAGE_1] ?: ""
+        set(value) = store.set(APP_PACKAGE_1, value)
 
     var appPackage2: String
-        get() = sharedPrefs.getString(APP_PACKAGE_2, "").toString()
-        set(value) = sharedPrefs.edit { putString(APP_PACKAGE_2, value).apply() }
+        get() = store[APP_PACKAGE_2] ?: ""
+        set(value) = store.set(APP_PACKAGE_2, value)
 
     var appPackage3: String
-        get() = sharedPrefs.getString(APP_PACKAGE_3, "").toString()
-        set(value) = sharedPrefs.edit { putString(APP_PACKAGE_3, value).apply() }
+        get() = store[APP_PACKAGE_3] ?: ""
+        set(value) = store.set(APP_PACKAGE_3, value)
 
     var appPackage4: String
-        get() = sharedPrefs.getString(APP_PACKAGE_4, "").toString()
-        set(value) = sharedPrefs.edit { putString(APP_PACKAGE_4, value).apply() }
+        get() = store[APP_PACKAGE_4] ?: ""
+        set(value) = store.set(APP_PACKAGE_4, value)
 
     var appPackage5: String
-        get() = sharedPrefs.getString(APP_PACKAGE_5, "").toString()
-        set(value) = sharedPrefs.edit { putString(APP_PACKAGE_5, value).apply() }
+        get() = store[APP_PACKAGE_5] ?: ""
+        set(value) = store.set(APP_PACKAGE_5, value)
 
     var appPackage6: String
-        get() = sharedPrefs.getString(APP_PACKAGE_6, "").toString()
-        set(value) = sharedPrefs.edit { putString(APP_PACKAGE_6, value).apply() }
+        get() = store[APP_PACKAGE_6] ?: ""
+        set(value) = store.set(APP_PACKAGE_6, value)
 
     var appPackage7: String
-        get() = sharedPrefs.getString(APP_PACKAGE_7, "").toString()
-        set(value) = sharedPrefs.edit { putString(APP_PACKAGE_7, value).apply() }
+        get() = store[APP_PACKAGE_7] ?: ""
+        set(value) = store.set(APP_PACKAGE_7, value)
 
     var appPackage8: String
-        get() = sharedPrefs.getString(APP_PACKAGE_8, "").toString()
-        set(value) = sharedPrefs.edit { putString(APP_PACKAGE_8, value).apply() }
+        get() = store[APP_PACKAGE_8] ?: ""
+        set(value) = store.set(APP_PACKAGE_8, value)
 
     var appActivityClassName1: String?
-        get() = sharedPrefs.getString(APP_ACTIVITY_CLASS_NAME_1, "").toString()
-        set(value) = sharedPrefs.edit { putString(APP_ACTIVITY_CLASS_NAME_1, value).apply() }
+        get() = store[APP_ACTIVITY_CLASS_NAME_1] ?: ""
+        set(value) {
+            if (value == null) store.remove(APP_ACTIVITY_CLASS_NAME_1) else store.set(APP_ACTIVITY_CLASS_NAME_1, value)
+        }
 
     var appActivityClassName2: String?
-        get() = sharedPrefs.getString(APP_ACTIVITY_CLASS_NAME_2, "").toString()
-        set(value) = sharedPrefs.edit { putString(APP_ACTIVITY_CLASS_NAME_2, value).apply() }
+        get() = store[APP_ACTIVITY_CLASS_NAME_2] ?: ""
+        set(value) {
+            if (value == null) store.remove(APP_ACTIVITY_CLASS_NAME_2) else store.set(APP_ACTIVITY_CLASS_NAME_2, value)
+        }
 
     var appActivityClassName3: String?
-        get() = sharedPrefs.getString(APP_ACTIVITY_CLASS_NAME_3, "").toString()
-        set(value) = sharedPrefs.edit { putString(APP_ACTIVITY_CLASS_NAME_3, value).apply() }
+        get() = store[APP_ACTIVITY_CLASS_NAME_3] ?: ""
+        set(value) {
+            if (value == null) store.remove(APP_ACTIVITY_CLASS_NAME_3) else store.set(APP_ACTIVITY_CLASS_NAME_3, value)
+        }
 
     var appActivityClassName4: String?
-        get() = sharedPrefs.getString(APP_ACTIVITY_CLASS_NAME_4, "").toString()
-        set(value) = sharedPrefs.edit { putString(APP_ACTIVITY_CLASS_NAME_4, value).apply() }
+        get() = store[APP_ACTIVITY_CLASS_NAME_4] ?: ""
+        set(value) {
+            if (value == null) store.remove(APP_ACTIVITY_CLASS_NAME_4) else store.set(APP_ACTIVITY_CLASS_NAME_4, value)
+        }
 
     var appActivityClassName5: String?
-        get() = sharedPrefs.getString(APP_ACTIVITY_CLASS_NAME_5, "").toString()
-        set(value) = sharedPrefs.edit { putString(APP_ACTIVITY_CLASS_NAME_5, value).apply() }
+        get() = store[APP_ACTIVITY_CLASS_NAME_5] ?: ""
+        set(value) {
+            if (value == null) store.remove(APP_ACTIVITY_CLASS_NAME_5) else store.set(APP_ACTIVITY_CLASS_NAME_5, value)
+        }
 
     var appActivityClassName6: String?
-        get() = sharedPrefs.getString(APP_ACTIVITY_CLASS_NAME_6, "").toString()
-        set(value) = sharedPrefs.edit { putString(APP_ACTIVITY_CLASS_NAME_6, value).apply() }
+        get() = store[APP_ACTIVITY_CLASS_NAME_6] ?: ""
+        set(value) {
+            if (value == null) store.remove(APP_ACTIVITY_CLASS_NAME_6) else store.set(APP_ACTIVITY_CLASS_NAME_6, value)
+        }
 
     var appActivityClassName7: String?
-        get() = sharedPrefs.getString(APP_ACTIVITY_CLASS_NAME_7, "").toString()
-        set(value) = sharedPrefs.edit { putString(APP_ACTIVITY_CLASS_NAME_7, value).apply() }
+        get() = store[APP_ACTIVITY_CLASS_NAME_7] ?: ""
+        set(value) {
+            if (value == null) store.remove(APP_ACTIVITY_CLASS_NAME_7) else store.set(APP_ACTIVITY_CLASS_NAME_7, value)
+        }
 
     var appActivityClassName8: String?
-        get() = sharedPrefs.getString(APP_ACTIVITY_CLASS_NAME_8, "").toString()
-        set(value) = sharedPrefs.edit { putString(APP_ACTIVITY_CLASS_NAME_8, value).apply() }
+        get() = store[APP_ACTIVITY_CLASS_NAME_8] ?: ""
+        set(value) {
+            if (value == null) store.remove(APP_ACTIVITY_CLASS_NAME_8) else store.set(APP_ACTIVITY_CLASS_NAME_8, value)
+        }
 
     var appUser1: String
-        get() = sharedPrefs.getString(APP_USER_1, "").toString()
-        set(value) = sharedPrefs.edit { putString(APP_USER_1, value).apply() }
+        get() = store[APP_USER_1] ?: ""
+        set(value) = store.set(APP_USER_1, value)
 
     var appUser2: String
-        get() = sharedPrefs.getString(APP_USER_2, "").toString()
-        set(value) = sharedPrefs.edit { putString(APP_USER_2, value).apply() }
+        get() = store[APP_USER_2] ?: ""
+        set(value) = store.set(APP_USER_2, value)
 
     var appUser3: String
-        get() = sharedPrefs.getString(APP_USER_3, "").toString()
-        set(value) = sharedPrefs.edit { putString(APP_USER_3, value).apply() }
+        get() = store[APP_USER_3] ?: ""
+        set(value) = store.set(APP_USER_3, value)
 
     var appUser4: String
-        get() = sharedPrefs.getString(APP_USER_4, "").toString()
-        set(value) = sharedPrefs.edit { putString(APP_USER_4, value).apply() }
+        get() = store[APP_USER_4] ?: ""
+        set(value) = store.set(APP_USER_4, value)
 
     var appUser5: String
-        get() = sharedPrefs.getString(APP_USER_5, "").toString()
-        set(value) = sharedPrefs.edit { putString(APP_USER_5, value).apply() }
+        get() = store[APP_USER_5] ?: ""
+        set(value) = store.set(APP_USER_5, value)
 
     var appUser6: String
-        get() = sharedPrefs.getString(APP_USER_6, "").toString()
-        set(value) = sharedPrefs.edit { putString(APP_USER_6, value).apply() }
+        get() = store[APP_USER_6] ?: ""
+        set(value) = store.set(APP_USER_6, value)
 
     var appUser7: String
-        get() = sharedPrefs.getString(APP_USER_7, "").toString()
-        set(value) = sharedPrefs.edit { putString(APP_USER_7, value).apply() }
+        get() = store[APP_USER_7] ?: ""
+        set(value) = store.set(APP_USER_7, value)
 
     var appUser8: String
-        get() = sharedPrefs.getString(APP_USER_8, "").toString()
-        set(value) = sharedPrefs.edit { putString(APP_USER_8, value).apply() }
+        get() = store[APP_USER_8] ?: ""
+        set(value) = store.set(APP_USER_8, value)
 
     var appNameSwipeLeft: String
-        get() = sharedPrefs.getString(APP_NAME_SWIPE_LEFT, "").toString()
-        set(value) = sharedPrefs.edit { putString(APP_NAME_SWIPE_LEFT, value).apply() }
+        get() = store[APP_NAME_SWIPE_LEFT] ?: ""
+        set(value) = store.set(APP_NAME_SWIPE_LEFT, value)
 
     var appNameSwipeRight: String
-        get() = sharedPrefs.getString(APP_NAME_SWIPE_RIGHT, "").toString()
-        set(value) = sharedPrefs.edit { putString(APP_NAME_SWIPE_RIGHT, value).apply() }
+        get() = store[APP_NAME_SWIPE_RIGHT] ?: ""
+        set(value) = store.set(APP_NAME_SWIPE_RIGHT, value)
 
     var appPackageSwipeLeft: String
-        get() = sharedPrefs.getString(APP_PACKAGE_SWIPE_LEFT, "").toString()
-        set(value) = sharedPrefs.edit { putString(APP_PACKAGE_SWIPE_LEFT, value).apply() }
+        get() = store[APP_PACKAGE_SWIPE_LEFT] ?: ""
+        set(value) = store.set(APP_PACKAGE_SWIPE_LEFT, value)
 
     var appActivityClassNameSwipeLeft: String?
-        get() = sharedPrefs.getString(APP_ACTIVITY_CLASS_NAME_SWIPE_LEFT, "").toString()
-        set(value) = sharedPrefs.edit { putString(APP_ACTIVITY_CLASS_NAME_SWIPE_LEFT, value).apply() }
+        get() = store[APP_ACTIVITY_CLASS_NAME_SWIPE_LEFT] ?: ""
+        set(value) {
+            if (value == null) {
+                store.remove(APP_ACTIVITY_CLASS_NAME_SWIPE_LEFT)
+            } else {
+                store.set(APP_ACTIVITY_CLASS_NAME_SWIPE_LEFT, value)
+            }
+        }
 
     var appPackageSwipeRight: String
-        get() = sharedPrefs.getString(APP_PACKAGE_SWIPE_RIGHT, "").toString()
-        set(value) = sharedPrefs.edit { putString(APP_PACKAGE_SWIPE_RIGHT, value).apply() }
+        get() = store[APP_PACKAGE_SWIPE_RIGHT] ?: ""
+        set(value) = store.set(APP_PACKAGE_SWIPE_RIGHT, value)
 
     var appActivityClassNameRight: String?
-        get() = sharedPrefs.getString(APP_ACTIVITY_CLASS_NAME_SWIPE_RIGHT, "").toString()
-        set(value) = sharedPrefs.edit { putString(APP_ACTIVITY_CLASS_NAME_SWIPE_RIGHT, value).apply() }
+        get() = store[APP_ACTIVITY_CLASS_NAME_SWIPE_RIGHT] ?: ""
+        set(value) {
+            if (value == null) {
+                store.remove(APP_ACTIVITY_CLASS_NAME_SWIPE_RIGHT)
+            } else {
+                store.set(APP_ACTIVITY_CLASS_NAME_SWIPE_RIGHT, value)
+            }
+        }
 
     var appUserSwipeLeft: String
-        get() = sharedPrefs.getString(APP_USER_SWIPE_LEFT, "").toString()
-        set(value) = sharedPrefs.edit { putString(APP_USER_SWIPE_LEFT, value).apply() }
+        get() = store[APP_USER_SWIPE_LEFT] ?: ""
+        set(value) = store.set(APP_USER_SWIPE_LEFT, value)
 
     var appUserSwipeRight: String
-        get() = sharedPrefs.getString(APP_USER_SWIPE_RIGHT, "").toString()
-        set(value) = sharedPrefs.edit { putString(APP_USER_SWIPE_RIGHT, value).apply() }
+        get() = store[APP_USER_SWIPE_RIGHT] ?: ""
+        set(value) = store.set(APP_USER_SWIPE_RIGHT, value)
 
     var isShortcut1: Boolean
-        get() = sharedPrefs.getBoolean(IS_SHORTCUT_1, false)
-        set(value) = sharedPrefs.edit { putBoolean(IS_SHORTCUT_1, value) }
+        get() = store[IS_SHORTCUT_1] ?: false
+        set(value) = store.set(IS_SHORTCUT_1, value)
 
     var shortcutId1: String
-        get() = sharedPrefs.getString(SHORTCUT_ID_1, "").toString()
-        set(value) = sharedPrefs.edit { putString(SHORTCUT_ID_1, value) }
+        get() = store[SHORTCUT_ID_1] ?: ""
+        set(value) = store.set(SHORTCUT_ID_1, value)
 
     var isShortcut2: Boolean
-        get() = sharedPrefs.getBoolean(IS_SHORTCUT_2, false)
-        set(value) = sharedPrefs.edit { putBoolean(IS_SHORTCUT_2, value) }
+        get() = store[IS_SHORTCUT_2] ?: false
+        set(value) = store.set(IS_SHORTCUT_2, value)
 
     var shortcutId2: String
-        get() = sharedPrefs.getString(SHORTCUT_ID_2, "").toString()
-        set(value) = sharedPrefs.edit { putString(SHORTCUT_ID_2, value) }
+        get() = store[SHORTCUT_ID_2] ?: ""
+        set(value) = store.set(SHORTCUT_ID_2, value)
 
     var isShortcut3: Boolean
-        get() = sharedPrefs.getBoolean(IS_SHORTCUT_3, false)
-        set(value) = sharedPrefs.edit { putBoolean(IS_SHORTCUT_3, value) }
+        get() = store[IS_SHORTCUT_3] ?: false
+        set(value) = store.set(IS_SHORTCUT_3, value)
 
     var shortcutId3: String
-        get() = sharedPrefs.getString(SHORTCUT_ID_3, "").toString()
-        set(value) = sharedPrefs.edit { putString(SHORTCUT_ID_3, value) }
+        get() = store[SHORTCUT_ID_3] ?: ""
+        set(value) = store.set(SHORTCUT_ID_3, value)
 
     var isShortcut4: Boolean
-        get() = sharedPrefs.getBoolean(IS_SHORTCUT_4, false)
-        set(value) = sharedPrefs.edit { putBoolean(IS_SHORTCUT_4, value) }
+        get() = store[IS_SHORTCUT_4] ?: false
+        set(value) = store.set(IS_SHORTCUT_4, value)
 
     var shortcutId4: String
-        get() = sharedPrefs.getString(SHORTCUT_ID_4, "").toString()
-        set(value) = sharedPrefs.edit { putString(SHORTCUT_ID_4, value) }
+        get() = store[SHORTCUT_ID_4] ?: ""
+        set(value) = store.set(SHORTCUT_ID_4, value)
 
     var isShortcut5: Boolean
-        get() = sharedPrefs.getBoolean(IS_SHORTCUT_5, false)
-        set(value) = sharedPrefs.edit { putBoolean(IS_SHORTCUT_5, value) }
+        get() = store[IS_SHORTCUT_5] ?: false
+        set(value) = store.set(IS_SHORTCUT_5, value)
 
     var shortcutId5: String
-        get() = sharedPrefs.getString(SHORTCUT_ID_5, "").toString()
-        set(value) = sharedPrefs.edit { putString(SHORTCUT_ID_5, value) }
+        get() = store[SHORTCUT_ID_5] ?: ""
+        set(value) = store.set(SHORTCUT_ID_5, value)
 
     var isShortcut6: Boolean
-        get() = sharedPrefs.getBoolean(IS_SHORTCUT_6, false)
-        set(value) = sharedPrefs.edit { putBoolean(IS_SHORTCUT_6, value) }
+        get() = store[IS_SHORTCUT_6] ?: false
+        set(value) = store.set(IS_SHORTCUT_6, value)
 
     var shortcutId6: String
-        get() = sharedPrefs.getString(SHORTCUT_ID_6, "").toString()
-        set(value) = sharedPrefs.edit { putString(SHORTCUT_ID_6, value) }
+        get() = store[SHORTCUT_ID_6] ?: ""
+        set(value) = store.set(SHORTCUT_ID_6, value)
 
     var isShortcut7: Boolean
-        get() = sharedPrefs.getBoolean(IS_SHORTCUT_7, false)
-        set(value) = sharedPrefs.edit { putBoolean(IS_SHORTCUT_7, value) }
+        get() = store[IS_SHORTCUT_7] ?: false
+        set(value) = store.set(IS_SHORTCUT_7, value)
 
     var shortcutId7: String
-        get() = sharedPrefs.getString(SHORTCUT_ID_7, "").toString()
-        set(value) = sharedPrefs.edit { putString(SHORTCUT_ID_7, value) }
+        get() = store[SHORTCUT_ID_7] ?: ""
+        set(value) = store.set(SHORTCUT_ID_7, value)
 
     var isShortcut8: Boolean
-        get() = sharedPrefs.getBoolean(IS_SHORTCUT_8, false)
-        set(value) = sharedPrefs.edit { putBoolean(IS_SHORTCUT_8, value) }
+        get() = store[IS_SHORTCUT_8] ?: false
+        set(value) = store.set(IS_SHORTCUT_8, value)
 
     var shortcutId8: String
-        get() = sharedPrefs.getString(SHORTCUT_ID_8, "").toString()
-        set(value) = sharedPrefs.edit { putString(SHORTCUT_ID_8, value) }
+        get() = store[SHORTCUT_ID_8] ?: ""
+        set(value) = store.set(SHORTCUT_ID_8, value)
 
     var shortcutIdSwipeLeft: String
-        get() = sharedPrefs.getString(SHORTCUT_ID_SWIPE_LEFT, "").toString()
-        set(value) = sharedPrefs.edit { putString(SHORTCUT_ID_SWIPE_LEFT, value) }
+        get() = store[SHORTCUT_ID_SWIPE_LEFT] ?: ""
+        set(value) = store.set(SHORTCUT_ID_SWIPE_LEFT, value)
 
     var isShortcutSwipeLeft: Boolean
-        get() = sharedPrefs.getBoolean(IS_SHORTCUT_SWIPE_LEFT, false)
-        set(value) = sharedPrefs.edit { putBoolean(IS_SHORTCUT_SWIPE_LEFT, value) }
+        get() = store[IS_SHORTCUT_SWIPE_LEFT] ?: false
+        set(value) = store.set(IS_SHORTCUT_SWIPE_LEFT, value)
 
     var shortcutIdSwipeRight: String
-        get() = sharedPrefs.getString(SHORTCUT_ID_SWIPE_RIGHT, "").toString()
-        set(value) = sharedPrefs.edit { putString(SHORTCUT_ID_SWIPE_RIGHT, value) }
+        get() = store[SHORTCUT_ID_SWIPE_RIGHT] ?: ""
+        set(value) = store.set(SHORTCUT_ID_SWIPE_RIGHT, value)
 
     var isShortcutSwipeRight: Boolean
-        get() = sharedPrefs.getBoolean(IS_SHORTCUT_SWIPE_RIGHT, false)
-        set(value) = sharedPrefs.edit { putBoolean(IS_SHORTCUT_SWIPE_RIGHT, value) }
+        get() = store[IS_SHORTCUT_SWIPE_RIGHT] ?: false
+        set(value) = store.set(IS_SHORTCUT_SWIPE_RIGHT, value)
 
     fun getAppName(location: Int): String =
         when (location) {
-            1 -> sharedPrefs.getString(APP_NAME_1, "").toString()
-            2 -> sharedPrefs.getString(APP_NAME_2, "").toString()
-            3 -> sharedPrefs.getString(APP_NAME_3, "").toString()
-            4 -> sharedPrefs.getString(APP_NAME_4, "").toString()
-            5 -> sharedPrefs.getString(APP_NAME_5, "").toString()
-            6 -> sharedPrefs.getString(APP_NAME_6, "").toString()
-            7 -> sharedPrefs.getString(APP_NAME_7, "").toString()
-            8 -> sharedPrefs.getString(APP_NAME_8, "").toString()
+            1 -> appName1
+            2 -> appName2
+            3 -> appName3
+            4 -> appName4
+            5 -> appName5
+            6 -> appName6
+            7 -> appName7
+            8 -> appName8
             else -> ""
         }
 
     fun getAppPackage(location: Int): String =
         when (location) {
-            1 -> sharedPrefs.getString(APP_PACKAGE_1, "").toString()
-            2 -> sharedPrefs.getString(APP_PACKAGE_2, "").toString()
-            3 -> sharedPrefs.getString(APP_PACKAGE_3, "").toString()
-            4 -> sharedPrefs.getString(APP_PACKAGE_4, "").toString()
-            5 -> sharedPrefs.getString(APP_PACKAGE_5, "").toString()
-            6 -> sharedPrefs.getString(APP_PACKAGE_6, "").toString()
-            7 -> sharedPrefs.getString(APP_PACKAGE_7, "").toString()
-            8 -> sharedPrefs.getString(APP_PACKAGE_8, "").toString()
+            1 -> appPackage1
+            2 -> appPackage2
+            3 -> appPackage3
+            4 -> appPackage4
+            5 -> appPackage5
+            6 -> appPackage6
+            7 -> appPackage7
+            8 -> appPackage8
             else -> ""
         }
 
     fun getAppActivityClassName(location: Int): String =
         when (location) {
-            1 -> sharedPrefs.getString(APP_ACTIVITY_CLASS_NAME_1, "").toString()
-            2 -> sharedPrefs.getString(APP_ACTIVITY_CLASS_NAME_2, "").toString()
-            3 -> sharedPrefs.getString(APP_ACTIVITY_CLASS_NAME_3, "").toString()
-            4 -> sharedPrefs.getString(APP_ACTIVITY_CLASS_NAME_4, "").toString()
-            5 -> sharedPrefs.getString(APP_ACTIVITY_CLASS_NAME_5, "").toString()
-            6 -> sharedPrefs.getString(APP_ACTIVITY_CLASS_NAME_6, "").toString()
-            7 -> sharedPrefs.getString(APP_ACTIVITY_CLASS_NAME_7, "").toString()
-            8 -> sharedPrefs.getString(APP_ACTIVITY_CLASS_NAME_8, "").toString()
+            1 -> appActivityClassName1.toString()
+            2 -> appActivityClassName2.toString()
+            3 -> appActivityClassName3.toString()
+            4 -> appActivityClassName4.toString()
+            5 -> appActivityClassName5.toString()
+            6 -> appActivityClassName6.toString()
+            7 -> appActivityClassName7.toString()
+            8 -> appActivityClassName8.toString()
             else -> ""
         }
 
     fun getAppUser(location: Int): String =
         when (location) {
-            1 -> sharedPrefs.getString(APP_USER_1, "").toString()
-            2 -> sharedPrefs.getString(APP_USER_2, "").toString()
-            3 -> sharedPrefs.getString(APP_USER_3, "").toString()
-            4 -> sharedPrefs.getString(APP_USER_4, "").toString()
-            5 -> sharedPrefs.getString(APP_USER_5, "").toString()
-            6 -> sharedPrefs.getString(APP_USER_6, "").toString()
-            7 -> sharedPrefs.getString(APP_USER_7, "").toString()
-            8 -> sharedPrefs.getString(APP_USER_8, "").toString()
+            1 -> appUser1
+            2 -> appUser2
+            3 -> appUser3
+            4 -> appUser4
+            5 -> appUser5
+            6 -> appUser6
+            7 -> appUser7
+            8 -> appUser8
             else -> ""
         }
 
@@ -559,10 +617,10 @@ class Prefs(
         if (appPackageSwipeRight == packageName) appActivityClassNameRight = activityClassName
     }
 
-    fun getAppRenameLabel(appPackage: String): String = sharedPrefs.getString(appPackage, "").toString()
+    fun getAppRenameLabel(appPackage: String): String = store[stringPreferencesKey(appPackage)] ?: ""
 
     fun setAppRenameLabel(
         appPackage: String,
         renameLabel: String,
-    ) = sharedPrefs.edit { putString(appPackage, renameLabel) }
+    ) = store.set(stringPreferencesKey(appPackage), renameLabel)
 }

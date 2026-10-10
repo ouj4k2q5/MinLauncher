@@ -13,6 +13,12 @@ Olauncher). Single Gradle module `:app`, Kotlin sources under
   is a ratchet: fix new violations in code. CI compares the entry count against
   `config/detekt/baseline-max` and fails if the baseline grew. When you fix a
   baselined violation, delete its entry from the baseline.
+- **Keep the DataStore main-process-only.** Settings live in a Preferences
+  DataStore owned by `LauncherApp` (`AppSettingsStore`), but the accessibility
+  service runs in `:serviceProcess` and reads/writes `lockModeOn` through plain
+  SharedPreferences — that process must never instantiate the DataStore
+  (one instance per file per process). `LockModePreservingMigration` excludes
+  that key for this reason.
 
 ## Verify before committing
 
@@ -74,6 +80,10 @@ JVM tests are JUnit 4 only.
 
 - Debug builds use the `.debug` application-ID suffix, so they install alongside
   release builds.
+- Robolectric tests use `@Config(sdk = [35])` (SDK 36 needs Java 21) and never
+  use the `preferencesDataStore` delegate (a static singleton goes stale across
+  tests); DataStore tests create the store with `PreferenceDataStoreFactory.create`
+  and a per-test file.
 - Further docs live in `docs/` — `development.md` (build), `releasing.md`
   (release process), `fork-changes.md` (what differs from upstream Olauncher and
   why code was removed), `privacy.md` (permission rationale).

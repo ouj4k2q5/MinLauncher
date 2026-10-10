@@ -35,3 +35,16 @@ by the original author. Report issues for this fork to this repository, not upst
   app (fresh emulator, kiosk) the drawer would launch it the moment it opened.
 
 For current permissions and their purposes, see [Privacy and permissions](privacy.md).
+
+## Storage
+
+- Stores settings with Jetpack Preferences DataStore instead of the upstream
+  SharedPreferences. A synchronous snapshot cache (`AppSettingsStore`) keeps
+  `Prefs`' synchronous getters, so existing call sites are unchanged; writes
+  update the cache immediately and persist asynchronously through a
+  single-consumer FIFO queue.
+- Migrates the legacy SharedPreferences file once on first launch.
+  `LOCK_MODE` deliberately stays on SharedPreferences: the accessibility
+  service runs in `:serviceProcess`, writes that key cross-process, and that
+  process must never instantiate the DataStore (one instance per file per
+  process).
