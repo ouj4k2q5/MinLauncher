@@ -155,8 +155,8 @@ class AppDrawerAdapter(
                 // opens. A leading space stays an explicit opt-out.
                 autoLaunch =
                     allowAutoLaunch &&
-                        !charSearch.isNullOrBlank() &&
-                        !charSearch.startsWith(" ")
+                    !charSearch.isNullOrBlank() &&
+                    !charSearch.startsWith(" ")
 
                 val source = appsList.toList()
                 val appFilteredList = (
@@ -167,7 +167,7 @@ class AppDrawerAdapter(
                             app !is AppModel.PrivateSpaceHeader && appLabelMatches(app.appLabel, charSearch)
                         }
                     }
-                    )
+                )
 
                 val filterResults = FilterResults()
                 filterResults.values = appFilteredList

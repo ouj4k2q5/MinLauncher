@@ -20,6 +20,22 @@ cd MinLauncher
 ./gradlew lint
 ```
 
+## On-device smoke tests
+
+Besides the JVM/Robolectric suite, a few Espresso smoke tests run on a Gradle
+Managed Device — a Pixel 2 emulator with the headless, test-optimized
+[aosp-atd](https://developer.android.com/studio/test/gradle-managed-devices#atd-images)
+API 30 image (matching `minSdk`):
+
+```bash
+./gradlew pixel2api30DebugAndroidTest
+```
+
+The first run downloads a ~1.2 GB system image. Because of that cost these tests
+are not part of the per-push CI command; `.github/workflows/instrumented.yml`
+runs them nightly and on demand (workflow_dispatch), where the runner's KVM makes
+the emulator fast enough.
+
 ## Code style and static analysis
 
 Kotlin code is checked by [ktlint](https://pinterest.github.io/ktlint/) (formatting,

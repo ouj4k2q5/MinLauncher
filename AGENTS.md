@@ -33,7 +33,12 @@ and describe the visual diff in the commit message. Useful subsets:
 ./gradlew test --tests "app.minlauncher.data.ShortcutIdentityTest"   # single test class
 ```
 
-Only JUnit 4 JVM tests exist locally; there is no emulator/instrumentation setup.
+On-device smoke tests run on a Gradle Managed Device (Pixel 2, API 30, headless
+aosp-atd image) with `./gradlew pixel2api30DebugAndroidTest`; the first run downloads
+a ~1.2 GB system image, so they are not part of the per-push CI command above — CI
+runs them nightly and on demand in `instrumented.yml`.
+
+JVM tests are JUnit 4 only.
 
 ## Toolchain quirks
 

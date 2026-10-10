@@ -60,6 +60,18 @@ android {
             // Lets Robolectric tests read res/ assets (strings, themes, etc.).
             isIncludeAndroidResources = true
         }
+        managedDevices {
+            localDevices {
+                // Headless ATD image at minSdk for the on-device smoke tests:
+                // ./gradlew pixel2api30DebugAndroidTest (first run downloads
+                // the system image, ~1.2 GB).
+                create("pixel2api30") {
+                    device = "Pixel 2"
+                    apiLevel = 30
+                    systemImageSource = "aosp-atd"
+                }
+            }
+        }
     }
 
     dependenciesInfo {
@@ -142,4 +154,8 @@ dependencies {
     testImplementation(libs.androidx.arch.core.testing)
     testImplementation(libs.espresso.core)
     testImplementation(libs.roborazzi)
+
+    androidTestImplementation(libs.androidx.test.core.ktx)
+    androidTestImplementation(libs.androidx.test.ext.junit)
+    androidTestImplementation(libs.espresso.core)
 }
