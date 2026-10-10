@@ -129,4 +129,37 @@ class AppSettingsStoreConcurrencyTest {
         // torn or fabricated state ever became visible.
         assertTrue(written.contains(store[key]))
     }
+
+    @Test
+    fun `mid-burst committed emissions are suppressed instead of clobbering the snapshot`() {
+        val store = newStore()
+        store.warmUp()
+
+        // A same-key burst enqueues every edit before the single consumer can
+        // drain them, so write i's committed emission is dispatched while
+        // writes i+1..N are still in flight. Applying it unconditionally
+        // would roll the snapshot back to an older value mid-burst; the
+        // suppression guard must withhold it instead.
+        val writes = 40
+        repeat(writes) { store.set(key, "burst-$it") }
+        val last = "burst-${writes - 1}"
+        assertEquals(last, store[key])
+
+        // Wait for the durable state to converge on the last write.
+        runBlocking {
+            withTimeout(5_000) {
+                while (store.dataStore.data.first()[key] != last) {
+                    delay(10)
+                }
+            }
+        }
+
+        // Pins the collector suppression: with the guard removed (an
+        // unconditional `snapshot = committed`), no emission is ever withheld
+        // and this counter stays zero, failing this assertion.
+        assertTrue(
+            "no mid-burst emission was suppressed; the suppression guard may be gone",
+            store.suppressedEmissions.get() > 0,
+        )
+    }
 }

@@ -2,6 +2,7 @@ package app.minlauncher.data
 
 import android.content.Context
 import android.util.Log
+import androidx.annotation.VisibleForTesting
 import androidx.datastore.core.DataStore
 import androidx.datastore.core.handlers.ReplaceFileCorruptionHandler
 import androidx.datastore.preferences.core.PreferenceDataStoreFactory
@@ -76,6 +77,13 @@ class AppSettingsStore(
     private val snapshotLock = Any()
     private val inFlightEdits = AtomicInteger(0)
 
+    // Test seam: how many committed emissions arrived while an optimistic
+    // edit was still in flight and were therefore withheld from [snapshot].
+    // Pinned by AppSettingsStoreConcurrencyTest — if this stays zero across a
+    // same-key write burst, the suppression guard has stopped working.
+    @VisibleForTesting
+    internal val suppressedEmissions = AtomicInteger(0)
+
     // FIFO queue drained by a single consumer coroutine: edits reach the
     // DataStore (which serializes edits by arrival order) in the same order
     // their optimistic snapshot updates were applied under [snapshotLock], so
@@ -95,7 +103,11 @@ class AppSettingsStore(
                 try {
                     dataStore.data.collect { committed ->
                         synchronized(snapshotLock) {
-                            if (inFlightEdits.get() == 0) snapshot = committed
+                            if (inFlightEdits.get() == 0) {
+                                snapshot = committed
+                            } else {
+                                suppressedEmissions.incrementAndGet()
+                            }
                         }
                     }
                     return@launch
