@@ -19,11 +19,14 @@ Olauncher). Single Gradle module `:app`, Kotlin sources under
 CI (`.github/workflows/ci.yml`) runs exactly this — run the same locally:
 
 ```bash
-./gradlew test lint detekt ktlintCheck assembleDebug assembleRelease
+./gradlew test verifyRoborazziDebug lint detekt ktlintCheck assembleDebug assembleRelease
 ```
 
 `assembleRelease` is intentional: R8 shrinking problems only surface there.
-Useful subsets:
+`verifyRoborazziDebug` compares the main screens against the screenshot baselines
+committed in `app/roborazzi/` (plain `test` silently skips the capture). When a
+visual change is intentional, re-record with `./gradlew recordRoborazziDebug`
+and describe the visual diff in the commit message. Useful subsets:
 
 ```bash
 ./gradlew ktlintFormat                          # auto-fix formatting (.editorconfig, 120-col)
