@@ -7,12 +7,17 @@ import androidx.test.core.app.ApplicationProvider
 import app.minlauncher.helper.FakeAppListProvider
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.withTimeout
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -149,6 +154,25 @@ class LauncherRepositoryTest {
 
         assertEquals(Gravity.CENTER, prefs.homeAlignment)
         assertEquals(Gravity.CENTER, repository.homeAppAlignment.value)
+    }
+
+    @Test
+    fun `getTodaysScreenTime computes a formatted value with no usage events`() =
+        runBlocking {
+            // The usage query runs on Dispatchers.IO regardless of the
+            // scope injected for the other tests, so await the first value.
+            repository.getTodaysScreenTime()
+
+            assertEquals("0m", withTimeout(5_000) { repository.screenTimeValue.filterNotNull().first() })
+        }
+
+    @Test
+    fun `getTodaysScreenTime skips recomputation when last updated within a minute`() {
+        prefs.screenTimeLastUpdated = System.currentTimeMillis()
+
+        repository.getTodaysScreenTime()
+
+        assertNull(repository.screenTimeValue.value)
     }
 
     @Test

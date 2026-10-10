@@ -9,18 +9,23 @@ import android.os.UserManager
 import android.util.Log
 import app.minlauncher.R
 import app.minlauncher.helper.AppListProvider
+import app.minlauncher.helper.formattedTimeSpent
 import app.minlauncher.helper.getPrivateSpaceApps
 import app.minlauncher.helper.getPrivateSpaceUserHandle
+import app.minlauncher.helper.hasBeenMinutes
 import app.minlauncher.helper.isMinLauncherDefault
 import app.minlauncher.helper.isPrivateSpaceLocked
 import app.minlauncher.helper.showToast
+import app.minlauncher.helper.usageStats.EventLogWrapper
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
+import java.util.Calendar
 
 private const val TAG = "LauncherRepository"
 
@@ -45,9 +50,16 @@ class LauncherRepository(
     val isMinLauncherDefault = MutableStateFlow<Boolean?>(null)
     val homeAppAlignment = MutableStateFlow(prefs.homeAlignment)
 
+    // App-scoped so the value survives activity recreation (theme change,
+    // rotation): a fragment-scoped holder would reset to null while the
+    // one-minute throttle in getTodaysScreenTime() blocks recomputation.
+    val screenTimeValue = MutableStateFlow<String?>(null)
+
     val privateSpaceApps = MutableStateFlow<List<AppModel>?>(null)
     val privateSpaceLocked = MutableStateFlow<Boolean>(true)
     val privateSpaceAvailable = MutableStateFlow<Boolean>(false)
+
+    private var screenTimeJob: Job? = null
 
     // Suppress backToHomeScreen during Private Space lock/unlock auth
     var isPrivateSpaceToggling = false
@@ -101,6 +113,39 @@ class LauncherRepository(
     fun updateHomeAlignment(gravity: Int) {
         prefs.homeAlignment = gravity
         homeAppAlignment.value = prefs.homeAlignment
+    }
+
+    fun getTodaysScreenTime() {
+        if (prefs.screenTimeLastUpdated.hasBeenMinutes(1).not()) return
+        if (screenTimeJob?.isActive == true) return
+
+        screenTimeJob =
+            scope.launch(Dispatchers.IO) {
+                try {
+                    val eventLogWrapper = EventLogWrapper(appContext)
+                    // Start of today in millis
+                    val calendar =
+                        Calendar.getInstance().apply {
+                            set(Calendar.HOUR_OF_DAY, 0)
+                            set(Calendar.MINUTE, 0)
+                            set(Calendar.SECOND, 0)
+                            set(Calendar.MILLISECOND, 0)
+                        }
+                    val startTime = calendar.timeInMillis
+                    val endTime = System.currentTimeMillis()
+
+                    val timeSpent =
+                        eventLogWrapper.aggregateSimpleUsageStats(
+                            eventLogWrapper.aggregateForegroundStats(
+                                eventLogWrapper.getForegroundStatsByTimestamps(startTime, endTime),
+                            ),
+                        )
+                    val viewTimeSpent = appContext.formattedTimeSpent(timeSpent)
+                    screenTimeValue.value = viewTimeSpent
+                    prefs.screenTimeLastUpdated = endTime
+                } catch (_: SecurityException) {
+                }
+            }
     }
 
     fun refreshHome(appCountUpdated: Boolean) {
