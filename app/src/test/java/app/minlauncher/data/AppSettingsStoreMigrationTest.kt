@@ -139,4 +139,29 @@ class AppSettingsStoreMigrationTest {
             (read as MutableSet<String>).add("com.extra.app")
         }
     }
+
+    @Test
+    fun `corrupted DataStore file degrades to defaults instead of crashing`() {
+        // 0x0f bytes are an invalid protobuf wire type (field 1, wire type 7),
+        // so parsing fails and the store detects corruption.
+        val file = context.filesDir.resolve("datastore/migration-test.preferences_pb")
+        file.parentFile?.mkdirs()
+        file.writeBytes(ByteArray(8) { 0x0f })
+
+        val store = newStore()
+        store.warmUp() // must not throw
+
+        // The corruption handler replaced the file with empty preferences.
+        assertNull(store[boolKey])
+
+        // The store stays usable: writes still go through and persist.
+        store.set(boolKey, false)
+        runBlocking {
+            withTimeout(5_000) {
+                while (store.dataStore.data.first()[boolKey] != false) {
+                    delay(10)
+                }
+            }
+        }
+    }
 }

@@ -1,7 +1,9 @@
 package app.minlauncher.data
 
 import android.content.Context
+import android.util.Log
 import androidx.datastore.core.DataStore
+import androidx.datastore.core.handlers.ReplaceFileCorruptionHandler
 import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
@@ -9,9 +11,11 @@ import androidx.datastore.preferences.core.emptyPreferences
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
+import java.io.IOException
 import java.util.concurrent.atomic.AtomicInteger
 
 /**
@@ -34,6 +38,12 @@ import java.util.concurrent.atomic.AtomicInteger
  * when no optimistic edit is still in flight: DataStore commits edits one at
  * a time, so mid-burst emissions lag the optimistic snapshot and must not
  * clobber newer local writes.
+ *
+ * A DataStore failure must never crash the launcher (it would crash-loop on
+ * every start, and this app is the home screen): a corrupted file is replaced
+ * with empty preferences via [ReplaceFileCorruptionHandler], [warmUp]
+ * degrades to defaults instead of throwing inside Application.onCreate, and
+ * the collector and async edits log and recover instead of dying.
  */
 class AppSettingsStore(
     context: Context,
@@ -45,11 +55,14 @@ class AppSettingsStore(
         const val LEGACY_PREFS_NAME = "app.minlauncher"
 
         private const val DATASTORE_FILE = "app.minlauncher"
+        private const val TAG = "AppSettingsStore"
+        private const val COLLECT_RETRY_DELAY_MS = 1_000L
     }
 
     val dataStore: DataStore<Preferences> =
         PreferenceDataStoreFactory.create(
             scope = scope,
+            corruptionHandler = ReplaceFileCorruptionHandler { emptyPreferences() },
             migrations = listOf(LockModePreservingMigration(context)),
             produceFile = { context.filesDir.resolve("datastore/$dataStoreFileName.preferences_pb") },
         )
@@ -67,9 +80,19 @@ class AppSettingsStore(
 
     init {
         scope.launch {
-            dataStore.data.collect { committed ->
-                synchronized(snapshotLock) {
-                    if (inFlightEdits.get() == 0) snapshot = committed
+            while (true) {
+                try {
+                    dataStore.data.collect { committed ->
+                        synchronized(snapshotLock) {
+                            if (inFlightEdits.get() == 0) snapshot = committed
+                        }
+                    }
+                    return@launch
+                } catch (e: IOException) {
+                    // Without the retry loop the collector would die on the
+                    // first read failure and freeze the snapshot forever.
+                    Log.e(TAG, "Failed to read committed settings; retrying", e)
+                    delay(COLLECT_RETRY_DELAY_MS)
                 }
             }
         }
@@ -81,9 +104,18 @@ class AppSettingsStore(
      * non-blocking via [snapshot]. Triggers the one-time
      * [LockModePreservingMigration] (every legacy key except LOCK_MODE, which
      * stays on SharedPreferences for the :serviceProcess write path).
+     *
+     * Never throws: an unreadable settings file degrades to empty preferences
+     * (logged) so the launcher keeps starting instead of crash-looping.
      */
     fun warmUp() {
-        runBlocking { snapshot = dataStore.data.first() }
+        snapshot =
+            try {
+                runBlocking { dataStore.data.first() }
+            } catch (e: IOException) {
+                Log.e(TAG, "Failed to read settings at startup; using defaults", e)
+                emptyPreferences()
+            }
     }
 
     /** Synchronous read of the cached snapshot. */
@@ -105,6 +137,11 @@ class AppSettingsStore(
         scope.launch {
             try {
                 dataStore.edit { it[key] = value }
+            } catch (e: IOException) {
+                // Persistence failed: the optimistic snapshot may diverge from
+                // disk until the next successful write, but the launcher must
+                // not crash over a settings write.
+                Log.e(TAG, "Failed to persist settings write for key $key", e)
             } finally {
                 inFlightEdits.decrementAndGet()
             }
@@ -124,6 +161,8 @@ class AppSettingsStore(
         scope.launch {
             try {
                 dataStore.edit { it.remove(key) }
+            } catch (e: IOException) {
+                Log.e(TAG, "Failed to persist settings removal for key $key", e)
             } finally {
                 inFlightEdits.decrementAndGet()
             }
