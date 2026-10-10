@@ -5,8 +5,8 @@
 | Component | Version                    |
 |---|----------------------------|
 | JDK | 17                         |
-| Gradle | 9.7.1, through the wrapper |
-| Android Gradle Plugin | 9.4.0                      |
+| Gradle | 9.8.0, through the wrapper |
+| Android Gradle Plugin | 9.4.1                      |
 | `compileSdk` / `targetSdk` | 36                         |
 | `minSdk` | 30 (Android 11)            |
 
