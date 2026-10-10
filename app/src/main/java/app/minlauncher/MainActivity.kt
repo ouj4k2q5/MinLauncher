@@ -18,7 +18,6 @@ import android.view.WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS
 import androidx.activity.OnBackPressedCallback
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
-import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.NavController
 import androidx.navigation.findNavController
@@ -41,7 +40,7 @@ import kotlin.time.Duration.Companion.milliseconds
 class MainActivity : AppCompatActivity() {
     private lateinit var prefs: Prefs
     private lateinit var navController: NavController
-    private lateinit var viewModel: MainViewModel
+    private val repository by lazy { (application as LauncherApp).launcherRepository }
     private lateinit var binding: ActivityMainBinding
     private var timerJob: Job? = null
     private var isResumed = false
@@ -69,7 +68,6 @@ class MainActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         navController = this.findNavController(R.id.nav_host_fragment)
-        viewModel = ViewModelProvider(this)[MainViewModel::class.java]
 
         val onBackPressedCallback =
             object : OnBackPressedCallback(true) {
@@ -91,12 +89,12 @@ class MainActivity : AppCompatActivity() {
         if (prefs.firstOpen) {
             prefs.firstOpen = false
             prefs.firstOpenTime = System.currentTimeMillis()
-            viewModel.resetLauncherLiveData.call()
+            repository.resetLauncherLiveData.call()
         }
 
         initClickListeners()
-        initObservers(viewModel)
-        viewModel.getAppList()
+        initObservers()
+        repository.getAppList()
         registerShortcutCallback()
         setupOrientation()
 
@@ -109,8 +107,8 @@ class MainActivity : AppCompatActivity() {
                         context: Context?,
                         intent: Intent?,
                     ) {
-                        viewModel.isPrivateSpaceToggling = false
-                        viewModel.getPrivateSpaceAppList()
+                        repository.isPrivateSpaceToggling = false
+                        repository.getPrivateSpaceAppList()
                     }
                 }
             val filter =
@@ -130,8 +128,8 @@ class MainActivity : AppCompatActivity() {
     override fun onResume() {
         super.onResume()
         isResumed = true
-        viewModel.isPrivateSpaceToggling = false
-        viewModel.getAppList()
+        repository.isPrivateSpaceToggling = false
+        repository.getAppList()
     }
 
     private fun registerShortcutCallback() {
@@ -170,7 +168,7 @@ class MainActivity : AppCompatActivity() {
                     shortcuts: MutableList<ShortcutInfo>,
                     user: android.os.UserHandle,
                 ) {
-                    viewModel.getAppList()
+                    repository.getAppList()
                 }
             }
         launcherApps.registerCallback(launcherAppsCallback!!)
@@ -213,18 +211,15 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun initObservers(viewModel: MainViewModel) {
-        viewModel.launcherResetFailed.observe(this) {
-            openLauncherChooser(it)
-        }
-        viewModel.resetLauncherLiveData.observe(this) {
+    private fun initObservers() {
+        repository.resetLauncherLiveData.observe(this) {
             if (isDefaultLauncher()) {
                 resetLauncherViaFakeActivity()
             } else {
                 showLauncherSelector(Constants.REQUEST_CODE_LAUNCHER_SELECTOR)
             }
         }
-        viewModel.showDialog.observe(this) {
+        repository.showDialog.observe(this) {
             when (it) {
                 Constants.Dialog.ABOUT -> {
                     showMessageDialog(R.string.app_name, R.string.welcome_to_minlauncher_settings, R.string.okay) {
@@ -274,17 +269,10 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun backToHomeScreen() {
-        if (viewModel.isPrivateSpaceToggling) return
+        if (repository.isPrivateSpaceToggling) return
         binding.messageLayout.visibility = View.GONE
         if (navController.currentDestination?.id != R.id.mainFragment) {
             navController.popBackStack(R.id.mainFragment, false)
-        }
-    }
-
-    private fun openLauncherChooser(resetFailed: Boolean) {
-        if (resetFailed) {
-            val intent = Intent(Settings.ACTION_MANAGE_DEFAULT_APPS_SETTINGS)
-            startActivity(intent)
         }
     }
 

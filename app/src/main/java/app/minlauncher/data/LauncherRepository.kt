@@ -24,9 +24,10 @@ import kotlinx.coroutines.launch
 private const val TAG = "LauncherRepository"
 
 /**
- * Shared-state holder for the launcher's screens, extracted from
- * [app.minlauncher.MainViewModel]. Owns the LiveData backing fields and the
- * state-mutating functions; MainViewModel and DrawerViewModel delegate to it.
+ * Shared-state holder for the launcher's screens. Owns the LiveData backing
+ * fields and the state-mutating functions; MainActivity and the screen
+ * ViewModels (HomeViewModel, DrawerViewModel, SettingsViewModel) delegate to
+ * it.
  */
 class LauncherRepository(
     private val appContext: Context,
