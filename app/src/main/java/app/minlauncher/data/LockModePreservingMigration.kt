@@ -56,12 +56,15 @@ class LockModePreservingMigration(
                 is Long -> migrated[longPreferencesKey(key)] = value
                 is Float -> migrated[floatPreferencesKey(key)] = value
                 is String -> migrated[stringPreferencesKey(key)] = value
-                is Set<*> ->
-                    if (value.all { it is String }) {
-                        migrated[stringSetPreferencesKey(key)] = value as Set<String>
+                is Set<*> -> {
+                    // Migrate only sets whose elements are all Strings; skip mixed sets.
+                    val stringSet = value.filterIsInstance<String>()
+                    if (stringSet.size == value.size) {
+                        migrated[stringSetPreferencesKey(key)] = stringSet.toSet()
                     } else {
                         return@forEach
                     }
+                }
                 else -> return@forEach
             }
             keysToRemove.add(key)
