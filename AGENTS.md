@@ -37,7 +37,7 @@ Only JUnit 4 JVM tests exist locally; there is no emulator/instrumentation setup
 
 ## Toolchain quirks
 
-- JDK 17 required. AGP 9.4.0, Gradle 9.7.1 via the wrapper, Kotlin 2.2 via AGP's
+- JDK 17 required. AGP 9.4.1, Gradle 9.8.0 via the wrapper, Kotlin 2.2 via AGP's
   built-in Kotlin support (no `kotlin-android` plugin, no buildscript classpath).
 - AGP 9 DSL differs from older examples you may know:
   `compileSdk { version = release(36) }`, `minSdk { version = release(30) }`,
