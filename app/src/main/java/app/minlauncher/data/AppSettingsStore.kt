@@ -11,12 +11,14 @@ import androidx.datastore.preferences.core.emptyPreferences
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import java.io.IOException
 import java.util.concurrent.atomic.AtomicInteger
+import kotlin.coroutines.cancellation.CancellationException
 
 /**
  * App-scoped owner of the Preferences DataStore that backs [Prefs].
@@ -74,11 +76,20 @@ class AppSettingsStore(
     private val snapshotLock = Any()
     private val inFlightEdits = AtomicInteger(0)
 
+    // FIFO queue drained by a single consumer coroutine: edits reach the
+    // DataStore (which serializes edits by arrival order) in the same order
+    // their optimistic snapshot updates were applied under [snapshotLock], so
+    // a same-key double write can never persist the older value last. A plain
+    // scope.launch per write would not guarantee this — dispatch order on a
+    // thread pool is not FIFO.
+    private val editQueue = Channel<suspend () -> Unit>(Channel.UNLIMITED)
+
     @Volatile
     var snapshot: Preferences = emptyPreferences()
         private set
 
     init {
+        scope.launch { drainEditQueue() }
         scope.launch {
             while (true) {
                 try {
@@ -94,6 +105,28 @@ class AppSettingsStore(
                     Log.e(TAG, "Failed to read committed settings; retrying", e)
                     delay(COLLECT_RETRY_DELAY_MS)
                 }
+            }
+        }
+    }
+
+    /**
+     * Applies queued edits strictly FIFO (see [editQueue]). Any single failing
+     * op is logged and skipped: the consumer must survive it, or the queue
+     * would stop draining, [inFlightEdits] would never reach zero, and the
+     * collector would be suppressed forever.
+     */
+    @Suppress("TooGenericExceptionCaught") // deliberate blast-radius containment for the queue consumer
+    private suspend fun drainEditQueue() {
+        for (pendingEdit in editQueue) {
+            try {
+                pendingEdit()
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                // Persistence failed: the optimistic snapshot may diverge
+                // from disk until the next successful write, but the
+                // launcher must not crash over a settings write.
+                Log.e(TAG, "Failed to persist settings change", e)
             }
         }
     }
@@ -124,7 +157,9 @@ class AppSettingsStore(
     /**
      * Optimistic synchronous cache update + asynchronous persistent edit.
      * Single-key edits only; the collector re-syncs the snapshot from the
-     * authoritative file afterwards.
+     * authoritative file afterwards. The edit is enqueued while holding
+     * [snapshotLock], so the durable write order always matches the snapshot
+     * update order.
      */
     fun <T> set(
         key: Preferences.Key<T>,
@@ -133,17 +168,12 @@ class AppSettingsStore(
         synchronized(snapshotLock) {
             snapshot = snapshot.toMutablePreferences().apply { set(key, value) }.toPreferences()
             inFlightEdits.incrementAndGet()
-        }
-        scope.launch {
-            try {
-                dataStore.edit { it[key] = value }
-            } catch (e: IOException) {
-                // Persistence failed: the optimistic snapshot may diverge from
-                // disk until the next successful write, but the launcher must
-                // not crash over a settings write.
-                Log.e(TAG, "Failed to persist settings write for key $key", e)
-            } finally {
-                inFlightEdits.decrementAndGet()
+            editQueue.trySend {
+                try {
+                    dataStore.edit { it[key] = value }
+                } finally {
+                    inFlightEdits.decrementAndGet()
+                }
             }
         }
     }
@@ -152,19 +182,18 @@ class AppSettingsStore(
      * Optimistic synchronous cache removal + asynchronous persistent edit.
      * DataStore has no null values, so removing a key is the way a nullable
      * preference is cleared (mirrors the old putString(key, null) behavior).
+     * The edit is enqueued while holding [snapshotLock]; see [set].
      */
     fun <T> remove(key: Preferences.Key<T>) {
         synchronized(snapshotLock) {
             snapshot = snapshot.toMutablePreferences().apply { remove(key) }.toPreferences()
             inFlightEdits.incrementAndGet()
-        }
-        scope.launch {
-            try {
-                dataStore.edit { it.remove(key) }
-            } catch (e: IOException) {
-                Log.e(TAG, "Failed to persist settings removal for key $key", e)
-            } finally {
-                inFlightEdits.decrementAndGet()
+            editQueue.trySend {
+                try {
+                    dataStore.edit { it.remove(key) }
+                } finally {
+                    inFlightEdits.decrementAndGet()
+                }
             }
         }
     }
