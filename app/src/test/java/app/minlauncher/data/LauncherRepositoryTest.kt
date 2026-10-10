@@ -7,6 +7,9 @@ import androidx.test.core.app.ApplicationProvider
 import app.minlauncher.helper.FakeAppListProvider
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
@@ -19,6 +22,7 @@ import org.robolectric.annotation.Config
 
 // SDK 36 requires Java 21 in Robolectric, so pin the highest SDK that runs on JDK 17.
 @Config(sdk = [35])
+@OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
 @RunWith(RobolectricTestRunner::class)
 class LauncherRepositoryTest {
     private val application = ApplicationProvider.getApplicationContext<Application>()
@@ -148,25 +152,43 @@ class LauncherRepositoryTest {
     }
 
     @Test
-    fun `refreshHome emits the given flag`() {
-        repository.refreshHome(true)
+    fun `refreshHome emits the given flag`() =
+        runTest {
+            val received = mutableListOf<Boolean>()
+            backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+                repository.refreshHome.collect { received.add(it) }
+            }
 
-        assertEquals(true, repository.refreshHome.value)
-    }
+            repository.refreshHome(true)
+
+            assertEquals(listOf(true), received)
+        }
 
     @Test
-    fun `toggleDateTime emits a signal`() {
-        repository.toggleDateTime()
+    fun `toggleDateTime emits a signal`() =
+        runTest {
+            val received = mutableListOf<Unit>()
+            backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+                repository.toggleDateTime.collect { received.add(it) }
+            }
 
-        assertNotNull(repository.toggleDateTime.value)
-    }
+            repository.toggleDateTime()
+
+            assertEquals(listOf(Unit), received)
+        }
 
     @Test
-    fun `updateSwipeApps emits a signal`() {
-        repository.updateSwipeApps()
+    fun `updateSwipeApps emits a signal`() =
+        runTest {
+            val received = mutableListOf<Unit>()
+            backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+                repository.updateSwipeApps.collect { received.add(it) }
+            }
 
-        assertNotNull(repository.updateSwipeApps.value)
-    }
+            repository.updateSwipeApps()
+
+            assertEquals(listOf(Unit), received)
+        }
 
     @Test
     fun `togglePrivateSpaceLock is a no-op without a private space`() {
@@ -247,25 +269,37 @@ class LauncherRepositoryTest {
     }
 
     @Test
-    fun `selectedApp ignores private space header for home slots`() {
-        repository.selectedApp(AppModel.PrivateSpaceHeader(isLocked = true), Constants.FLAG_SET_HOME_APP_1)
+    fun `selectedApp ignores private space header for home slots`() =
+        runTest {
+            val homeRefreshes = mutableListOf<Boolean>()
+            backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+                repository.refreshHome.collect { homeRefreshes.add(it) }
+            }
 
-        assertEquals("", prefs.appName1)
-        assertEquals("", prefs.appPackage1)
-        assertEquals(false, repository.refreshHome.value)
-    }
+            repository.selectedApp(AppModel.PrivateSpaceHeader(isLocked = true), Constants.FLAG_SET_HOME_APP_1)
+
+            assertEquals("", prefs.appName1)
+            assertEquals("", prefs.appPackage1)
+            assertEquals(emptyList<Boolean>(), homeRefreshes)
+        }
 
     @Test
-    fun `selectedApp saves app to swipe left action`() {
-        repository.selectedApp(testApp, Constants.FLAG_SET_SWIPE_LEFT_APP)
+    fun `selectedApp saves app to swipe left action`() =
+        runTest {
+            val swipeSignals = mutableListOf<Unit>()
+            backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+                repository.updateSwipeApps.collect { swipeSignals.add(it) }
+            }
 
-        assertEquals("Test App", prefs.appNameSwipeLeft)
-        assertEquals("app.minlauncher.test.target", prefs.appPackageSwipeLeft)
-        assertEquals("app.minlauncher.test.target.MainActivity", prefs.appActivityClassNameSwipeLeft)
-        assertFalse(prefs.isShortcutSwipeLeft)
-        assertEquals("", prefs.shortcutIdSwipeLeft)
-        assertEquals(Unit, repository.updateSwipeApps.value)
-    }
+            repository.selectedApp(testApp, Constants.FLAG_SET_SWIPE_LEFT_APP)
+
+            assertEquals("Test App", prefs.appNameSwipeLeft)
+            assertEquals("app.minlauncher.test.target", prefs.appPackageSwipeLeft)
+            assertEquals("app.minlauncher.test.target.MainActivity", prefs.appActivityClassNameSwipeLeft)
+            assertFalse(prefs.isShortcutSwipeLeft)
+            assertEquals("", prefs.shortcutIdSwipeLeft)
+            assertEquals(listOf(Unit), swipeSignals)
+        }
 
     @Test
     fun `selectedApp saves pinned shortcut to swipe right action`() {
@@ -292,9 +326,15 @@ class LauncherRepositoryTest {
     }
 
     @Test
-    fun `saving a home app triggers a home refresh`() {
-        repository.selectedApp(testApp, Constants.FLAG_SET_HOME_APP_2)
+    fun `saving a home app triggers a home refresh`() =
+        runTest {
+            val homeRefreshes = mutableListOf<Boolean>()
+            backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+                repository.refreshHome.collect { homeRefreshes.add(it) }
+            }
 
-        assertEquals(false, repository.refreshHome.value)
-    }
+            repository.selectedApp(testApp, Constants.FLAG_SET_HOME_APP_2)
+
+            assertEquals(listOf(false), homeRefreshes)
+        }
 }

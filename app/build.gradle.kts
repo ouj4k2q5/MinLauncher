@@ -19,13 +19,13 @@ file("$rootDir/version.properties").inputStream().use { versionProps.load(it) }
 val appVersionName =
     (
         project.findProperty("appVersionName") ?: versionProps.getProperty("versionName")
-        ?: error("version.properties is missing versionName")
-        ).toString()
+            ?: error("version.properties is missing versionName")
+    ).toString()
 val appVersionCode =
     (
         project.findProperty("appVersionCode") ?: versionProps.getProperty("versionCode")
-        ?: error("version.properties is missing versionCode")
-        ).toString().toInt()
+            ?: error("version.properties is missing versionCode")
+    ).toString().toInt()
 
 android {
     compileSdk {
@@ -148,6 +148,7 @@ dependencies {
 
     testImplementation(libs.junit)
     testImplementation(libs.robolectric)
+    testImplementation(libs.kotlinx.coroutines.test)
     testImplementation(libs.androidx.test.core.ktx)
     testImplementation(libs.androidx.test.ext.junit)
     testImplementation(libs.espresso.core)

@@ -37,12 +37,12 @@ class LauncherRepository(
 ) {
     private val prefs = Prefs(appContext)
 
-    val refreshHome = MutableStateFlow<Boolean>(false)
-    val toggleDateTime = MutableStateFlow<Unit?>(null)
-    val updateSwipeApps = MutableStateFlow<Any?>(null)
     val appList = MutableStateFlow<List<AppModel>?>(null)
     val hiddenApps = MutableStateFlow<List<AppModel>?>(null)
-    val isMinLauncherDefault = MutableStateFlow<Boolean>(false)
+
+    // State, not an event: null until first computed, so collectors don't act
+    // on a placeholder value before isMinLauncherDefault() has run.
+    val isMinLauncherDefault = MutableStateFlow<Boolean?>(null)
     val homeAppAlignment = MutableStateFlow(prefs.homeAlignment)
 
     val privateSpaceApps = MutableStateFlow<List<AppModel>?>(null)
@@ -57,6 +57,18 @@ class LauncherRepository(
 
     private val _resetLauncher = Channel<Unit>(Channel.BUFFERED)
     val resetLauncher = _resetLauncher.receiveAsFlow()
+
+    // One-shot screen signals. Unlike a StateFlow, a Channel delivers every
+    // send exactly once (no equality dedup, no conflation) and buffers events
+    // emitted while the target screen is STOPPED.
+    private val _refreshHome = Channel<Boolean>(Channel.BUFFERED)
+    val refreshHome = _refreshHome.receiveAsFlow()
+
+    private val _toggleDateTime = Channel<Unit>(Channel.BUFFERED)
+    val toggleDateTime = _toggleDateTime.receiveAsFlow()
+
+    private val _updateSwipeApps = Channel<Unit>(Channel.BUFFERED)
+    val updateSwipeApps = _updateSwipeApps.receiveAsFlow()
 
     fun postDialog(dialog: String) {
         _showDialog.trySend(dialog)
@@ -92,15 +104,15 @@ class LauncherRepository(
     }
 
     fun refreshHome(appCountUpdated: Boolean) {
-        refreshHome.value = appCountUpdated
+        _refreshHome.trySend(appCountUpdated)
     }
 
     fun toggleDateTime() {
-        toggleDateTime.value = Unit
+        _toggleDateTime.trySend(Unit)
     }
 
     fun updateSwipeApps() {
-        updateSwipeApps.value = Unit
+        _updateSwipeApps.trySend(Unit)
     }
 
     fun getPrivateSpaceAppList() {

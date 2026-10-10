@@ -235,7 +235,7 @@ class SettingsFragment :
             prefs.firstSettingsOpen = false
         }
         collectOnStart(viewModel.isMinLauncherDefault) {
-            if (it) binding.setLauncher.text = getString(R.string.change_default_launcher)
+            if (it == true) binding.setLauncher.text = getString(R.string.change_default_launcher)
         }
         collectOnStart(viewModel.homeAppAlignment) {
             populateAlignment()

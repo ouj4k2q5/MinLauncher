@@ -168,12 +168,12 @@ class HomeFragment :
             populateHomeScreen(it)
         }
         collectOnStart(viewModel.isMinLauncherDefault) {
-            if (it != true) {
+            if (it == false) {
                 prefs.homeBottomAlignment = false
                 setHomeAlignment()
             }
             if (binding.firstRunTips.isVisible) return@collectOnStart
-            binding.setDefaultLauncher.isVisible = it.not() && prefs.hideSetDefaultLauncher.not()
+            binding.setDefaultLauncher.isVisible = it == false && prefs.hideSetDefaultLauncher.not()
         }
         collectOnStart(viewModel.homeAppAlignment) {
             setHomeAlignment(it)
