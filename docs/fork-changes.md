@@ -29,5 +29,9 @@ by the original author. Report issues for this fork to this repository, not upst
   expands the notification drawer, matching the stock Android home-screen convention;
   the setting was also effectively undiscoverable (it only appeared after tapping the
   "Gestures" header in Settings).
+- The app drawer's auto-launch (launch the single remaining match while typing) no
+  longer fires for a blank query. Upstream would launch the app immediately whenever
+  the filtered list had exactly one entry, so on a device with only one launchable
+  app (fresh emulator, kiosk) the drawer would launch it the moment it opened.
 
 For current permissions and their purposes, see [Privacy and permissions](privacy.md).

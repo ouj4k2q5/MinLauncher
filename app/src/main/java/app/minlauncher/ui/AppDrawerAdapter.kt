@@ -149,7 +149,14 @@ class AppDrawerAdapter(
         return object : Filter() {
             override fun performFiltering(charSearch: CharSequence?): FilterResults {
                 isBangSearch = charSearch?.startsWith("!") ?: false
-                autoLaunch = allowAutoLaunch && (charSearch?.startsWith(" ")?.not() ?: true)
+                // Auto-launch is a search-time affordance: it must never fire for
+                // a blank query, or a device whose drawer holds exactly one app
+                // (fresh emulator, kiosk) would launch it the moment the drawer
+                // opens. A leading space stays an explicit opt-out.
+                autoLaunch =
+                    allowAutoLaunch &&
+                        !charSearch.isNullOrBlank() &&
+                        !charSearch.startsWith(" ")
 
                 val source = appsList.toList()
                 val appFilteredList = (
@@ -160,7 +167,7 @@ class AppDrawerAdapter(
                             app !is AppModel.PrivateSpaceHeader && appLabelMatches(app.appLabel, charSearch)
                         }
                     }
-                )
+                    )
 
                 val filterResults = FilterResults()
                 filterResults.values = appFilteredList
