@@ -339,7 +339,9 @@ fun Context.getColorFromAttr(
     typedValue: TypedValue = TypedValue(),
     resolveRefs: Boolean = true,
 ): Int {
-    theme.resolveAttribute(attrColor, typedValue, resolveRefs)
+    check(theme.resolveAttribute(attrColor, typedValue, resolveRefs)) {
+        "Failed to resolve attribute $attrColor"
+    }
     return typedValue.data
 }
 
