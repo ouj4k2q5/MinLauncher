@@ -36,6 +36,28 @@ are not part of the per-push CI command; `.github/workflows/instrumented.yml`
 runs them nightly and on demand (workflow_dispatch), where the runner's KVM makes
 the emulator fast enough.
 
+## Test coverage
+
+JVM test coverage is measured with AGP's built-in JaCoCo integration
+(`enableUnitTestCoverage` on the debug build type; report generation only —
+there is deliberately no minimum-coverage gate):
+
+```bash
+./gradlew createDebugUnitTestCoverageReport
+```
+
+The HTML report and the JaCoCo XML land in
+`app/build/reports/coverage/test/debug/`. CI generates the report on every push
+and includes it in the `reports` artifact. The JaCoCo version is pinned in
+[libs.versions.toml](../gradle/libs.versions.toml).
+
+CI also posts the coverage table as a pull request comment (updated on each
+push while the PR is open) and to the Actions run's summary page, via the
+pinned [madrapps/jacoco-report](https://github.com/Madrapps/jacoco-report)
+action. This is report-only: there is no coverage threshold that fails the
+build, and fork PRs skip the comment because their `GITHUB_TOKEN` is
+read-only.
+
 ## Code style and static analysis
 
 Kotlin code is checked by [ktlint](https://pinterest.github.io/ktlint/) (formatting,
