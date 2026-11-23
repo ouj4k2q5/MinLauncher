@@ -11,7 +11,6 @@ import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import app.minlauncher.R
 import app.minlauncher.data.Constants
@@ -36,8 +35,8 @@ internal fun settingsPalette(colors: SettingsColors): SettingsPalette {
     val shadow =
         Shadow(
             color = Color(colors.textShadow),
-            offset = with(density) { Offset(0f, 2.dp.toPx()) },
-            blurRadius = with(density) { 4.dp.toPx() },
+            offset = Offset(0f, 2f),
+            blurRadius = 4f,
         )
     val small = TextStyle(fontSize = smallSize, color = Color(colors.primaryColor), shadow = shadow)
     return SettingsPalette(
