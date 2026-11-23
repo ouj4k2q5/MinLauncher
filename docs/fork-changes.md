@@ -18,7 +18,9 @@ by the original author. Report issues for this fork to this repository, not upst
 - Removes promotional UI, timed review/share/wallpaper prompts, seasonal dialogs, and
   outbound promotional or support links.
 - Removes the remote daily-photo wallpaper, WorkManager dependency, and `INTERNET`
-  permission. The existing local solid-colour wallpaper remains.
+  permission. The local solid-colour wallpaper is now drawn as an in-app backdrop
+  instead of overwriting the system wallpaper, so toggling it is fully reversible
+  and the `SET_WALLPAPER` permission is gone. The lock screen wallpaper is never touched.
 - Removes unused dependencies and resources, and explicitly declares the coroutine and
   lifecycle dependencies used by the app.
 - Removes the ability to long-press the clock, date, or screen-time text and assign

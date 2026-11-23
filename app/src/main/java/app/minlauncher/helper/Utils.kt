@@ -1,14 +1,12 @@
 package app.minlauncher.helper
 
 import android.annotation.SuppressLint
-import android.app.WallpaperManager
 import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
 import android.content.pm.ApplicationInfo
 import android.content.pm.LauncherApps
-import android.content.res.Configuration
-import android.content.res.Configuration.UI_MODE_NIGHT_YES
+import android.graphics.Color
 import android.os.Build
 import android.os.UserHandle
 import android.os.UserManager
@@ -24,8 +22,6 @@ import android.view.animation.LinearInterpolator
 import android.widget.Toast
 import androidx.annotation.AttrRes
 import androidx.annotation.ColorInt
-import androidx.appcompat.app.AppCompatDelegate
-import androidx.core.graphics.createBitmap
 import androidx.core.net.toUri
 import app.minlauncher.BuildConfig
 import app.minlauncher.R
@@ -165,37 +161,8 @@ fun getDefaultLauncherPackage(context: Context): String {
     }
 }
 
-fun setPlainWallpaperByTheme(
-    context: Context,
-    appTheme: Int,
-) {
-    when (appTheme) {
-        AppCompatDelegate.MODE_NIGHT_YES -> setPlainWallpaper(context, android.R.color.black)
-        AppCompatDelegate.MODE_NIGHT_NO -> setPlainWallpaper(context, android.R.color.white)
-        else -> {
-            if (context.isDarkThemeOn()) {
-                setPlainWallpaper(context, android.R.color.black)
-            } else {
-                setPlainWallpaper(context, android.R.color.white)
-            }
-        }
-    }
-}
-
-fun setPlainWallpaper(
-    context: Context,
-    color: Int,
-) {
-    try {
-        val bitmap = createBitmap(1000, 2000)
-        bitmap.eraseColor(context.getColor(color))
-        val manager = WallpaperManager.getInstance(context)
-        manager.setBitmap(bitmap, null, false, WallpaperManager.FLAG_SYSTEM)
-        manager.setBitmap(bitmap, null, false, WallpaperManager.FLAG_LOCK)
-        bitmap.recycle()
-    } catch (e: Exception) {
-        Log.e(TAG, "Failed to set plain wallpaper", e)
-    }
+fun View.applySolidWallpaper(enabled: Boolean) {
+    setBackgroundColor(if (enabled) context.getColorFromAttr(R.attr.primaryInverseColor) else Color.TRANSPARENT)
 }
 
 fun openAppInfo(
@@ -320,10 +287,6 @@ fun isTablet(context: Context): Boolean {
     return diagonalInches >= 7.0
 }
 
-fun Context.isDarkThemeOn(): Boolean =
-    resources.configuration.uiMode and
-        Configuration.UI_MODE_NIGHT_MASK == UI_MODE_NIGHT_YES
-
 fun Context.openUrl(url: String) {
     if (url.isEmpty()) return
     val intent = Intent(Intent.ACTION_VIEW)
@@ -376,7 +339,9 @@ fun Context.getColorFromAttr(
     typedValue: TypedValue = TypedValue(),
     resolveRefs: Boolean = true,
 ): Int {
-    theme.resolveAttribute(attrColor, typedValue, resolveRefs)
+    check(theme.resolveAttribute(attrColor, typedValue, resolveRefs)) {
+        "Failed to resolve attribute $attrColor"
+    }
     return typedValue.data
 }
 

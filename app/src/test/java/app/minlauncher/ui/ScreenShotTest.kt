@@ -1,15 +1,12 @@
 package app.minlauncher.ui
 
-import android.graphics.drawable.ColorDrawable
 import androidx.appcompat.R.id.search_src_text
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.test.core.app.ActivityScenario
 import androidx.test.espresso.Espresso.onView
 import androidx.test.espresso.action.ViewActions.typeText
 import androidx.test.espresso.matcher.ViewMatchers.withId
-import app.minlauncher.R
 import app.minlauncher.data.Prefs
-import app.minlauncher.helper.getColorFromAttr
 import app.minlauncher.testing.TestMainActivity
 import com.github.takahirom.roborazzi.RobolectricDeviceQualifiers
 import com.github.takahirom.roborazzi.captureRoboImage
@@ -92,14 +89,7 @@ class ScreenShotTest {
     @Test
     fun `settings screen`() {
         launchHome().use { scenario ->
-            // Long press on the left edge of the home background opens settings.
-            onView(withId(R.id.mainLayout)).perform(
-                holdLongPress(
-                    at = { view ->
-                        floatArrayOf(view.width * 0.02f, view.height * 0.5f)
-                    },
-                ),
-            )
+            openSettings()
 
             scenario.capture("roborazzi/settings.png")
         }
@@ -147,13 +137,6 @@ class ScreenShotTest {
 
     private fun ActivityScenario<TestMainActivity>.capture(name: String) {
         onActivity { activity ->
-            // The launcher window is transparent so the system wallpaper shows through,
-            // but Robolectric has no wallpaper layer. Paint the solid backdrop the app
-            // itself uses for this theme (see Utils.setPlainWallpaperByTheme) so the
-            // capture matches a real device with a solid wallpaper enabled.
-            activity.window.setBackgroundDrawable(
-                ColorDrawable(activity.getColorFromAttr(R.attr.primaryInverseColor)),
-            )
             activity.window.decorView.captureRoboImage(name)
         }
     }
