@@ -3,6 +3,7 @@ package app.minlauncher.ui
 import android.content.Context
 import android.content.pm.ActivityInfo
 import android.content.pm.LauncherApps
+import android.os.Bundle
 import android.os.Process
 import android.os.SystemClock
 import android.os.UserHandle
@@ -10,7 +11,6 @@ import android.provider.Settings
 import android.view.MotionEvent
 import android.view.View
 import android.view.ViewConfiguration
-import androidx.core.os.bundleOf
 import androidx.test.core.app.ActivityScenario
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.espresso.UiController
@@ -73,10 +73,10 @@ fun ActivityScenario<TestMainActivity>.openDrawer(
                 as androidx.navigation.fragment.NavHostFragment
         navHost.navController.navigate(
             app.minlauncher.R.id.appListFragment,
-            bundleOf(
-                Constants.Key.FLAG to flag,
-                Constants.Key.RENAME to canRename,
-            ),
+            Bundle().apply {
+                putInt(Constants.Key.FLAG, flag)
+                putBoolean(Constants.Key.RENAME, canRename)
+            },
         )
     }
 }

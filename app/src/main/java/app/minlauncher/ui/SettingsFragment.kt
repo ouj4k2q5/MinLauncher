@@ -11,7 +11,6 @@ import android.view.ViewGroup
 import android.view.WindowInsets
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatDelegate
-import androidx.core.os.bundleOf
 import androidx.core.view.isVisible
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.viewmodel.initializer
@@ -315,7 +314,7 @@ class SettingsFragment :
         viewModel.getHiddenApps()
         findNavController().navigate(
             R.id.action_settingsFragment_to_appListFragment,
-            bundleOf(Constants.Key.FLAG to Constants.FLAG_HIDDEN_APPS),
+            Bundle().apply { putInt(Constants.Key.FLAG, Constants.FLAG_HIDDEN_APPS) },
         )
     }
 
@@ -567,7 +566,7 @@ class SettingsFragment :
         viewModel.getAppList(true)
         findNavController().navigate(
             R.id.action_settingsFragment_to_appListFragment,
-            bundleOf(Constants.Key.FLAG to flag),
+            Bundle().apply { putInt(Constants.Key.FLAG, flag) },
         )
     }
 

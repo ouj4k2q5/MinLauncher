@@ -39,7 +39,8 @@ fun View.showKeyboard(show: Boolean = true) {
             val targetView = findFocus() ?: this
             targetView.windowInsetsController?.show(WindowInsets.Type.ime())
             val imm = context.getSystemService(Context.INPUT_METHOD_SERVICE) as? InputMethodManager
-            imm?.showSoftInput(targetView, InputMethodManager.SHOW_IMPLICIT)
+            // 0 = explicit show request; the SHOW_IMPLICIT flag is deprecated in SDK 37.
+            imm?.showSoftInput(targetView, 0)
         }, 100)
     }
 }
