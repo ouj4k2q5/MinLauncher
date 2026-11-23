@@ -7,9 +7,9 @@ detekt = "1.23.8"
 agp = "9.5.1"
 ktlintGradle = "14.2.0"
 kotlinStdlib = "2.2.10"
-# The app itself only needs this floor: since the Compose graph was added,
-# the androidx.lifecycle atomic group resolves the whole family to 2.11.0
-# at build time (see the force block in app/build.gradle.kts).
+# The app itself only needs this floor: the Compose graph's androidx.lifecycle
+# atomic group resolves the whole family to 2.11.0 at build time, which is fine
+# now that the project compiles against compileSdk 37.
 lifecycle = "2.9.0"
 navigationFragmentKtx = "2.10.2"
 recyclerview = "1.4.0"
@@ -23,7 +23,7 @@ jacoco = "0.8.16"
 # Must track kotlinStdlib: the Compose compiler Gradle plugin is versioned
 # with the Kotlin compiler it is built against.
 kotlinComposePlugin = "2.2.10"
-composeBom = "2026.06.01"
+composeBom = "2026.11.01"
 [libraries]
 appcompat = { module = "androidx.appcompat:appcompat", version.ref = "appcompat" }
 core-ktx = { module = "androidx.core:core-ktx", version.ref = "coreKtx" }

@@ -2,19 +2,23 @@ package app.minlauncher.ui.theme
 
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.compose.foundation.isSystemInDarkTheme
-import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.MaterialExpressiveTheme
 import androidx.compose.material3.darkColorScheme
-import androidx.compose.material3.lightColorScheme
+import androidx.compose.material3.expressiveLightColorScheme
 import androidx.compose.runtime.Composable
 
 /**
- * Foundation-only Material3 theme for the launcher.
+ * Material Expressive theme for the launcher, built on Material3 1.5.0
+ * (Compose BOM 2026.11.01).
  *
- * Deliberately plain: the light/dark color schemes are the Material3
- * defaults. The app's black/white XML palette is not mirrored into Compose
- * (user decision, 2026-11-23); when screens migrate (8a+) they can accept
- * the defaults or customize specific slots, referencing colors from
- * colors.xml rather than duplicating hex values here.
+ * Deliberately plain: the light scheme is [expressiveLightColorScheme] and the
+ * dark scheme stays the Material3 [darkColorScheme] default, because 1.5.0 ships
+ * no dark expressive variant and the plan calls only for the light one. Motion
+ * uses [MaterialExpressiveTheme]'s default expressive scheme (no override). The
+ * app's black/white XML palette is not mirrored into Compose (user decision,
+ * 2026-11-23); when screens migrate (8a+) they can accept the defaults or
+ * customize specific slots, referencing colors from colors.xml rather than
+ * duplicating hex values here.
  *
  * [appTheme] uses the same `AppCompatDelegate.MODE_NIGHT_*` values that
  * `Prefs.appTheme` stores and `MainActivity` hands to
@@ -40,8 +44,8 @@ fun MinLauncherTheme(
             AppCompatDelegate.MODE_NIGHT_YES -> true
             else -> isSystemInDarkTheme()
         }
-    MaterialTheme(
-        colorScheme = if (darkTheme) darkColorScheme() else lightColorScheme(),
+    MaterialExpressiveTheme(
+        colorScheme = if (darkTheme) darkColorScheme() else expressiveLightColorScheme(),
         content = content,
     )
 }
