@@ -21,6 +21,7 @@ class HomeViewModel(
     val refreshHome get() = repository.refreshHome
     val isMinLauncherDefault get() = repository.isMinLauncherDefault
     val homeAppAlignment get() = repository.homeAppAlignment
+    val homeBottomAlignment get() = repository.homeBottomAlignment
     val toggleDateTime get() = repository.toggleDateTime
     val screenTimeValue get() = repository.screenTimeValue
 

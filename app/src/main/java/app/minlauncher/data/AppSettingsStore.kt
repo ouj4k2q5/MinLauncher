@@ -14,6 +14,9 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
@@ -96,6 +99,18 @@ class AppSettingsStore(
     var snapshot: Preferences = emptyPreferences()
         private set
 
+    // Observable twin of [snapshot]: emits on every snapshot update, whether an
+    // optimistic set()/remove() or a committed collector emission. LauncherRepository
+    // mirrors settings into read-only StateFlows by collecting this flow, so it must
+    // be updated adjacently with [snapshot] in every place the snapshot changes.
+    //
+    // Safety note: set()/remove() assign while holding [snapshotLock], and collectors
+    // on Main.immediate/Unconfined resume in-line on the emitting thread — i.e.
+    // inside the lock. That is only safe while collectors stick to lock-free reads
+    // (the Prefs getters); never acquire snapshotLock or block inside a collector.
+    private val _snapshotFlow = MutableStateFlow(emptyPreferences())
+    val snapshotFlow: StateFlow<Preferences> = _snapshotFlow.asStateFlow()
+
     init {
         scope.launch { drainEditQueue() }
         scope.launch {
@@ -105,6 +120,7 @@ class AppSettingsStore(
                         synchronized(snapshotLock) {
                             if (inFlightEdits.get() == 0) {
                                 snapshot = committed
+                                _snapshotFlow.value = committed
                             } else {
                                 suppressedEmissions.incrementAndGet()
                             }
@@ -161,6 +177,7 @@ class AppSettingsStore(
                 Log.e(TAG, "Failed to read settings at startup; using defaults", e)
                 emptyPreferences()
             }
+        _snapshotFlow.value = snapshot
     }
 
     /** Synchronous read of the cached snapshot. */
@@ -187,6 +204,7 @@ class AppSettingsStore(
                     inFlightEdits.decrementAndGet()
                 }
             }
+            _snapshotFlow.value = snapshot
         }
     }
 
@@ -207,6 +225,7 @@ class AppSettingsStore(
                     inFlightEdits.decrementAndGet()
                 }
             }
+            _snapshotFlow.value = snapshot
         }
     }
 }

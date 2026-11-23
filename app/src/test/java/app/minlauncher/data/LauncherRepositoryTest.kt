@@ -157,6 +157,60 @@ class LauncherRepositoryTest {
     }
 
     @Test
+    fun `settings mirrors are seeded from the prefs defaults on a fresh store`() {
+        assertEquals(Constants.DateTime.ON, repository.dateTimeVisibility.value)
+        assertEquals(false, repository.showStatusBar.value)
+        assertEquals(4, repository.homeAppsNum.value)
+        assertEquals(true, repository.screenTimeEnabled.value)
+        assertEquals(1.0f, repository.textSizeScale.value)
+        assertEquals(false, repository.boldFont.value)
+        assertEquals(false, repository.solidWallpaper.value)
+        assertEquals(Gravity.START, repository.appLabelAlignment.value)
+        assertEquals(false, repository.homeBottomAlignment.value)
+        assertEquals(true, repository.swipeLeftEnabled.value)
+        assertEquals(true, repository.swipeRightEnabled.value)
+    }
+
+    @Test
+    fun `homeAppAlignment seeds from a non-default snapshot and follows direct prefs writes`() {
+        prefs.homeAlignment = Gravity.END
+        val secondRepository = repositoryWith(FakeAppListProvider())
+        assertEquals(Gravity.END, secondRepository.homeAppAlignment.value)
+
+        prefs.homeAlignment = Gravity.CENTER
+        assertEquals(Gravity.CENTER, secondRepository.homeAppAlignment.value)
+    }
+
+    @Test
+    fun `showStatusBar mirror follows prefs writes`() {
+        prefs.showStatusBar = true
+        assertEquals(true, repository.showStatusBar.value)
+
+        prefs.showStatusBar = false
+        assertEquals(false, repository.showStatusBar.value)
+    }
+
+    @Test
+    fun `homeAppsNum mirror follows prefs writes`() {
+        prefs.homeAppsNum = 6
+        assertEquals(6, repository.homeAppsNum.value)
+    }
+
+    @Test
+    fun `textSizeScale mirror follows prefs writes`() {
+        prefs.textSizeScale = 1.3f
+        assertEquals(1.3f, repository.textSizeScale.value)
+    }
+
+    @Test
+    fun `swipeLeftEnabled mirror toggles with prefs`() {
+        prefs.swipeLeftEnabled = false
+        assertEquals(false, repository.swipeLeftEnabled.value)
+        prefs.swipeLeftEnabled = true
+        assertEquals(true, repository.swipeLeftEnabled.value)
+    }
+
+    @Test
     fun `getTodaysScreenTime computes a formatted value with no usage events`() =
         runBlocking {
             // The usage query runs on Dispatchers.IO regardless of the

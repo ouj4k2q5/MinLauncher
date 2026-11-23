@@ -23,6 +23,8 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
 import java.util.Calendar
@@ -48,7 +50,57 @@ class LauncherRepository(
     // State, not an event: null until first computed, so collectors don't act
     // on a placeholder value before isMinLauncherDefault() has run.
     val isMinLauncherDefault = MutableStateFlow<Boolean?>(null)
-    val homeAppAlignment = MutableStateFlow(prefs.homeAlignment)
+
+    // Pre-existing mirror, converted to the same collector-driven shape as the
+    // settings mirrors below: updateHomeAlignment() is the only writer of the
+    // underlying pref today, but a future direct prefs.homeAlignment write
+    // would leave a write-through mirror stale forever (the exact bug class
+    // these mirrors exist to close). The snapshotFlow collector is the only
+    // writer of the mirror itself.
+    private val _homeAppAlignment = MutableStateFlow(prefs.homeAlignment)
+    val homeAppAlignment: StateFlow<Int> = _homeAppAlignment.asStateFlow()
+
+    // Read-only StateFlow mirrors of the settings the screens render. Seeded
+    // from the warmed Prefs snapshot at construction (LauncherApp.onCreate
+    // warms the store before building the repository) and kept fresh by
+    // collecting [Prefs.snapshotFlow] in the init block below: fragments write
+    // prefs directly, so the mirrors observe the store instead of owning
+    // writes. Values are re-read through the Prefs getters (which apply the
+    // defaults), keeping the key -> default mapping private to Prefs.
+    // appTheme is deliberately not mirrored: theme changes go through
+    // Activity.recreate().
+    private val _dateTimeVisibility = MutableStateFlow(prefs.dateTimeVisibility)
+    val dateTimeVisibility: StateFlow<Int> = _dateTimeVisibility.asStateFlow()
+
+    private val _showStatusBar = MutableStateFlow(prefs.showStatusBar)
+    val showStatusBar: StateFlow<Boolean> = _showStatusBar.asStateFlow()
+
+    private val _homeAppsNum = MutableStateFlow(prefs.homeAppsNum)
+    val homeAppsNum: StateFlow<Int> = _homeAppsNum.asStateFlow()
+
+    private val _screenTimeEnabled = MutableStateFlow(prefs.screenTimeEnabled)
+    val screenTimeEnabled: StateFlow<Boolean> = _screenTimeEnabled.asStateFlow()
+
+    private val _textSizeScale = MutableStateFlow(prefs.textSizeScale)
+    val textSizeScale: StateFlow<Float> = _textSizeScale.asStateFlow()
+
+    private val _boldFont = MutableStateFlow(prefs.boldFont)
+    val boldFont: StateFlow<Boolean> = _boldFont.asStateFlow()
+
+    private val _solidWallpaper = MutableStateFlow(prefs.solidWallpaper)
+    val solidWallpaper: StateFlow<Boolean> = _solidWallpaper.asStateFlow()
+
+    private val _appLabelAlignment = MutableStateFlow(prefs.appLabelAlignment)
+    val appLabelAlignment: StateFlow<Int> = _appLabelAlignment.asStateFlow()
+
+    private val _homeBottomAlignment = MutableStateFlow(prefs.homeBottomAlignment)
+    val homeBottomAlignment: StateFlow<Boolean> = _homeBottomAlignment.asStateFlow()
+
+    private val _swipeLeftEnabled = MutableStateFlow(prefs.swipeLeftEnabled)
+    val swipeLeftEnabled: StateFlow<Boolean> = _swipeLeftEnabled.asStateFlow()
+
+    private val _swipeRightEnabled = MutableStateFlow(prefs.swipeRightEnabled)
+    val swipeRightEnabled: StateFlow<Boolean> = _swipeRightEnabled.asStateFlow()
 
     // App-scoped so the value survives activity recreation (theme change,
     // rotation): a fragment-scoped holder would reset to null while the
@@ -82,6 +134,44 @@ class LauncherRepository(
     private val _updateSwipeApps = Channel<Unit>(Channel.BUFFERED)
     val updateSwipeApps = _updateSwipeApps.receiveAsFlow()
 
+    // The settings mirrors never write prefs; this collector is what keeps them
+    // in sync with settings changes made anywhere else. snapshotFlow emits on every
+    // snapshot update and the getters already reflect that snapshot, so re-reading
+    // them here is always at least as current as the emission.
+    init {
+        scope.launch {
+            prefs.snapshotFlow.collect {
+                refreshSettingsMirrors()
+            }
+        }
+    }
+
+    // A mirror must never freeze silently: an exception escaping the collector
+    // would be absorbed by the SupervisorJob without even logging, leaving
+    // every mirror stale forever (the same failure AppSettingsStore's own
+    // collector guards against). Skip the failed emission (logged) instead —
+    // the next one re-reads every getter from the latest snapshot, so the
+    // mirrors converge.
+    @Suppress("TooGenericExceptionCaught") // the launcher must survive any mirror failure
+    private fun refreshSettingsMirrors() {
+        try {
+            _homeAppAlignment.value = prefs.homeAlignment
+            _dateTimeVisibility.value = prefs.dateTimeVisibility
+            _showStatusBar.value = prefs.showStatusBar
+            _homeAppsNum.value = prefs.homeAppsNum
+            _screenTimeEnabled.value = prefs.screenTimeEnabled
+            _textSizeScale.value = prefs.textSizeScale
+            _boldFont.value = prefs.boldFont
+            _solidWallpaper.value = prefs.solidWallpaper
+            _appLabelAlignment.value = prefs.appLabelAlignment
+            _homeBottomAlignment.value = prefs.homeBottomAlignment
+            _swipeLeftEnabled.value = prefs.swipeLeftEnabled
+            _swipeRightEnabled.value = prefs.swipeRightEnabled
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to update settings mirrors", e)
+        }
+    }
+
     fun postDialog(dialog: String) {
         _showDialog.trySend(dialog)
     }
@@ -111,8 +201,13 @@ class LauncherRepository(
     }
 
     fun updateHomeAlignment(gravity: Int) {
+        // The mirror updates in the snapshotFlow collector, which Main.immediate
+        // normally resumes in-line on this (main) thread. That is best-effort,
+        // not a guarantee: if a committed emission is already dispatched and
+        // pending, homeAppAlignment.value can still hold the old value right
+        // after this returns. Read prefs.homeAlignment directly when a
+        // synchronous read is required.
         prefs.homeAlignment = gravity
-        homeAppAlignment.value = prefs.homeAlignment
     }
 
     fun getTodaysScreenTime() {

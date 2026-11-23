@@ -95,7 +95,7 @@ class HomeFragment :
         prefs = Prefs(requireContext())
 
         initObservers()
-        setHomeAlignment(prefs.homeAlignment)
+        setHomeAlignment(viewModel.homeAppAlignment.value)
         initSwipeTouchListener()
         initClickListeners()
     }
@@ -178,6 +178,9 @@ class HomeFragment :
         collectOnStart(viewModel.homeAppAlignment) {
             setHomeAlignment(it)
         }
+        collectOnStart(viewModel.homeBottomAlignment) {
+            setHomeAlignment()
+        }
         collectOnStart(viewModel.toggleDateTime) {
             populateDateTime()
         }
@@ -232,8 +235,8 @@ class HomeFragment :
         binding.homeApp8.setOnLongClickListener(this)
     }
 
-    private fun setHomeAlignment(horizontalGravity: Int = prefs.homeAlignment) {
-        val verticalGravity = if (prefs.homeBottomAlignment) Gravity.BOTTOM else Gravity.CENTER_VERTICAL
+    private fun setHomeAlignment(horizontalGravity: Int = viewModel.homeAppAlignment.value) {
+        val verticalGravity = if (viewModel.homeBottomAlignment.value) Gravity.BOTTOM else Gravity.CENTER_VERTICAL
         binding.homeAppsLayout.gravity = horizontalGravity or verticalGravity
         binding.dateTimeLayout.gravity = horizontalGravity
         binding.homeApp1.gravity = horizontalGravity
@@ -293,7 +296,7 @@ class HomeFragment :
                     topMargin = marginTop
                     marginStart = horizontalMargin
                     marginEnd = horizontalMargin
-                    gravity = if (prefs.homeAlignment == Gravity.END) Gravity.START else Gravity.END
+                    gravity = if (viewModel.homeAppAlignment.value == Gravity.END) Gravity.START else Gravity.END
                 }
         binding.tvScreenTime.layoutParams = params
         binding.tvScreenTime.setPadding(10.dpToPx())
