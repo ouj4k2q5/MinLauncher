@@ -1,3 +1,5 @@
+import org.gradle.api.tasks.testing.Test
+import org.gradle.testing.jacoco.plugins.JacocoTaskExtension
 import java.util.Properties
 
 plugins {
@@ -95,6 +97,13 @@ android {
         }
     }
 
+    // Pinned rather than whatever AGP bundles: JaCoCo 0.8.13+ records line
+    // coverage for Kotlin inline functions, and pinning keeps report semantics
+    // stable across AGP updates.
+    testCoverage {
+        jacocoVersion = libs.versions.jacoco.get()
+    }
+
     buildTypes {
         release {
             isDebuggable = false
@@ -110,6 +119,8 @@ android {
             isMinifyEnabled = false
             applicationIdSuffix = ".debug"
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+            // Generates createDebugUnitTestCoverageReport (report only; no threshold gate).
+            enableUnitTestCoverage = true
         }
     }
     buildFeatures {
@@ -158,4 +169,25 @@ dependencies {
     androidTestImplementation(libs.androidx.test.core.ktx)
     androidTestImplementation(libs.androidx.test.ext.junit)
     androidTestImplementation(libs.espresso.core)
+}
+
+// Robolectric loads app classes in a sandbox classloader without a code
+// location, so JaCoCo skips them unless they are included explicitly; without
+// this, coverage of the app's own classes reads 0%. jdk.internal.* cannot be
+// instrumented on JDK 17. AGP applies the JaCoCo plugin (which creates the
+// jacoco extension on Test tasks) during its own afterEvaluate, so this must
+// be registered after that, or the findByType below is a silent no-op.
+afterEvaluate {
+    tasks.withType<Test>().configureEach {
+        val jacoco = extensions.findByType<JacocoTaskExtension>()
+        // Fail loudly rather than silently producing a ~0% report if a future
+        // AGP change moves JaCoCo extension creation behind this block again.
+        if (name == "testDebugUnitTest") {
+            requireNotNull(jacoco) { "JaCoCo extension missing on $name; coverage would silently read 0%" }
+        }
+        jacoco?.apply {
+            isIncludeNoLocationClasses = true
+            excludes = listOf("jdk.internal.*")
+        }
+    }
 }

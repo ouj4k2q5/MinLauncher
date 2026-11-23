@@ -16,6 +16,7 @@ androidxTestCore = "1.7.0"
 androidxTestExtJunit = "1.3.0"
 espressoCore = "3.7.0"
 roborazzi = "1.79.0"
+jacoco = "0.8.16"
 [libraries]
 appcompat = { module = "androidx.appcompat:appcompat", version.ref = "appcompat" }
 core-ktx = { module = "androidx.core:core-ktx", version.ref = "coreKtx" }
