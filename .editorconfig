@@ -13,6 +13,10 @@ indent_style = space
 [*.{kt,kts}]
 indent_size = 4
 max_line_length = 120
+# Compose composables are PascalCase by convention (official Compose API style
+# guidelines), e.g. MinLauncherTheme. This is ktlint's sanctioned option for
+# the function-naming rule rather than a suppression or a renamed entry point.
+ktlint_function_naming_ignore_when_annotated_with = Composable
 
 [*.{gradle,properties,md}]
 indent_size = 4
