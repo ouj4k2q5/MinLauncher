@@ -5,6 +5,7 @@ import android.content.SharedPreferences
 import android.view.Gravity
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.content.edit
+import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.floatPreferencesKey
 import androidx.datastore.preferences.core.intPreferencesKey
@@ -12,6 +13,7 @@ import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.core.stringSetPreferencesKey
 import app.minlauncher.LauncherApp
+import kotlinx.coroutines.flow.StateFlow
 
 /**
  * Settings facade over a snapshot cache of the Preferences DataStore (see
@@ -32,6 +34,16 @@ class Prefs(
     private val store by lazy {
         settings ?: (context.applicationContext as LauncherApp).appSettings
     }
+
+    /**
+     * Observable settings changes: a snapshot of the backing DataStore that emits
+     * on every write (optimistic) and on every committed collector emission.
+     * Backs LauncherRepository's read-only StateFlow mirrors. Like [store], this
+     * must never be touched from the :serviceProcess (it would instantiate the
+     * DataStore there).
+     */
+    val snapshotFlow: StateFlow<Preferences>
+        get() = store.snapshotFlow
 
     // lockModeOn stays on SharedPreferences because MyAccessibilityService,
     // running in :serviceProcess, writes it cross-process and must never
