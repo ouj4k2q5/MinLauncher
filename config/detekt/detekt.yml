@@ -14,3 +14,9 @@ empty-blocks:
     # Framework hooks such as AccessibilityService.onInterrupt() are required
     # overrides that are legitimately empty.
     ignoreOverridden: true
+naming:
+  FunctionNaming:
+    # Compose composables are PascalCase by convention (MinLauncherTheme), like
+    # a type name; the official style guide asks for it.
+    ignoreAnnotated:
+      - Composable
