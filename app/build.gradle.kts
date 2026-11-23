@@ -4,6 +4,7 @@ import java.util.Properties
 
 plugins {
     alias(libs.plugins.android.application)
+    alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.ktlint)
     alias(libs.plugins.detekt)
     alias(libs.plugins.roborazzi)
@@ -126,6 +127,7 @@ android {
     buildFeatures {
         viewBinding = true
         buildConfig = true
+        compose = true
     }
     namespace = "app.minlauncher"
 }
@@ -143,6 +145,24 @@ detekt {
     config.setFrom(files("$rootDir/config/detekt/detekt.yml"))
 }
 
+configurations.all {
+    resolutionStrategy {
+        // The Compose graph drags the androidx.lifecycle atomic group to 2.11.0,
+        // and of the lifecycle 2.11.0 artifacts only lifecycle-runtime-compose
+        // requires compileSdk 37 (the rest are minCompileSdk 34, AAR metadata).
+        // Pin just that one coordinate to 2.10.0 (minCompileSdk 35, verified via
+        // AAR metadata) and leave the rest of the family at 2.11.0: navigation
+        // 2.10.2 bytecode references ViewModelStoreProvider from 2.11.0, so
+        // forcing the whole family down breaks 17 Robolectric tests with
+        // NoClassDefFoundError in NavHostFragment. Caution: force silently
+        // overrides explicit declarations too — if you ever add a direct
+        // dependency on lifecycle-runtime-compose (e.g. for
+        // collectAsStateWithLifecycle), revisit this force first.
+        // Remove this force when the project moves to compileSdk 37.
+        force("androidx.lifecycle:lifecycle-runtime-compose:2.10.0")
+    }
+}
+
 dependencies {
     implementation(libs.kotlin.stdlib)
     implementation(libs.kotlinx.coroutines.android)
@@ -158,6 +178,16 @@ dependencies {
     // Navigation
     implementation(libs.navigation.fragment.ktx)
 
+    // Compose (Stage 0 foundation — BOM 2026.06.01 is the newest that builds
+    // against compileSdk 36; 2026.08.00+ requires 37. Compose screens are still
+    // zero; Stage 8a settings will be the first consumer of these.)
+    implementation(platform(libs.compose.bom))
+    implementation(libs.compose.ui)
+    implementation(libs.compose.foundation)
+    implementation(libs.compose.material3)
+    implementation(libs.compose.ui.tooling.preview)
+    debugImplementation(libs.compose.ui.tooling)
+
     testImplementation(libs.junit)
     testImplementation(libs.robolectric)
     testImplementation(libs.kotlinx.coroutines.test)
@@ -165,6 +195,10 @@ dependencies {
     testImplementation(libs.androidx.test.ext.junit)
     testImplementation(libs.espresso.core)
     testImplementation(libs.roborazzi)
+    testImplementation(platform(libs.compose.bom))
+    testImplementation(libs.compose.ui.test.junit4)
+    testImplementation(libs.compose.ui.test.manifest)
+    testImplementation(libs.roborazzi.compose)
 
     androidTestImplementation(libs.androidx.test.core.ktx)
     androidTestImplementation(libs.androidx.test.ext.junit)
