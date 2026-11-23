@@ -13,11 +13,14 @@ import android.view.View
 import android.view.ViewConfiguration
 import androidx.test.core.app.ActivityScenario
 import androidx.test.core.app.ApplicationProvider
+import androidx.test.espresso.Espresso.onView
 import androidx.test.espresso.UiController
 import androidx.test.espresso.ViewAction
 import androidx.test.espresso.action.CoordinatesProvider
 import androidx.test.espresso.action.GeneralLocation
 import androidx.test.espresso.matcher.ViewMatchers.isDisplayed
+import androidx.test.espresso.matcher.ViewMatchers.withId
+import app.minlauncher.R
 import app.minlauncher.data.AppModel
 import app.minlauncher.data.Constants
 import app.minlauncher.data.Prefs
@@ -69,7 +72,7 @@ fun ActivityScenario<TestMainActivity>.openDrawer(
 ) {
     onActivity { activity ->
         val navHost =
-            activity.supportFragmentManager.findFragmentById(android.R.id.content)
+            activity.supportFragmentManager.findFragmentById(R.id.nav_host_fragment)
                 as androidx.navigation.fragment.NavHostFragment
         navHost.navController.navigate(
             app.minlauncher.R.id.appListFragment,
@@ -79,6 +82,21 @@ fun ActivityScenario<TestMainActivity>.openDrawer(
             },
         )
     }
+}
+
+/**
+ * Opens Settings with the home-screen gesture: a long press on the left edge
+ * of the home screen, clear of the home app slots, lands on the background
+ * where a long press opens settings.
+ */
+fun openSettings() {
+    onView(withId(R.id.mainLayout)).perform(
+        holdLongPress(
+            at = { view ->
+                floatArrayOf(view.width * 0.02f, view.height * 0.5f)
+            },
+        ),
+    )
 }
 
 /** The app under test, for asserting persisted state from within a test. */

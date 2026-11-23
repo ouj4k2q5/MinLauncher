@@ -30,7 +30,6 @@ import app.minlauncher.helper.isAccessServiceEnabled
 import app.minlauncher.helper.isEinkDisplay
 import app.minlauncher.helper.isTablet
 import app.minlauncher.helper.openAppInfo
-import app.minlauncher.helper.setPlainWallpaperByTheme
 import app.minlauncher.helper.showToast
 import kotlin.math.roundToInt
 
@@ -344,7 +343,9 @@ class SettingsFragment :
 
     /**
      * Long press on the wallpaper row: force the theme to one the solid wallpaper suits
-     * and repaint it, then switch the toggle off.
+     * and switch the toggle off. The activity is recreated so the forced theme
+     * (and the transparent background) apply immediately, not at the next
+     * unrelated recreation.
      */
     private fun removeWallpaper() {
         prefs.appTheme =
@@ -353,17 +354,14 @@ class SettingsFragment :
             } else {
                 AppCompatDelegate.MODE_NIGHT_YES
             }
-        setPlainWallpaperByTheme(requireContext(), prefs.appTheme)
         prefs.solidWallpaper = false
         populateWallpaperText()
+        requireActivity().recreate()
     }
 
     private fun toggleSolidWallpaper() {
         prefs.solidWallpaper = !prefs.solidWallpaper
         populateWallpaperText()
-        if (prefs.solidWallpaper) {
-            setPlainWallpaperByTheme(requireContext(), prefs.appTheme)
-        }
     }
 
     private fun updateHomeAppsNum(num: Int) {
@@ -419,7 +417,6 @@ class SettingsFragment :
 
     private fun setAppTheme(theme: Int) {
         if (AppCompatDelegate.getDefaultNightMode() == theme) return
-        if (prefs.solidWallpaper) setPlainWallpaperByTheme(requireContext(), theme)
         requireActivity().recreate()
     }
 

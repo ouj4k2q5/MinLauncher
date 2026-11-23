@@ -26,13 +26,13 @@ import androidx.navigation.findNavController
 import app.minlauncher.data.Constants
 import app.minlauncher.data.Prefs
 import app.minlauncher.databinding.ActivityMainBinding
+import app.minlauncher.helper.applySolidWallpaper
 import app.minlauncher.helper.getColorFromAttr
 import app.minlauncher.helper.hasBeenHours
 import app.minlauncher.helper.isDefaultLauncher
 import app.minlauncher.helper.isEinkDisplay
 import app.minlauncher.helper.isTablet
 import app.minlauncher.helper.resetLauncherViaFakeActivity
-import app.minlauncher.helper.setPlainWallpaperByTheme
 import app.minlauncher.helper.showLauncherSelector
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -69,6 +69,7 @@ class MainActivity : AppCompatActivity() {
         if (prefs.boldFont) theme.applyStyle(R.style.BoldFontOverlay, true)
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
+        binding.mainActivityLayout.applySolidWallpaper(prefs.solidWallpaper)
 
         navController = this.findNavController(R.id.nav_host_fragment)
 
@@ -203,7 +204,6 @@ class MainActivity : AppCompatActivity() {
         if (prefs.solidWallpaper &&
             AppCompatDelegate.getDefaultNightMode() == AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM
         ) {
-            setPlainWallpaperByTheme(this, prefs.appTheme)
             recreate()
         }
     }
@@ -215,6 +215,9 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun initObservers() {
+        collectOnStarted(repository.solidWallpaper) {
+            binding.mainActivityLayout.applySolidWallpaper(it)
+        }
         collectOnStarted(repository.resetLauncher) {
             if (isDefaultLauncher()) {
                 resetLauncherViaFakeActivity()

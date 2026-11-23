@@ -24,18 +24,6 @@ class SettingsFlowTest {
         TestMainActivity.testAppListProvider = null
     }
 
-    private fun openSettings() {
-        // Long press on the left edge of the home screen, clear of the home
-        // app slots, lands on the background where a long press opens settings.
-        onView(withId(R.id.mainLayout)).perform(
-            holdLongPress(
-                at = { view ->
-                    floatArrayOf(view.width * 0.02f, view.height * 0.5f)
-                },
-            ),
-        )
-    }
-
     @Test
     fun `long press on the home background opens settings`() {
         launchLauncher(fakeApps("Browser")) { firstOpen = false }.use {
