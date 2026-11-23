@@ -8,6 +8,7 @@ A minimal, ad-free, offline Android home screen launcher
 
 [![CI](https://github.com/ouj4k2q5/Minlauncher/actions/workflows/ci.yml/badge.svg)](https://github.com/ouj4k2q5/Minlauncher/actions/workflows/ci.yml)
 [![License: GPL v3](https://img.shields.io/github/license/ouj4k2q5/Minlauncher)](LICENSE)
+[![F-Droid](https://img.shields.io/f-droid/v/io.github.ouj4k2q5.minlauncher)](https://f-droid.org/packages/io.github.ouj4k2q5.minlauncher)
 
 <img alt="home screenshot" src="./metadata/en-US/images/phoneScreenshots/2.png" width="200">
 <img alt="home screenshot" src="./metadata/en-US/images/phoneScreenshots/3.png" width="200">
@@ -22,8 +23,8 @@ content and network access removed.
 ## Get it
 
 [<img src="https://fdroid.gitlab.io/artwork/badge/get-it-on.svg"
-    alt="Get it on F-Droid"
-    height="80">](https://f-droid.org/packages/io.github.ouj4k2q5.minlauncher)
+alt="Get it on F-Droid"
+height="80">](https://f-droid.org/packages/io.github.ouj4k2q5.minlauncher)
 
 Download an APK from [F-Droid](https://f-droid.org/ja/packages/io.github.ouj4k2q5.minlauncher) or [GitHub Releases](https://github.com/ouj4k2q5/MinLauncher/releases).
 To build from source or verify a release attestation, see the
