@@ -1,6 +1,6 @@
 [versions]
 appcompat = "1.8.0"
-coreKtx = "1.16.0"
+coreKtx = "1.19.1"
 coroutines = "1.7.3"
 datastore = "1.3.0"
 detekt = "1.23.8"
