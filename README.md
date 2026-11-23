@@ -10,6 +10,8 @@ A minimal, ad-free, offline Android home screen launcher
 [![License: GPL v3](https://img.shields.io/github/license/ouj4k2q5/Minlauncher)](LICENSE)
 [![F-Droid](https://img.shields.io/f-droid/v/io.github.ouj4k2q5.minlauncher)](https://f-droid.org/packages/io.github.ouj4k2q5.minlauncher)
 
+<img alt="home swipe gestures demo" src="./metadata/en-US/images/demos/home-gestures.opt.gif" width="280">
+<br>
 <img alt="home screenshot" src="./metadata/en-US/images/phoneScreenshots/2.png" width="200">
 <img alt="home screenshot" src="./metadata/en-US/images/phoneScreenshots/3.png" width="200">
 <img alt="home screenshot" src="./metadata/en-US/images/phoneScreenshots/5.png" width="200">
