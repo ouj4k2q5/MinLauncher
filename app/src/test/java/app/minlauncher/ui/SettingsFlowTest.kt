@@ -1,24 +1,34 @@
 package app.minlauncher.ui
 
-import androidx.test.espresso.Espresso.onView
-import androidx.test.espresso.action.ViewActions.click
-import androidx.test.espresso.action.ViewActions.scrollTo
-import androidx.test.espresso.assertion.ViewAssertions.matches
-import androidx.test.espresso.matcher.ViewMatchers.isDisplayed
-import androidx.test.espresso.matcher.ViewMatchers.withId
-import app.minlauncher.R
+import android.app.Application
+import android.provider.Settings
+import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.junit4.createEmptyComposeRule
+import androidx.compose.ui.test.longClick
+import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.performTouchInput
+import androidx.test.core.app.ApplicationProvider
 import app.minlauncher.testing.TestMainActivity
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
 
 // SDK 36 requires Java 21 in Robolectric, so pin the highest SDK that runs on JDK 17.
 @Config(sdk = [35])
 @RunWith(RobolectricTestRunner::class)
 class SettingsFlowTest {
+    // Empty rule: the test launches its own ActivityScenario (per-test seeding
+    // has to happen before the activity starts), then drives the Compose tree.
+    @get:Rule
+    val composeRule = createEmptyComposeRule()
+
     @After
     fun clearTestAppListProvider() {
         TestMainActivity.testAppListProvider = null
@@ -29,9 +39,29 @@ class SettingsFlowTest {
         launchLauncher(fakeApps("Browser")) { firstOpen = false }.use {
             openSettings()
 
-            onView(withId(R.id.minlauncherHiddenApps)).check(matches(isDisplayed()))
-            onView(withId(R.id.alignment)).perform(scrollTo()).check(matches(isDisplayed()))
-            onView(withId(R.id.appThemeText)).perform(scrollTo()).check(matches(isDisplayed()))
+            composeRule.onNodeWithTag("settings.hiddenApps").assertIsDisplayed()
+            composeRule.onNodeWithTag("settings.alignment").performScrollTo().assertIsDisplayed()
+            composeRule.onNodeWithTag("settings.appTheme").performScrollTo().assertIsDisplayed()
+        }
+    }
+
+    @Test
+    fun `long press on the lock row opens the accessibility settings`() {
+        launchLauncher(fakeApps("Browser")) { firstOpen = false }.use {
+            openSettings()
+
+            val shadowApplication = shadowOf(ApplicationProvider.getApplicationContext<Application>())
+            // The activity launch itself is queued here; drain it first.
+            while (shadowApplication.nextStartedActivity != null) {
+                // keep draining
+            }
+
+            composeRule.onNodeWithTag("settings.toggleLock").performScrollTo().performTouchInput { longClick() }
+
+            assertEquals(
+                Settings.ACTION_ACCESSIBILITY_SETTINGS,
+                shadowApplication.nextStartedActivity?.action,
+            )
         }
     }
 
@@ -40,8 +70,8 @@ class SettingsFlowTest {
         launchLauncher(fakeApps("Browser")) { firstOpen = false }.use {
             openSettings()
 
-            onView(withId(R.id.alignment)).perform(scrollTo(), click())
-            onView(withId(R.id.alignmentCenter)).perform(click())
+            composeRule.onNodeWithTag("settings.alignment").performScrollTo().performClick()
+            composeRule.onNodeWithTag("settings.alignment.center").performClick()
 
             assertEquals(android.view.Gravity.CENTER, testPrefs().homeAlignment)
         }
@@ -52,8 +82,8 @@ class SettingsFlowTest {
         launchLauncher(fakeApps("Browser")) { firstOpen = false }.use {
             openSettings()
 
-            onView(withId(R.id.appThemeText)).perform(scrollTo(), click())
-            onView(withId(R.id.themeLight)).perform(click())
+            composeRule.onNodeWithTag("settings.appTheme").performScrollTo().performClick()
+            composeRule.onNodeWithTag("settings.theme.light").performClick()
 
             assertEquals(
                 androidx.appcompat.app.AppCompatDelegate.MODE_NIGHT_NO,

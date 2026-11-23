@@ -1,18 +1,27 @@
 package app.minlauncher.ui
 
 import android.content.Intent
+import android.content.res.TypedArray
 import android.os.Bundle
 import android.os.Process
 import android.provider.Settings
-import android.view.Gravity
+import android.util.TypedValue
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.view.WindowInsets
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatDelegate
-import androidx.core.view.isVisible
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.platform.ComposeView
+import androidx.compose.ui.platform.ViewCompositionStrategy
 import androidx.fragment.app.viewModels
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import androidx.navigation.fragment.findNavController
@@ -22,21 +31,24 @@ import app.minlauncher.R
 import app.minlauncher.SettingsViewModel
 import app.minlauncher.data.Constants
 import app.minlauncher.data.Prefs
-import app.minlauncher.databinding.FragmentSettingsBinding
-import app.minlauncher.helper.animateAlpha
 import app.minlauncher.helper.appUsagePermissionGranted
-import app.minlauncher.helper.getColorFromAttr
 import app.minlauncher.helper.isAccessServiceEnabled
 import app.minlauncher.helper.isEinkDisplay
 import app.minlauncher.helper.isTablet
 import app.minlauncher.helper.openAppInfo
 import app.minlauncher.helper.showToast
+import app.minlauncher.ui.settings.SettingsCallbacks
+import app.minlauncher.ui.settings.SettingsColors
+import app.minlauncher.ui.settings.SettingsScreen
+import app.minlauncher.ui.settings.SettingsUiState
+import app.minlauncher.ui.theme.MinLauncherTheme
 import kotlin.math.roundToInt
 
-class SettingsFragment :
-    BaseFragment(),
-    View.OnClickListener,
-    View.OnLongClickListener {
+// One small method per settings action (the same layout as the old onClick
+// switch, split by side effect); the count is inherent to binding a dense
+// settings screen to the Fragment, not a sign of a class doing too many things.
+@Suppress("TooManyFunctions")
+class SettingsFragment : BaseFragment() {
     private lateinit var prefs: Prefs
 
     // Explicit factory: under Robolectric the default factory's Application
@@ -52,16 +64,94 @@ class SettingsFragment :
         }
     }
 
-    private var viewBinding: FragmentSettingsBinding? = null
-    private val binding get() = viewBinding!!
+    // Compose state hoisted here: the pending text-size preview, the theme
+    // (only changes through Activity.recreate), and the values that have no
+    // repository mirror (auto-show keyboard, lock mode, swipe app labels).
+    private var pendingTextSizeScale by mutableFloatStateOf(-1f)
+    private var appTheme by mutableIntStateOf(AppCompatDelegate.MODE_NIGHT_YES)
+    private var autoShowKeyboard by mutableStateOf(true)
+    private var usagePermissionGranted by mutableStateOf(false)
+    private var accessibilityOverlayVisible by mutableStateOf(false)
+    private var accessibilityServiceEnabled by mutableStateOf(false)
+    private var lockModeOn by mutableStateOf(false)
+    private var swipeLeftAppName by mutableStateOf("")
+    private var swipeRightAppName by mutableStateOf("")
+    private var einkDisplay by mutableStateOf(false)
 
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
         savedInstanceState: Bundle?,
     ): View {
-        viewBinding = FragmentSettingsBinding.inflate(inflater, container, false)
-        return binding.root
+        prefs = Prefs(requireContext())
+        appTheme = prefs.appTheme
+        autoShowKeyboard = prefs.autoShowKeyboard
+        pendingTextSizeScale = -1f
+        accessibilityOverlayVisible = false
+        usagePermissionGranted = requireContext().appUsagePermissionGranted()
+        einkDisplay = requireContext().isEinkDisplay()
+        populateLockSettings()
+        refreshSwipeApps()
+
+        val colors = resolveSettingsColors()
+        val callbacks = createCallbacks()
+
+        return ComposeView(requireContext()).apply {
+            id = R.id.mainActivityLayout
+            setBackgroundColor(colors.shadeDark)
+            setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
+            setContent { SettingsScreenHost(colors, callbacks) }
+        }
+    }
+
+    @Composable
+    private fun SettingsScreenHost(
+        colors: SettingsColors,
+        callbacks: SettingsCallbacks,
+    ) {
+        val homeAppsNum by viewModel.homeAppsNum.collectAsStateWithLifecycle()
+        val dateTimeVisibility by viewModel.dateTimeVisibility.collectAsStateWithLifecycle()
+        val homeAlignment by viewModel.homeAppAlignment.collectAsStateWithLifecycle()
+        val homeBottomAlignment by viewModel.homeBottomAlignment.collectAsStateWithLifecycle()
+        val statusBarOn by viewModel.showStatusBar.collectAsStateWithLifecycle()
+        val screenTimeEnabled by viewModel.screenTimeEnabled.collectAsStateWithLifecycle()
+        val textSizeScale by viewModel.textSizeScale.collectAsStateWithLifecycle()
+        val boldFont by viewModel.boldFont.collectAsStateWithLifecycle()
+        val solidWallpaper by viewModel.solidWallpaper.collectAsStateWithLifecycle()
+        val swipeLeftEnabled by viewModel.swipeLeftEnabled.collectAsStateWithLifecycle()
+        val swipeRightEnabled by viewModel.swipeRightEnabled.collectAsStateWithLifecycle()
+        val isDefaultLauncher by viewModel.isMinLauncherDefault.collectAsStateWithLifecycle()
+        val displayedTextSize = if (pendingTextSizeScale > 0f) pendingTextSizeScale else textSizeScale
+
+        MinLauncherTheme(appTheme = appTheme) {
+            SettingsScreen(
+                state =
+                    SettingsUiState(
+                        homeAppsNum = homeAppsNum,
+                        dateTimeVisibility = dateTimeVisibility,
+                        homeAlignment = homeAlignment,
+                        homeBottomAlignment = homeBottomAlignment,
+                        statusBarOn = statusBarOn,
+                        screenTimeOn = usagePermissionGranted && screenTimeEnabled,
+                        isDefaultLauncher = isDefaultLauncher == true,
+                        autoShowKeyboard = autoShowKeyboard,
+                        solidWallpaper = solidWallpaper,
+                        showThemeRow = !einkDisplay,
+                        appTheme = appTheme,
+                        boldFont = boldFont,
+                        textSizeLabel = "%.1f".format(displayedTextSize),
+                        swipeLeftAppName = swipeLeftAppName,
+                        swipeRightAppName = swipeRightAppName,
+                        swipeLeftEnabled = swipeLeftEnabled,
+                        swipeRightEnabled = swipeRightEnabled,
+                        lockModeOn = lockModeOn,
+                        accessibilityServiceEnabled = accessibilityServiceEnabled,
+                        accessibilityOverlayVisible = accessibilityOverlayVisible,
+                    ),
+                colors = colors,
+                callbacks = callbacks,
+            )
+        }
     }
 
     override fun onViewCreated(
@@ -69,240 +159,92 @@ class SettingsFragment :
         savedInstanceState: Bundle?,
     ) {
         super.onViewCreated(view, savedInstanceState)
-        prefs = Prefs(requireContext())
         viewModel.isMinLauncherDefault()
-
-        binding.homeAppsNum.text = prefs.homeAppsNum.toString()
-        populateKeyboardText()
-        populateScreenTimeOnOff()
-        populateLockSettings()
-        // Home button for recents feature disabled
-        // populateHomeButtonRecents()
-        populateWallpaperText()
-        populateAppThemeText()
-        populateTextSize()
-        populateBoldFont()
-        populateAlignment()
-        populateStatusBar()
-        populateDateTime()
-        populateSwipeApps()
-        initClickListeners()
-        initObservers()
-    }
-
-    override fun onClick(view: View) {
-        binding.appsNumSelectLayout.visibility = View.GONE
-        binding.dateTimeSelectLayout.visibility = View.GONE
-        binding.appThemeSelectLayout.visibility = View.GONE
-        if (view.id != R.id.textSizeMinus && view.id != R.id.textSizePlus) {
-            if (binding.textSizesLayout.isVisible) {
-                binding.textSizesLayout.visibility = View.GONE
-                applyTextSizeScale()
-            }
-        }
-        if (view.id != R.id.alignmentBottom) {
-            binding.alignmentSelectLayout.visibility = View.GONE
-        }
-
-        when (view.id) {
-            R.id.minlauncherHiddenApps -> showHiddenApps()
-            R.id.screenTimeOnOff -> toggleScreenTime()
-            R.id.appInfo -> openAppInfo(requireContext(), Process.myUserHandle(), BuildConfig.APPLICATION_ID)
-            R.id.setLauncher -> viewModel.requestResetLauncher()
-            R.id.toggleLock -> toggleLockMode()
-            // Home button for recents feature disabled
-            // R.id.homeButtonRecents -> toggleHomeButtonRecents()
-            R.id.autoShowKeyboard -> toggleKeyboardText()
-            R.id.homeAppsNum -> binding.appsNumSelectLayout.visibility = View.VISIBLE
-            R.id.solidWallpaper -> toggleSolidWallpaper()
-            R.id.alignment -> binding.alignmentSelectLayout.visibility = View.VISIBLE
-            R.id.alignmentLeft -> viewModel.updateHomeAlignment(Gravity.START)
-            R.id.alignmentCenter -> viewModel.updateHomeAlignment(Gravity.CENTER)
-            R.id.alignmentRight -> viewModel.updateHomeAlignment(Gravity.END)
-            R.id.alignmentBottom -> updateHomeBottomAlignment()
-            R.id.statusBar -> toggleStatusBar()
-            R.id.dateTime -> binding.dateTimeSelectLayout.visibility = View.VISIBLE
-            R.id.dateTimeOn -> toggleDateTime(Constants.DateTime.ON)
-            R.id.dateTimeOff -> toggleDateTime(Constants.DateTime.OFF)
-            R.id.dateOnly -> toggleDateTime(Constants.DateTime.DATE_ONLY)
-            R.id.appThemeText -> binding.appThemeSelectLayout.visibility = View.VISIBLE
-            R.id.themeLight -> updateTheme(AppCompatDelegate.MODE_NIGHT_NO)
-            R.id.themeDark -> updateTheme(AppCompatDelegate.MODE_NIGHT_YES)
-            R.id.themeSystem -> updateTheme(AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM)
-            R.id.textSizeValue -> binding.textSizesLayout.visibility = View.VISIBLE
-            R.id.boldFont -> toggleBoldFont()
-            R.id.actionAccessibility -> openAccessibilityService()
-            R.id.closeAccessibility -> toggleAccessibilityVisibility(false)
-
-            R.id.maxApps0 -> updateHomeAppsNum(0)
-            R.id.maxApps1 -> updateHomeAppsNum(1)
-            R.id.maxApps2 -> updateHomeAppsNum(2)
-            R.id.maxApps3 -> updateHomeAppsNum(3)
-            R.id.maxApps4 -> updateHomeAppsNum(4)
-            R.id.maxApps5 -> updateHomeAppsNum(5)
-            R.id.maxApps6 -> updateHomeAppsNum(6)
-            R.id.maxApps7 -> updateHomeAppsNum(7)
-            R.id.maxApps8 -> updateHomeAppsNum(8)
-
-            R.id.textSizeMinus -> adjustTextSizePreview(-0.1f)
-            R.id.textSizePlus -> adjustTextSizePreview(0.1f)
-
-            R.id.swipeLeftApp -> showAppListIfEnabled(Constants.FLAG_SET_SWIPE_LEFT_APP)
-            R.id.swipeRightApp -> showAppListIfEnabled(Constants.FLAG_SET_SWIPE_RIGHT_APP)
-        }
-    }
-
-    override fun onLongClick(view: View): Boolean {
-        when (view.id) {
-            R.id.alignment -> {
-                prefs.appLabelAlignment = prefs.homeAlignment
-                findNavController().navigate(R.id.action_settingsFragment_to_appListFragment)
-                requireContext().showToast(getString(R.string.alignment_changed))
-            }
-
-            R.id.solidWallpaper -> removeWallpaper()
-            R.id.appThemeText -> {
-                binding.appThemeSelectLayout.visibility = View.VISIBLE
-                binding.themeSystem.visibility = View.VISIBLE
-            }
-
-            R.id.swipeLeftApp -> toggleSwipeLeft()
-            R.id.swipeRightApp -> toggleSwipeRight()
-            R.id.toggleLock -> startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
-        }
-        return true
-    }
-
-    private fun initClickListeners() {
-        binding.minlauncherHiddenApps.setOnClickListener(this)
-        binding.scrollLayout.setOnClickListener(this)
-        binding.appInfo.setOnClickListener(this)
-        binding.setLauncher.setOnClickListener(this)
-        binding.autoShowKeyboard.setOnClickListener(this)
-        binding.toggleLock.setOnClickListener(this)
-        // Home button for recents feature disabled
-        // binding.homeButtonRecents.setOnClickListener(this)
-        binding.homeAppsNum.setOnClickListener(this)
-        binding.screenTimeOnOff.setOnClickListener(this)
-        binding.solidWallpaper.setOnClickListener(this)
-        binding.alignment.setOnClickListener(this)
-        binding.alignmentLeft.setOnClickListener(this)
-        binding.alignmentCenter.setOnClickListener(this)
-        binding.alignmentRight.setOnClickListener(this)
-        binding.alignmentBottom.setOnClickListener(this)
-        binding.statusBar.setOnClickListener(this)
-        binding.dateTime.setOnClickListener(this)
-        binding.dateTimeOn.setOnClickListener(this)
-        binding.dateTimeOff.setOnClickListener(this)
-        binding.dateOnly.setOnClickListener(this)
-        binding.swipeLeftApp.setOnClickListener(this)
-        binding.swipeRightApp.setOnClickListener(this)
-        binding.appThemeText.setOnClickListener(this)
-        binding.themeLight.setOnClickListener(this)
-        binding.themeDark.setOnClickListener(this)
-        binding.themeSystem.setOnClickListener(this)
-        binding.textSizeValue.setOnClickListener(this)
-        binding.boldFont.setOnClickListener(this)
-        binding.actionAccessibility.setOnClickListener(this)
-        binding.closeAccessibility.setOnClickListener(this)
-
-        binding.maxApps0.setOnClickListener(this)
-        binding.maxApps1.setOnClickListener(this)
-        binding.maxApps2.setOnClickListener(this)
-        binding.maxApps3.setOnClickListener(this)
-        binding.maxApps4.setOnClickListener(this)
-        binding.maxApps5.setOnClickListener(this)
-        binding.maxApps6.setOnClickListener(this)
-        binding.maxApps7.setOnClickListener(this)
-        binding.maxApps8.setOnClickListener(this)
-
-        binding.textSizeMinus.setOnClickListener(this)
-        binding.textSizePlus.setOnClickListener(this)
-
-        binding.solidWallpaper.setOnLongClickListener(this)
-        binding.alignment.setOnLongClickListener(this)
-        binding.appThemeText.setOnLongClickListener(this)
-        binding.swipeLeftApp.setOnLongClickListener(this)
-        binding.swipeRightApp.setOnLongClickListener(this)
-        binding.toggleLock.setOnLongClickListener(this)
-    }
-
-    private fun initObservers() {
+        applyStatusBarInsets(prefs.showStatusBar)
         if (prefs.firstSettingsOpen) {
             viewModel.postDialog(Constants.Dialog.ABOUT)
             prefs.firstSettingsOpen = false
         }
-        collectOnStart(viewModel.isMinLauncherDefault) {
-            if (it == true) binding.setLauncher.text = getString(R.string.change_default_launcher)
-        }
-        collectOnStart(viewModel.homeAppAlignment) {
-            populateAlignment()
-        }
         collectOnStart(viewModel.updateSwipeApps) {
-            populateSwipeApps()
+            refreshSwipeApps()
         }
+    }
+
+    private fun createCallbacks(): SettingsCallbacks =
+        SettingsCallbacks(
+            onOpenHiddenApps = { showHiddenApps() },
+            onOpenAppInfo = {
+                openAppInfo(requireContext(), Process.myUserHandle(), BuildConfig.APPLICATION_ID)
+            },
+            onRequestResetLauncher = { viewModel.requestResetLauncher() },
+            onToggleScreenTime = { toggleScreenTime() },
+            onSelectHomeAppsNum = { updateHomeAppsNum(it) },
+            onSelectDateTime = { toggleDateTime(it) },
+            onSelectAlignment = { viewModel.updateHomeAlignment(it) },
+            onToggleBottomAlignment = { updateHomeBottomAlignment() },
+            onLongPressAlignment = { handleAlignmentLongClick() },
+            onToggleStatusBar = { toggleStatusBar() },
+            onToggleAutoShowKeyboard = { toggleKeyboardText() },
+            onToggleSolidWallpaper = { toggleSolidWallpaper() },
+            onLongPressSolidWallpaper = { removeWallpaper() },
+            onSelectTheme = { updateTheme(it) },
+            onToggleBoldFont = { toggleBoldFont() },
+            onAdjustTextSize = { adjustTextSizePreview(it) },
+            onFinalizeTextSize = { applyTextSizeScale() },
+            onSwipeAppClick = { isLeft ->
+                showAppListIfEnabled(
+                    if (isLeft) Constants.FLAG_SET_SWIPE_LEFT_APP else Constants.FLAG_SET_SWIPE_RIGHT_APP,
+                )
+            },
+            onSwipeAppLongPress = { isLeft ->
+                if (isLeft) toggleSwipeLeft() else toggleSwipeRight()
+            },
+            onToggleLockMode = { toggleLockMode() },
+            onLongPressLockMode = { openAccessibilitySettings() },
+            onOpenAccessibilitySettings = { openAccessibilityService() },
+            onCloseAccessibility = { accessibilityOverlayVisible = false },
+        )
+
+    private fun handleAlignmentLongClick() {
+        prefs.appLabelAlignment = prefs.homeAlignment
+        findNavController().navigate(R.id.action_settingsFragment_to_appListFragment)
+        requireContext().showToast(getString(R.string.alignment_changed))
     }
 
     private fun toggleSwipeLeft() {
         prefs.swipeLeftEnabled = !prefs.swipeLeftEnabled
-        if (prefs.swipeLeftEnabled) {
-            binding.swipeLeftApp.setTextColor(requireContext().getColorFromAttr(R.attr.primaryColor))
-            requireContext().showToast(getString(R.string.swipe_left_app_enabled))
-        } else {
-            binding.swipeLeftApp.setTextColor(requireContext().getColorFromAttr(R.attr.primaryColorTrans50))
-            requireContext().showToast(getString(R.string.swipe_left_app_disabled))
-        }
+        requireContext().showToast(
+            getString(
+                if (prefs.swipeLeftEnabled) R.string.swipe_left_app_enabled else R.string.swipe_left_app_disabled,
+            ),
+        )
     }
 
     private fun toggleSwipeRight() {
         prefs.swipeRightEnabled = !prefs.swipeRightEnabled
-        if (prefs.swipeRightEnabled) {
-            binding.swipeRightApp.setTextColor(requireContext().getColorFromAttr(R.attr.primaryColor))
-            requireContext().showToast(getString(R.string.swipe_right_app_enabled))
-        } else {
-            binding.swipeRightApp.setTextColor(requireContext().getColorFromAttr(R.attr.primaryColorTrans50))
-            requireContext().showToast(getString(R.string.swipe_right_app_disabled))
-        }
+        requireContext().showToast(
+            getString(
+                if (prefs.swipeRightEnabled) R.string.swipe_right_app_enabled else R.string.swipe_right_app_disabled,
+            ),
+        )
     }
 
     private fun toggleStatusBar() {
         prefs.showStatusBar = !prefs.showStatusBar
-        populateStatusBar()
+        applyStatusBarInsets(prefs.showStatusBar)
     }
 
-    private fun populateStatusBar() {
-        if (prefs.showStatusBar) {
-            showStatusBar()
-            binding.statusBar.text = getString(R.string.on)
+    private fun applyStatusBarInsets(show: Boolean) {
+        if (show) {
+            requireActivity().window.insetsController?.show(WindowInsets.Type.statusBars())
         } else {
-            hideStatusBar()
-            binding.statusBar.text = getString(R.string.off)
+            requireActivity().window.insetsController?.hide(WindowInsets.Type.statusBars())
         }
     }
 
     private fun toggleDateTime(selected: Int) {
         prefs.dateTimeVisibility = selected
-        populateDateTime()
         viewModel.toggleDateTime()
-    }
-
-    private fun populateDateTime() {
-        binding.dateTime.text =
-            getString(
-                when (prefs.dateTimeVisibility) {
-                    Constants.DateTime.DATE_ONLY -> R.string.date
-                    Constants.DateTime.ON -> R.string.on
-                    else -> R.string.off
-                },
-            )
-    }
-
-    private fun showStatusBar() {
-        requireActivity().window.insetsController?.show(WindowInsets.Type.statusBars())
-    }
-
-    private fun hideStatusBar() {
-        requireActivity().window.insetsController?.hide(WindowInsets.Type.statusBars())
     }
 
     private fun showHiddenApps() {
@@ -317,24 +259,21 @@ class SettingsFragment :
         )
     }
 
-    private fun toggleAccessibilityVisibility(show: Boolean) {
-        if (isAccessServiceEnabled(requireContext())) {
-            binding.actionAccessibility.text = getString(R.string.disable)
-        }
-        binding.accessibilityLayout.isVisible = show
-        binding.scrollView.animateAlpha(if (show) 0.5f else 1f)
-    }
-
     private fun openAccessibilityService() {
-        toggleAccessibilityVisibility(false)
-        // prefs.lockModeOn = true
+        accessibilityOverlayVisible = false
         populateLockSettings()
         startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
     }
 
+    /** Long-press on the lock row: jump straight to the system accessibility settings. */
+    private fun openAccessibilitySettings() {
+        startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
+    }
+
     private fun toggleLockMode() {
-        if (!prefs.lockModeOn && !isAccessServiceEnabled(requireContext())) {
-            toggleAccessibilityVisibility(true)
+        accessibilityServiceEnabled = isAccessServiceEnabled(requireContext())
+        if (!prefs.lockModeOn && !accessibilityServiceEnabled) {
+            accessibilityOverlayVisible = true
             return
         }
         prefs.lockModeOn = !prefs.lockModeOn
@@ -349,29 +288,23 @@ class SettingsFragment :
      */
     private fun removeWallpaper() {
         prefs.appTheme =
-            if (requireContext().isEinkDisplay()) {
+            if (einkDisplay) {
                 AppCompatDelegate.MODE_NIGHT_NO
             } else {
                 AppCompatDelegate.MODE_NIGHT_YES
             }
         prefs.solidWallpaper = false
-        populateWallpaperText()
         requireActivity().recreate()
     }
 
     private fun toggleSolidWallpaper() {
         prefs.solidWallpaper = !prefs.solidWallpaper
-        populateWallpaperText()
     }
 
     private fun updateHomeAppsNum(num: Int) {
-        binding.homeAppsNum.text = num.toString()
-        binding.appsNumSelectLayout.visibility = View.GONE
         prefs.homeAppsNum = num
         viewModel.refreshHome(true)
     }
-
-    private var pendingTextSizeScale: Float = -1f
 
     private fun adjustTextSizePreview(delta: Float) {
         val maxScale = if (isTablet(requireContext())) 2.0f else 1.5f
@@ -380,9 +313,6 @@ class SettingsFragment :
         val clamped = newScale.coerceIn(0.5f, maxScale)
         if (clamped == current) return
         pendingTextSizeScale = clamped
-        val formatted = "%.1f".format(clamped)
-        binding.textSizeValue.text = formatted
-        binding.textSizeCurrent.text = formatted
     }
 
     private fun applyTextSizeScale() {
@@ -404,81 +334,29 @@ class SettingsFragment :
             prefs.keyboardMessageShown = true
         } else {
             prefs.autoShowKeyboard = !prefs.autoShowKeyboard
-            populateKeyboardText()
+            autoShowKeyboard = prefs.autoShowKeyboard
         }
     }
 
-    private fun updateTheme(appTheme: Int) {
-        if (AppCompatDelegate.getDefaultNightMode() == appTheme) return
-        prefs.appTheme = appTheme
-        populateAppThemeText(appTheme)
-        setAppTheme(appTheme)
-    }
-
-    private fun setAppTheme(theme: Int) {
+    private fun updateTheme(theme: Int) {
         if (AppCompatDelegate.getDefaultNightMode() == theme) return
+        prefs.appTheme = theme
+        appTheme = theme
         requireActivity().recreate()
-    }
-
-    private fun populateAppThemeText(appTheme: Int = prefs.appTheme) {
-        // MainActivity forces the light theme on e-ink, so the switcher would do nothing there.
-        if (requireContext().isEinkDisplay()) {
-            binding.appThemeLayout.visibility = View.GONE
-            return
-        }
-        when (appTheme) {
-            AppCompatDelegate.MODE_NIGHT_YES -> binding.appThemeText.text = getString(R.string.dark)
-            AppCompatDelegate.MODE_NIGHT_NO -> binding.appThemeText.text = getString(R.string.light)
-            else -> binding.appThemeText.text = getString(R.string.system_default)
-        }
-    }
-
-    private fun populateTextSize() {
-        val formatted = "%.1f".format(prefs.textSizeScale)
-        binding.textSizeValue.text = formatted
-        binding.textSizeCurrent.text = formatted
     }
 
     private fun toggleBoldFont() {
         prefs.boldFont = !prefs.boldFont
-        populateBoldFont()
         requireActivity().recreate()
     }
 
-    private fun populateBoldFont() {
-        binding.boldFont.text = getString(if (prefs.boldFont) R.string.on else R.string.off)
-    }
-
     private fun toggleScreenTime() {
-        if (requireContext().appUsagePermissionGranted().not()) {
+        usagePermissionGranted = requireContext().appUsagePermissionGranted()
+        if (!usagePermissionGranted) {
             viewModel.postDialog(Constants.Dialog.DIGITAL_WELLBEING)
             return
         }
         prefs.screenTimeEnabled = !prefs.screenTimeEnabled
-        populateScreenTimeOnOff()
-    }
-
-    private fun populateScreenTimeOnOff() {
-        binding.screenTimeOnOff.text =
-            getString(
-                if (requireContext().appUsagePermissionGranted() && prefs.screenTimeEnabled) {
-                    R.string.on
-                } else {
-                    R.string.off
-                },
-            )
-    }
-
-    private fun populateKeyboardText() {
-        if (prefs.autoShowKeyboard) {
-            binding.autoShowKeyboard.text = getString(R.string.on)
-        } else {
-            binding.autoShowKeyboard.text = getString(R.string.off)
-        }
-    }
-
-    private fun populateWallpaperText() {
-        binding.solidWallpaper.text = getString(if (prefs.solidWallpaper) R.string.on else R.string.off)
     }
 
     private fun updateHomeBottomAlignment() {
@@ -487,69 +365,18 @@ class SettingsFragment :
             return
         }
         prefs.homeBottomAlignment = !prefs.homeBottomAlignment
-        populateAlignment()
         viewModel.updateHomeAlignment(prefs.homeAlignment)
     }
 
-    private fun populateAlignment() {
-        when (viewModel.homeAppAlignment.value) {
-            Gravity.START -> binding.alignment.text = getString(R.string.left)
-            Gravity.CENTER -> binding.alignment.text = getString(R.string.center)
-            Gravity.END -> binding.alignment.text = getString(R.string.right)
-        }
-        binding.alignmentBottom.text =
-            if (prefs.homeBottomAlignment) {
-                getString(R.string.bottom_on)
-            } else {
-                getString(R.string.bottom_off)
-            }
-    }
-
-    // Home button for recents feature disabled
-    // private fun toggleHomeButtonRecents() {
-    //     if (!prefs.homeButtonShowRecents && !isAccessServiceEnabled(requireContext())) {
-    //         toggleAccessibilityVisibility(true)
-    //         return
-    //     }
-    //     prefs.homeButtonShowRecents = !prefs.homeButtonShowRecents
-    //     populateHomeButtonRecents()
-    // }
-
-    // private fun populateHomeButtonRecents() {
-    //     binding.homeButtonRecents.text = getString(
-    //         if (prefs.homeButtonShowRecents && isAccessServiceEnabled(requireContext())) R.string.on
-    //         else R.string.off
-    //     )
-    // }
-
     private fun populateLockSettings() {
-        binding.toggleLock.text =
-            getString(
-                if (prefs.lockModeOn && isAccessServiceEnabled(requireContext())) {
-                    R.string.on
-                } else {
-                    R.string.off
-                },
-            )
+        accessibilityServiceEnabled = isAccessServiceEnabled(requireContext())
+        lockModeOn = prefs.lockModeOn && accessibilityServiceEnabled
     }
 
-    private fun populateSwipeApps() {
-        binding.swipeLeftApp.text = prefs.appNameSwipeLeft.ifEmpty { getString(R.string.swipe_left_app_default) }
-        binding.swipeRightApp.text = prefs.appNameSwipeRight.ifEmpty { getString(R.string.swipe_right_app_default) }
-        if (!prefs.swipeLeftEnabled) {
-            binding.swipeLeftApp.setTextColor(requireContext().getColorFromAttr(R.attr.primaryColorTrans50))
-        }
-        if (!prefs.swipeRightEnabled) {
-            binding.swipeRightApp.setTextColor(requireContext().getColorFromAttr(R.attr.primaryColorTrans50))
-        }
+    private fun refreshSwipeApps() {
+        swipeLeftAppName = prefs.appNameSwipeLeft.ifEmpty { getString(R.string.swipe_left_app_default) }
+        swipeRightAppName = prefs.appNameSwipeRight.ifEmpty { getString(R.string.swipe_right_app_default) }
     }
-
-//    private fun populateDigitalWellbeing() {
-//        binding.digitalWellbeing.isVisible = requireContext()
-//                .isPackageInstalled(Constants.DIGITAL_WELLBEING_PACKAGE_NAME).not()
-//                && requireContext().isPackageInstalled(Constants.DIGITAL_WELLBEING_SAMSUNG_PACKAGE_NAME).not()
-//                && prefs.hideDigitalWellbeing.not()
-//    }
 
     private fun showAppListIfEnabled(flag: Int) {
         if ((flag == Constants.FLAG_SET_SWIPE_LEFT_APP) and !prefs.swipeLeftEnabled) {
@@ -567,9 +394,55 @@ class SettingsFragment :
         )
     }
 
-    override fun onDestroyView() {
-        applyTextSizeScale()
-        super.onDestroyView()
-        viewBinding = null
+    private fun resolveSettingsColors(): SettingsColors {
+        // Resolve once, from the activity theme, so the day/night variant is the
+        // one the (about to be displayed) screen uses. Theme switches recreate.
+        val typedArray = requireActivity().obtainStyledAttributes(R.styleable.SettingsColors)
+        return try {
+            SettingsColors(
+                primaryColor = typedArray.requireColor(R.styleable.SettingsColors_primaryColor, "primaryColor"),
+                shadeDark =
+                    typedArray.requireColor(R.styleable.SettingsColors_primaryShadeDarkColor, "primaryShadeDarkColor"),
+                colorTrans50 =
+                    typedArray.requireColor(R.styleable.SettingsColors_primaryColorTrans50, "primaryColorTrans50"),
+                inverse =
+                    typedArray.requireColor(R.styleable.SettingsColors_primaryInverseColor, "primaryInverseColor"),
+                inverseTrans80 =
+                    typedArray.requireColor(
+                        R.styleable.SettingsColors_primaryColorInverseTrans80,
+                        "primaryColorInverseTrans80",
+                    ),
+                inverseTrans90 =
+                    typedArray.requireColor(
+                        R.styleable.SettingsColors_primaryColorInverseTrans90,
+                        "primaryColorInverseTrans90",
+                    ),
+                dialogShade =
+                    typedArray.requireColor(R.styleable.SettingsColors_dialogShadeColor, "dialogShadeColor"),
+                textShadow =
+                    typedArray.requireColor(
+                        R.styleable.SettingsColors_primaryTextShadowColor,
+                        "primaryTextShadowColor",
+                    ),
+            )
+        } finally {
+            typedArray.recycle()
+        }
     }
+}
+
+/**
+ * Fail loudly (like getColorFromAttr) instead of silently painting transparent
+ * when a theme attribute the settings palette depends on is missing.
+ */
+private fun TypedArray.requireColor(
+    index: Int,
+    name: String,
+): Int {
+    val value = TypedValue()
+    check(getValue(index, value)) { "Failed to resolve theme attribute $name" }
+    check(value.type in TypedValue.TYPE_FIRST_COLOR_INT..TypedValue.TYPE_LAST_COLOR_INT) {
+        "Theme attribute $name is not a color (type=${value.type})"
+    }
+    return value.data
 }

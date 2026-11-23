@@ -4,18 +4,20 @@ import android.graphics.Color
 import android.graphics.drawable.ColorDrawable
 import android.view.View
 import androidx.appcompat.app.AppCompatDelegate
+import androidx.compose.ui.test.junit4.createEmptyComposeRule
+import androidx.compose.ui.test.longClick
+import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.performTouchInput
 import androidx.test.core.app.ActivityScenario
-import androidx.test.espresso.Espresso.onView
-import androidx.test.espresso.action.ViewActions.click
-import androidx.test.espresso.action.ViewActions.longClick
-import androidx.test.espresso.action.ViewActions.scrollTo
-import androidx.test.espresso.matcher.ViewMatchers.withId
 import app.minlauncher.R
 import app.minlauncher.helper.getColorFromAttr
 import app.minlauncher.testing.TestMainActivity
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotSame
+import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
@@ -25,6 +27,9 @@ import org.robolectric.annotation.Config
 @Config(sdk = [35])
 @RunWith(RobolectricTestRunner::class)
 class SolidWallpaperFlowTest {
+    @get:Rule
+    val composeRule = createEmptyComposeRule()
+
     @After
     fun clearTestAppListProvider() {
         TestMainActivity.testAppListProvider = null
@@ -56,12 +61,12 @@ class SolidWallpaperFlowTest {
         }.use { scenario ->
             openSettings()
 
-            onView(withId(R.id.solidWallpaper)).perform(scrollTo(), click())
+            composeRule.onNodeWithTag("settings.wallpaper").performScrollTo().performClick()
             scenario.assertBackgroundColor { activity ->
                 activity.getColorFromAttr(R.attr.primaryInverseColor)
             }
 
-            onView(withId(R.id.solidWallpaper)).perform(click())
+            composeRule.onNodeWithTag("settings.wallpaper").performClick()
             assertEquals(false, testPrefs().solidWallpaper)
             scenario.assertBackgroundColor { Color.TRANSPARENT }
         }
@@ -77,7 +82,7 @@ class SolidWallpaperFlowTest {
 
             var activityBeforeLongPress: TestMainActivity? = null
             scenario.onActivity { activityBeforeLongPress = it }
-            onView(withId(R.id.solidWallpaper)).perform(scrollTo(), longClick())
+            composeRule.onNodeWithTag("settings.wallpaper").performScrollTo().performTouchInput { longClick() }
             assertEquals(false, testPrefs().solidWallpaper)
             assertEquals(AppCompatDelegate.MODE_NIGHT_YES, testPrefs().appTheme)
             scenario.assertBackgroundColor { Color.TRANSPARENT }
@@ -100,8 +105,8 @@ class SolidWallpaperFlowTest {
         }.use { scenario ->
             openSettings()
 
-            onView(withId(R.id.appThemeText)).perform(scrollTo(), click())
-            onView(withId(R.id.themeDark)).perform(click())
+            composeRule.onNodeWithTag("settings.appTheme").performScrollTo().performClick()
+            composeRule.onNodeWithTag("settings.theme.dark").performClick()
             assertEquals(AppCompatDelegate.MODE_NIGHT_YES, testPrefs().appTheme)
             // Expect the literal dark-theme backdrop, not the activity's own
             // theme attr: if setAppTheme's recreate() stopped happening, a stale
