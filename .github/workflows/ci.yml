@@ -21,6 +21,13 @@ jobs:
     name: Test, lint and build
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    # Job-level so only this job gets the extra scope the coverage comment
+    # needs; every other permission stays at the workflow's contents: read.
+    # Note: job-level permissions replace the workflow-level block entirely,
+    # hence the explicit contents: read here as well.
+    permissions:
+      contents: read
+      pull-requests: write
 
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -55,9 +62,33 @@ jobs:
         # static analysis (config/detekt) on top of the built-in Android lint.
         # verifyRoborazziDebug fails when a screenshot no longer matches the committed
         # baseline in app/roborazzi (plain `test` silently skips the capture).
+        # createDebugUnitTestCoverageReport generates the JaCoCo HTML/XML report
+        # (report only, no threshold gate); it lands in app/build/reports/coverage/,
+        # which the artifact upload below already includes.
         # --continue so a failing task (e.g. test) doesn't hide later failures in
         # detekt/ktlintCheck; reports are uploaded either way via if: always().
-        run: ./gradlew --stacktrace --continue test verifyRoborazziDebug lint detekt ktlintCheck assembleDebug assembleRelease
+        run: ./gradlew --stacktrace --continue test verifyRoborazziDebug createDebugUnitTestCoverageReport lint detekt ktlintCheck assembleDebug assembleRelease
+
+      - name: Post coverage report
+        # Parses the JaCoCo XML from the step above and posts the coverage
+        # table as a PR comment (updated on every push while the PR is open)
+        # and to this job's summary, so branches without a PR still show it.
+        # The action's continue-on-error default is true: a missing report
+        # (e.g. nothing built) logs a warning but doesn't fail the run.
+        # min-coverage-* only toggles the pass/fail emoji in the table, and
+        # is zeroed to match the deliberate no-threshold-gate policy.
+        # Fork PRs get a read-only GITHUB_TOKEN, so the comment is skipped
+        # there; the job summary still renders.
+        if: always()
+        uses: madrapps/jacoco-report@e51ce1f46f7f8b5331593f935e59cbaf44b84920 # v1.8.0
+        with:
+          paths: ${{ github.workspace }}/app/build/reports/coverage/test/debug/report.xml
+          token: ${{ secrets.GITHUB_TOKEN }}
+          title: '## Unit test coverage'
+          comment-type: both
+          update-comment: true
+          min-coverage-overall: 0
+          min-coverage-changed-files: 0
 
       - name: Upload reports
         # Reports are most useful precisely when the build failed.

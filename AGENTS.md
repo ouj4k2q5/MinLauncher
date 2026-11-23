@@ -25,7 +25,7 @@ Olauncher). Single Gradle module `:app`, Kotlin sources under
 CI (`.github/workflows/ci.yml`) runs exactly this — run the same locally:
 
 ```bash
-./gradlew test verifyRoborazziDebug lint detekt ktlintCheck assembleDebug assembleRelease
+./gradlew test verifyRoborazziDebug createDebugUnitTestCoverageReport lint detekt ktlintCheck assembleDebug assembleRelease
 ```
 
 `assembleRelease` is intentional: R8 shrinking problems only surface there.
