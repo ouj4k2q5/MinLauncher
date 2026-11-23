@@ -153,8 +153,10 @@ dependencies {
     implementation(libs.recyclerview)
     implementation(libs.datastore.preferences)
 
-    // Android lifecycle
+    // Android lifecycle (runtime-compose provides collectAsStateWithLifecycle for
+    // the Compose settings screen; the Fragment keeps owning the ViewModel).
     implementation(libs.lifecycle.runtime.ktx)
+    implementation(libs.lifecycle.runtime.compose)
     implementation(libs.lifecycle.viewmodel.ktx)
 
     // Navigation
@@ -179,12 +181,14 @@ dependencies {
     testImplementation(libs.roborazzi)
     testImplementation(platform(libs.compose.bom))
     testImplementation(libs.compose.ui.test.junit4)
-    testImplementation(libs.compose.ui.test.manifest)
     testImplementation(libs.roborazzi.compose)
 
     androidTestImplementation(libs.androidx.test.core.ktx)
     androidTestImplementation(libs.androidx.test.ext.junit)
     androidTestImplementation(libs.espresso.core)
+    // The on-device smoke test drives the Compose settings screen.
+    androidTestImplementation(platform(libs.compose.bom))
+    androidTestImplementation(libs.compose.ui.test.junit4)
 }
 
 // Robolectric loads app classes in a sandbox classloader without a code

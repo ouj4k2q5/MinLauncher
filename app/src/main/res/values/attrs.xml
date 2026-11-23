@@ -12,4 +12,16 @@
     <attr name="dialogShadeColor" format="color" />
     <attr name="primaryShadeDarkColor" format="color" />
     <attr name="mainFontFamily" format="string" />
+
+    <!-- Resolved once by SettingsFragment for the Compose settings palette. -->
+    <declare-styleable name="SettingsColors">
+        <attr name="primaryColor" />
+        <attr name="primaryShadeDarkColor" />
+        <attr name="primaryColorTrans50" />
+        <attr name="primaryInverseColor" />
+        <attr name="primaryColorInverseTrans80" />
+        <attr name="primaryColorInverseTrans90" />
+        <attr name="dialogShadeColor" />
+        <attr name="primaryTextShadowColor" />
+    </declare-styleable>
 </resources>

@@ -1,5 +1,6 @@
 <resources>
     <string name="app_name" translatable="false">MinLauncher</string>
+    <string name="app_info">App info</string>
     <string name="lock_layout_description" translatable="false">lock layout description to be used a unique id to lock screen</string>
     <string name="day_battery" formatted="false" translatable="false">%s, %d%%</string>
     <string name="tag_1" translatable="false">1</string>
@@ -30,19 +31,9 @@
     <string name="home_layout_alignment">Layout</string>
     <string name="swipe_left_app">Swipe left</string>
     <string name="swipe_right_app">Swipe right</string>
-    <string name="_0">0</string>
-    <string name="_1">1</string>
-    <string name="_2">2</string>
-    <string name="_3">3</string>
-    <string name="_4">4</string>
-    <string name="_5">5</string>
-    <string name="_6">6</string>
-    <string name="_7">7</string>
-    <string name="_8">8</string>
     <string name="okay">OK</string>
     <string name="auto_show_keyboard">Auto-show keyboard</string>
     <string name="hide">Hide</string>
-    <string name="status_bar">Show status bar</string>
     <string name="rename">Rename</string>
     <string name="show_date_time">Show date and time</string>
     <string name="appearance">Appearance</string>
@@ -52,11 +43,11 @@
     <string name="dark">Dark</string>
     <string name="light">Light</string>
     <string name="welcome_to_minlauncher_settings">Thank you for choosing MinLauncher.
-    \n\nEnjoy your clean home screen.</string>
+   \n\nEnjoy your clean home screen.</string>
     <string name="keyboard_message">The keyboard is the fastest way to find apps.
-    \n\nYou can change this setting anytime.</string>
+   \n\nYou can change this setting anytime.</string>
     <string name="app_usage_message">To show screen time on the home screen, allow access to app usage.
-    \n\nThis feature is used only to display screen time. No data is collected or shared.</string>
+   \n\nThis feature is used only to display screen time. No data is collected or shared.</string>
     <string name="accessibility_service_description">Accessibility permission is required to enable \"Double-tap to lock the screen\". This service is used only for this gesture. No data is collected or shared.</string>
     <string name="close">Close</string>
     <string name="date">Date</string>
@@ -68,7 +59,6 @@
     <string name="accessibility_disclosure">Accessibility permission is required to enable \"Double-tap to lock the screen\".
 \n\nThis service is used only for this gesture. No data is collected or shared.</string>
     <string name="permission">Permission</string>
-    <string name="double_tap_lock">Double-tap to lock the screen</string>
     <string name="enable">Enable</string>
     <string name="disable">Disable</string>
     <string name="info">Info</string>

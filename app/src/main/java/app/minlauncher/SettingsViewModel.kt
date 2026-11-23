@@ -19,6 +19,16 @@ class SettingsViewModel(
 ) : AndroidViewModel(application) {
     val isMinLauncherDefault get() = repository.isMinLauncherDefault
     val homeAppAlignment get() = repository.homeAppAlignment
+    val homeBottomAlignment get() = repository.homeBottomAlignment
+    val dateTimeVisibility get() = repository.dateTimeVisibility
+    val showStatusBar get() = repository.showStatusBar
+    val homeAppsNum get() = repository.homeAppsNum
+    val screenTimeEnabled get() = repository.screenTimeEnabled
+    val textSizeScale get() = repository.textSizeScale
+    val boldFont get() = repository.boldFont
+    val solidWallpaper get() = repository.solidWallpaper
+    val swipeLeftEnabled get() = repository.swipeLeftEnabled
+    val swipeRightEnabled get() = repository.swipeRightEnabled
     val updateSwipeApps get() = repository.updateSwipeApps
 
     fun isMinLauncherDefault() = repository.isMinLauncherDefault()

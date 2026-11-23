@@ -1,5 +1,8 @@
 package app.minlauncher
 
+import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.junit4.createEmptyComposeRule
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.test.core.app.ActivityScenario
 import androidx.test.espresso.Espresso.onView
 import androidx.test.espresso.action.GeneralLocation
@@ -13,6 +16,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import app.minlauncher.data.Prefs
 import org.junit.Before
+import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 
@@ -24,6 +28,11 @@ import org.junit.runner.RunWith
  */
 @RunWith(AndroidJUnit4::class)
 class MainActivitySmokeTest {
+    // Settings is Compose now; the empty rule drives its semantics tree without
+    // launching an activity of its own (the tests use ActivityScenario).
+    @get:Rule
+    val composeRule = createEmptyComposeRule()
+
     @Before
     fun setUp() {
         disableSystemAnimations()
@@ -61,7 +70,8 @@ class MainActivitySmokeTest {
         ActivityScenario.launch(MainActivity::class.java).use {
             onView(withId(R.id.mainLayout)).perform(holdLongPress())
 
-            onView(withId(R.id.appInfo)).check(matches(isDisplayed()))
+            composeRule.waitForIdle()
+            composeRule.onNodeWithTag("settings.appInfo").assertIsDisplayed()
         }
     }
 }

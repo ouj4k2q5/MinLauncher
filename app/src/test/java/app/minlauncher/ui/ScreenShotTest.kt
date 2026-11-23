@@ -2,6 +2,7 @@ package app.minlauncher.ui
 
 import androidx.appcompat.R.id.search_src_text
 import androidx.appcompat.app.AppCompatDelegate
+import androidx.compose.ui.test.junit4.createEmptyComposeRule
 import androidx.test.core.app.ActivityScenario
 import androidx.test.espresso.Espresso.onView
 import androidx.test.espresso.action.ViewActions.typeText
@@ -12,6 +13,7 @@ import com.github.takahirom.roborazzi.RobolectricDeviceQualifiers
 import com.github.takahirom.roborazzi.captureRoboImage
 import org.junit.After
 import org.junit.Before
+import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
@@ -28,6 +30,11 @@ import java.util.TimeZone
 @Config(sdk = [35], qualifiers = RobolectricDeviceQualifiers.Pixel4)
 @RunWith(RobolectricTestRunner::class)
 class ScreenShotTest {
+    // The settings screen is Compose; this settles its composition before the
+    // decorView is captured. Other screens have no Compose roots yet.
+    @get:Rule
+    val composeRule = createEmptyComposeRule()
+
     private val homeApps = fakeApps("Browser", "Camera", "Mail", "Chat", "Maps", "Music", "Notes", "Files")
 
     // The TextClock renders Robolectric's frozen SystemClock in the JVM default
@@ -90,6 +97,7 @@ class ScreenShotTest {
     fun `settings screen`() {
         launchHome().use { scenario ->
             openSettings()
+            composeRule.waitForIdle()
 
             scenario.capture("roborazzi/settings.png")
         }
