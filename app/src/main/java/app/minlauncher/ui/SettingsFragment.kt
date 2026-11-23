@@ -496,7 +496,7 @@ class SettingsFragment :
     }
 
     private fun populateAlignment() {
-        when (prefs.homeAlignment) {
+        when (viewModel.homeAppAlignment.value) {
             Gravity.START -> binding.alignment.text = getString(R.string.left)
             Gravity.CENTER -> binding.alignment.text = getString(R.string.center)
             Gravity.END -> binding.alignment.text = getString(R.string.right)
