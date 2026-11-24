@@ -32,16 +32,24 @@ import org.robolectric.Shadows.shadowOf
 private const val TEST_PACKAGE_PREFIX = "app.minlauncher.ui.fixture"
 
 /** A regular app in the fake five-apps world. */
-fun fakeApp(label: String): AppModel.App =
+fun fakeApp(
+    label: String,
+    appPackage: String = "$TEST_PACKAGE_PREFIX.${label.lowercase()}",
+    activityClassName: String = "$appPackage.MainActivity",
+    user: UserHandle = Process.myUserHandle(),
+): AppModel.App =
     AppModel.App(
         appLabel = label,
         key = null,
-        appPackage = "$TEST_PACKAGE_PREFIX.${label.lowercase()}",
-        activityClassName = "$TEST_PACKAGE_PREFIX.${label.lowercase()}.MainActivity",
-        user = Process.myUserHandle(),
+        appPackage = appPackage,
+        activityClassName = activityClassName,
+        user = user,
     )
 
 fun fakeApps(vararg labels: String): List<AppModel.App> = labels.map { fakeApp(it) }
+
+/** A user handle for a secondary profile (user id 10), for other-profile rows. */
+fun otherProfileUser(): UserHandle = UserHandle.getUserHandleForUid(1_010_000)
 
 /**
  * Launches [TestMainActivity] with the given apps as the whole world:
@@ -158,27 +166,6 @@ fun holdLongPress(
                     0,
                 ),
             )
-        }
-    }
-
-/**
- * Pumps the main looper long enough for results posted by background
- * executors (e.g. AsyncListDiffer's diff) to land, so a following
- * doesNotExist() verifies removal deterministically. not(isDisplayed())
- * is not enough for this: a row opened in the long-press menu is already
- * INVISIBLE, so it would pass even if removal never happened.
- */
-fun waitForPostedWork(durationMs: Long = 250L): ViewAction =
-    object : ViewAction {
-        override fun getConstraints(): Matcher<View> = isDisplayed()
-
-        override fun getDescription(): String = "wait for posted background work for $durationMs ms"
-
-        override fun perform(
-            uiController: UiController,
-            view: View,
-        ) {
-            uiController.loopMainThreadForAtLeast(durationMs)
         }
     }
 

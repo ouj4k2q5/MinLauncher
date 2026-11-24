@@ -29,8 +29,7 @@
     <fragment
         android:id="@+id/appListFragment"
         android:name="app.minlauncher.ui.AppDrawerFragment"
-        android:label="app_list_fragment"
-        tools:layout="@layout/fragment_app_drawer">
+        android:label="app_list_fragment">
         <action
             android:id="@+id/action_appListFragment_to_settingsFragment2"
             app:destination="@id/settingsFragment"

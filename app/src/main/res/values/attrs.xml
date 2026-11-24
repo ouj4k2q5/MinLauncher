@@ -24,4 +24,14 @@
         <attr name="dialogShadeColor" />
         <attr name="primaryTextShadowColor" />
     </declare-styleable>
+
+    <!-- Resolved once by AppDrawerFragment for the Compose drawer palette. -->
+    <declare-styleable name="DrawerColors">
+        <attr name="primaryColor" />
+        <attr name="primaryShadeDarkColor" />
+        <attr name="primaryColorTrans50" />
+        <attr name="primaryColorTrans80" />
+        <attr name="primaryTextShadowColor" />
+        <attr name="mainFontFamily" />
+    </declare-styleable>
 </resources>

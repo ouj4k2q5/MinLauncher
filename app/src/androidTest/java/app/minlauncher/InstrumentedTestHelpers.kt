@@ -4,7 +4,6 @@ import android.os.SystemClock
 import android.view.MotionEvent
 import android.view.View
 import android.view.ViewConfiguration
-import androidx.recyclerview.widget.RecyclerView
 import androidx.test.espresso.UiController
 import androidx.test.espresso.ViewAction
 import androidx.test.espresso.action.CoordinatesProvider
@@ -69,34 +68,6 @@ internal fun holdLongPress(
                     0,
                 ),
             )
-        }
-    }
-
-/**
- * Waits until the RecyclerView's adapter holds at least one item. The app
- * list is populated asynchronously from LauncherApps on a background thread,
- * which Espresso's main-thread idling cannot see.
- */
-internal fun waitForRecyclerViewItems(timeoutMs: Long = 10_000L): ViewAction =
-    object : ViewAction {
-        override fun getConstraints(): Matcher<View> = ViewMatchers.isAssignableFrom(RecyclerView::class.java)
-
-        override fun getDescription(): String = "wait up to $timeoutMs ms for the list to receive items"
-
-        override fun perform(
-            uiController: UiController,
-            view: View,
-        ) {
-            if (view !is RecyclerView) {
-                error("Expected a RecyclerView but got ${view.javaClass.simpleName}")
-            }
-            val deadline = SystemClock.uptimeMillis() + timeoutMs
-            while ((view.adapter?.itemCount ?: 0) == 0) {
-                if (SystemClock.uptimeMillis() >= deadline) {
-                    throw AssertionError("RecyclerView received no items within $timeoutMs ms")
-                }
-                uiController.loopMainThreadForAtLeast(100)
-            }
         }
     }
 

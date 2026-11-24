@@ -32,19 +32,6 @@ fun View.hideKeyboard() {
     imm?.hideSoftInputFromWindow(windowToken, 0)
 }
 
-fun View.showKeyboard(show: Boolean = true) {
-    if (show.not()) return
-    if (requestFocus()) {
-        postDelayed({
-            val targetView = findFocus() ?: this
-            targetView.windowInsetsController?.show(WindowInsets.Type.ime())
-            val imm = context.getSystemService(Context.INPUT_METHOD_SERVICE) as? InputMethodManager
-            // 0 = explicit show request; the SHOW_IMPLICIT flag is deprecated in SDK 37.
-            imm?.showSoftInput(targetView, 0)
-        }, 100)
-    }
-}
-
 fun Activity.showLauncherSelector(requestCode: Int) {
     val roleManager = getSystemService(Context.ROLE_SERVICE) as RoleManager
     if (roleManager.isRoleAvailable(RoleManager.ROLE_HOME)) {

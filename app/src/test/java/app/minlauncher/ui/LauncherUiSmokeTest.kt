@@ -1,13 +1,16 @@
 package app.minlauncher.ui
 
+import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.junit4.createEmptyComposeRule
+import androidx.compose.ui.test.onNodeWithText
 import androidx.test.espresso.Espresso.onView
 import androidx.test.espresso.assertion.ViewAssertions.matches
 import androidx.test.espresso.matcher.ViewMatchers.isDisplayed
 import androidx.test.espresso.matcher.ViewMatchers.withId
-import androidx.test.espresso.matcher.ViewMatchers.withText
 import app.minlauncher.R
 import app.minlauncher.testing.TestMainActivity
 import org.junit.After
+import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
@@ -17,6 +20,11 @@ import org.robolectric.annotation.Config
 @Config(sdk = [35])
 @RunWith(RobolectricTestRunner::class)
 class LauncherUiSmokeTest {
+    // The drawer is Compose; the empty rule drives its semantics tree while
+    // the tests launch their own ActivityScenario.
+    @get:Rule
+    val composeRule = createEmptyComposeRule()
+
     @After
     fun clearTestAppListProvider() {
         TestMainActivity.testAppListProvider = null
@@ -36,9 +44,9 @@ class LauncherUiSmokeTest {
         launchLauncher(fakeApps("Browser", "Camera", "Mail")).use { scenario ->
             scenario.openDrawer()
 
-            onView(withText("Browser")).check(matches(isDisplayed()))
-            onView(withText("Camera")).check(matches(isDisplayed()))
-            onView(withText("Mail")).check(matches(isDisplayed()))
+            composeRule.onNodeWithText("Browser").assertIsDisplayed()
+            composeRule.onNodeWithText("Camera").assertIsDisplayed()
+            composeRule.onNodeWithText("Mail").assertIsDisplayed()
         }
     }
 }

@@ -2,6 +2,7 @@ package app.minlauncher
 
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createEmptyComposeRule
+import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.test.core.app.ActivityScenario
 import androidx.test.espresso.Espresso.onView
@@ -61,7 +62,20 @@ class MainActivitySmokeTest {
                 GeneralSwipeAction(Swipe.FAST, GeneralLocation.CENTER, GeneralLocation.TOP_CENTER, Press.FINGER),
             )
 
-            onView(withId(R.id.recyclerView)).perform(waitForRecyclerViewItems())
+            // The drawer is Compose; the app list is populated asynchronously
+            // from LauncherApps on a background thread, which idling cannot
+            // see, so poll the semantics tree instead of the old RecyclerView.
+            // Waiting for the list container alone is not enough — it composes
+            // even with a permanently empty list — so also require at least one
+            // child node: LazyColumn only composes children for actual items.
+            composeRule.waitUntil(timeoutMillis = 10_000L) {
+                composeRule
+                    .onAllNodesWithTag("drawer.list")
+                    .fetchSemanticsNodes()
+                    .firstOrNull()
+                    ?.children
+                    ?.isNotEmpty() == true
+            }
         }
     }
 
