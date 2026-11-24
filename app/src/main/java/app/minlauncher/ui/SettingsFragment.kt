@@ -1,11 +1,9 @@
 package app.minlauncher.ui
 
 import android.content.Intent
-import android.content.res.TypedArray
 import android.os.Bundle
 import android.os.Process
 import android.provider.Settings
-import android.util.TypedValue
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -42,6 +40,7 @@ import app.minlauncher.ui.settings.SettingsColors
 import app.minlauncher.ui.settings.SettingsScreen
 import app.minlauncher.ui.settings.SettingsUiState
 import app.minlauncher.ui.theme.MinLauncherTheme
+import app.minlauncher.ui.theme.requireColor
 import kotlin.math.roundToInt
 
 // One small method per settings action (the same layout as the old onClick
@@ -429,20 +428,4 @@ class SettingsFragment : BaseFragment() {
             typedArray.recycle()
         }
     }
-}
-
-/**
- * Fail loudly (like getColorFromAttr) instead of silently painting transparent
- * when a theme attribute the settings palette depends on is missing.
- */
-private fun TypedArray.requireColor(
-    index: Int,
-    name: String,
-): Int {
-    val value = TypedValue()
-    check(getValue(index, value)) { "Failed to resolve theme attribute $name" }
-    check(value.type in TypedValue.TYPE_FIRST_COLOR_INT..TypedValue.TYPE_LAST_COLOR_INT) {
-        "Theme attribute $name is not a color (type=${value.type})"
-    }
-    return value.data
 }

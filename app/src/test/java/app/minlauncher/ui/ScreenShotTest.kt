@@ -1,12 +1,10 @@
 package app.minlauncher.ui
 
-import androidx.appcompat.R.id.search_src_text
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.compose.ui.test.junit4.createEmptyComposeRule
+import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.performTextInput
 import androidx.test.core.app.ActivityScenario
-import androidx.test.espresso.Espresso.onView
-import androidx.test.espresso.action.ViewActions.typeText
-import androidx.test.espresso.matcher.ViewMatchers.withId
 import app.minlauncher.data.Prefs
 import app.minlauncher.testing.TestMainActivity
 import com.github.takahirom.roborazzi.RobolectricDeviceQualifiers
@@ -78,6 +76,8 @@ class ScreenShotTest {
     fun `app drawer`() {
         launchHome().use { scenario ->
             scenario.openDrawer()
+            composeRule.waitForIdle()
+
             scenario.capture("roborazzi/app_drawer.png")
         }
     }
@@ -87,7 +87,8 @@ class ScreenShotTest {
         launchHome().use { scenario ->
             scenario.openDrawer()
 
-            onView(withId(search_src_text)).perform(typeText("ma"))
+            composeRule.onNodeWithTag("drawer.search").performTextInput("ma")
+            composeRule.waitForIdle()
 
             scenario.capture("roborazzi/app_drawer_search.png")
         }

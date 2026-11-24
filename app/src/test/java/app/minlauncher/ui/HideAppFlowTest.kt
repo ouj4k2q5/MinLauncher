@@ -1,20 +1,17 @@
 package app.minlauncher.ui
 
-import androidx.test.espresso.Espresso.onView
-import androidx.test.espresso.action.ViewActions.click
-import androidx.test.espresso.action.ViewActions.longClick
-import androidx.test.espresso.assertion.ViewAssertions.doesNotExist
-import androidx.test.espresso.assertion.ViewAssertions.matches
-import androidx.test.espresso.matcher.ViewMatchers.isDisplayed
-import androidx.test.espresso.matcher.ViewMatchers.isRoot
-import androidx.test.espresso.matcher.ViewMatchers.withId
-import androidx.test.espresso.matcher.ViewMatchers.withText
-import app.minlauncher.R
+import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.junit4.createEmptyComposeRule
+import androidx.compose.ui.test.longClick
+import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performTouchInput
 import app.minlauncher.data.Constants
 import app.minlauncher.testing.TestMainActivity
-import org.hamcrest.Matchers.allOf
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
@@ -24,6 +21,11 @@ import org.robolectric.annotation.Config
 @Config(sdk = [35])
 @RunWith(RobolectricTestRunner::class)
 class HideAppFlowTest {
+    // The drawer is Compose; the empty rule drives its semantics tree while
+    // the tests launch their own ActivityScenario.
+    @get:Rule
+    val composeRule = createEmptyComposeRule()
+
     @After
     fun clearTestAppListProvider() {
         TestMainActivity.testAppListProvider = null
@@ -35,16 +37,19 @@ class HideAppFlowTest {
         launchLauncher(fakeApps("Browser", "Camera", "Mail")) { firstHide = false }.use { scenario ->
             scenario.openDrawer()
 
-            onView(withText("Camera")).perform(longClick())
-            onView(allOf(withId(R.id.appHide), isDisplayed())).perform(click())
+            composeRule.onNodeWithText("Camera").performTouchInput { longClick() }
+            composeRule.onNodeWithTag("drawer.appHide").performClick()
 
-            // removeApp goes through submitList, whose diff is computed on a
-            // background executor; pump the looper until it lands, so the
-            // check verifies the row is really gone, not just not displayed.
-            onView(isRoot()).perform(waitForPostedWork())
-            onView(withText("Camera")).check(doesNotExist())
-            onView(withText("Browser")).check(matches(isDisplayed()))
-            onView(withText("Mail")).check(matches(isDisplayed()))
+            // The removal is an optimistic state update in the Fragment;
+            // settle the recomposition before asserting.
+            composeRule.waitForIdle()
+            // While the row menu is open the title is alpha(0f) with cleared
+            // semantics, so the menu having closed proves the hide succeeded;
+            // only then can the Camera-absence assertion mean anything.
+            composeRule.onNodeWithTag("drawer.appHide").assertDoesNotExist()
+            composeRule.onNodeWithText("Camera").assertDoesNotExist()
+            composeRule.onNodeWithText("Browser").assertIsDisplayed()
+            composeRule.onNodeWithText("Mail").assertIsDisplayed()
             assertEquals(setOf("${camera.appPackage}|${camera.user}"), testPrefs().hiddenApps)
         }
     }
@@ -61,9 +66,18 @@ class HideAppFlowTest {
         }.use { scenario ->
             scenario.openDrawer()
 
-            onView(withText("Camera")).check(doesNotExist())
-            onView(withText("Browser")).check(matches(isDisplayed()))
-            onView(withText("Mail")).check(matches(isDisplayed()))
+            composeRule.onNodeWithText("Camera").assertDoesNotExist()
+            composeRule.onNodeWithText("Browser").assertIsDisplayed()
+            composeRule.onNodeWithText("Mail").assertIsDisplayed()
+        }
+    }
+
+    @Test
+    fun `the hidden apps drawer shows the flag-specific search hint`() {
+        launchLauncher(fakeApps("Browser")) { firstHide = false }.use { scenario ->
+            scenario.openDrawer(flag = Constants.FLAG_HIDDEN_APPS)
+
+            composeRule.onNodeWithText("Hidden apps").assertIsDisplayed()
         }
     }
 
@@ -78,10 +92,13 @@ class HideAppFlowTest {
             hiddenApps = mutableSetOf("${camera.appPackage}|${camera.user}")
         }.use { scenario ->
             scenario.openDrawer(flag = Constants.FLAG_HIDDEN_APPS)
-            onView(withText("Camera")).check(matches(isDisplayed()))
+            composeRule.onNodeWithText("Camera").assertIsDisplayed()
 
-            onView(withText("Camera")).perform(longClick())
-            onView(allOf(withId(R.id.appHide), isDisplayed())).perform(click())
+            composeRule.onNodeWithText("Camera").performTouchInput { longClick() }
+            composeRule.onNodeWithTag("drawer.appHide").performClick()
+            // The restore also closes the row menu; assert it so a pass cannot
+            // come from the menu still covering the drawer.
+            composeRule.onNodeWithTag("drawer.appHide").assertDoesNotExist()
 
             assertEquals(emptySet<String>(), testPrefs().hiddenApps)
         }

@@ -1,15 +1,20 @@
 package app.minlauncher.ui
 
+import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.junit4.createEmptyComposeRule
+import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.performClick
 import androidx.test.espresso.Espresso.onView
-import androidx.test.espresso.action.ViewActions.click
 import androidx.test.espresso.assertion.ViewAssertions.doesNotExist
 import androidx.test.espresso.assertion.ViewAssertions.matches
 import androidx.test.espresso.matcher.ViewMatchers.isDisplayed
 import androidx.test.espresso.matcher.ViewMatchers.withText
+import app.minlauncher.data.Constants
 import app.minlauncher.testing.TestMainActivity
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
@@ -19,9 +24,26 @@ import org.robolectric.annotation.Config
 @Config(sdk = [35])
 @RunWith(RobolectricTestRunner::class)
 class SetHomeAppFlowTest {
+    // The home screen is still Views (Espresso); the drawer is Compose, so its
+    // selection goes through the compose rule.
+    @get:Rule
+    val composeRule = createEmptyComposeRule()
+
     @After
     fun clearTestAppListProvider() {
         TestMainActivity.testAppListProvider = null
+    }
+
+    @Test
+    fun `the set-home drawer shows the flag-specific search hint`() {
+        launchLauncher(fakeApps("Browser")) {
+            firstOpen = false
+            firstSettingsOpen = false
+        }.use { scenario ->
+            scenario.openDrawer(flag = Constants.FLAG_SET_HOME_APP_1)
+
+            composeRule.onNodeWithText("Please select an app").assertIsDisplayed()
+        }
     }
 
     @Test
@@ -44,7 +66,7 @@ class SetHomeAppFlowTest {
             onView(withText("Browser")).perform(holdLongPress())
 
             // Selecting an app closes the drawer and updates the slot.
-            onView(withText("Camera")).perform(click())
+            composeRule.onNodeWithText("Camera").performClick()
 
             onView(withText("Camera")).check(matches(isDisplayed()))
             onView(withText("Browser")).check(doesNotExist())

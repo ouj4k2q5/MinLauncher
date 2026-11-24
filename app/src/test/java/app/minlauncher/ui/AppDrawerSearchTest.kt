@@ -1,16 +1,15 @@
 package app.minlauncher.ui
 
-import androidx.appcompat.R.id.search_src_text
-import androidx.test.espresso.Espresso.onView
-import androidx.test.espresso.action.ViewActions.replaceText
-import androidx.test.espresso.action.ViewActions.typeText
-import androidx.test.espresso.assertion.ViewAssertions.doesNotExist
-import androidx.test.espresso.assertion.ViewAssertions.matches
-import androidx.test.espresso.matcher.ViewMatchers.isDisplayed
-import androidx.test.espresso.matcher.ViewMatchers.withId
-import androidx.test.espresso.matcher.ViewMatchers.withText
+import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.junit4.createEmptyComposeRule
+import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.performTextClearance
+import androidx.compose.ui.test.performTextInput
+import androidx.compose.ui.test.performTextReplacement
 import app.minlauncher.testing.TestMainActivity
 import org.junit.After
+import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
@@ -20,6 +19,11 @@ import org.robolectric.annotation.Config
 @Config(sdk = [35])
 @RunWith(RobolectricTestRunner::class)
 class AppDrawerSearchTest {
+    // The drawer is Compose; the empty rule drives its semantics tree while
+    // the tests launch their own ActivityScenario.
+    @get:Rule
+    val composeRule = createEmptyComposeRule()
+
     @After
     fun clearTestAppListProvider() {
         TestMainActivity.testAppListProvider = null
@@ -32,15 +36,15 @@ class AppDrawerSearchTest {
         launchLauncher(apps).use { scenario ->
             scenario.openDrawer()
 
-            onView(withText("Browser")).check(matches(isDisplayed()))
+            composeRule.onNodeWithText("Browser").assertIsDisplayed()
 
-            onView(withId(search_src_text)).perform(typeText("ma"))
+            composeRule.onNodeWithTag("drawer.search").performTextInput("ma")
 
-            onView(withText("Mail")).check(matches(isDisplayed()))
-            onView(withText("Maps")).check(matches(isDisplayed()))
-            onView(withText("Browser")).check(doesNotExist())
-            onView(withText("Camera")).check(doesNotExist())
-            onView(withText("Music")).check(doesNotExist())
+            composeRule.onNodeWithText("Mail").assertIsDisplayed()
+            composeRule.onNodeWithText("Maps").assertIsDisplayed()
+            composeRule.onNodeWithText("Browser").assertDoesNotExist()
+            composeRule.onNodeWithText("Camera").assertDoesNotExist()
+            composeRule.onNodeWithText("Music").assertDoesNotExist()
         }
     }
 
@@ -49,14 +53,14 @@ class AppDrawerSearchTest {
         launchLauncher(apps).use { scenario ->
             scenario.openDrawer()
 
-            onView(withId(search_src_text)).perform(replaceText("ma"))
-            onView(withText("Browser")).check(doesNotExist())
+            composeRule.onNodeWithTag("drawer.search").performTextReplacement("ma")
+            composeRule.onNodeWithText("Browser").assertDoesNotExist()
 
-            onView(withId(search_src_text)).perform(replaceText(""))
+            composeRule.onNodeWithTag("drawer.search").performTextClearance()
 
-            onView(withText("Browser")).check(matches(isDisplayed()))
-            onView(withText("Camera")).check(matches(isDisplayed()))
-            onView(withText("Music")).check(matches(isDisplayed()))
+            composeRule.onNodeWithText("Browser").assertIsDisplayed()
+            composeRule.onNodeWithText("Camera").assertIsDisplayed()
+            composeRule.onNodeWithText("Music").assertIsDisplayed()
         }
     }
 
@@ -65,13 +69,13 @@ class AppDrawerSearchTest {
         launchLauncher(apps).use { scenario ->
             scenario.openDrawer()
 
-            onView(withId(search_src_text)).perform(typeText("zzz"))
+            composeRule.onNodeWithTag("drawer.search").performTextInput("zzz")
 
-            onView(withText("Browser")).check(doesNotExist())
-            onView(withText("Camera")).check(doesNotExist())
-            onView(withText("Mail")).check(doesNotExist())
-            onView(withText("Maps")).check(doesNotExist())
-            onView(withText("Music")).check(doesNotExist())
+            composeRule.onNodeWithText("Browser").assertDoesNotExist()
+            composeRule.onNodeWithText("Camera").assertDoesNotExist()
+            composeRule.onNodeWithText("Mail").assertDoesNotExist()
+            composeRule.onNodeWithText("Maps").assertDoesNotExist()
+            composeRule.onNodeWithText("Music").assertDoesNotExist()
         }
     }
 }
