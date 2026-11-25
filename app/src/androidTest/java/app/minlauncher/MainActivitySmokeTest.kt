@@ -10,8 +10,6 @@ import androidx.test.espresso.action.GeneralLocation
 import androidx.test.espresso.action.GeneralSwipeAction
 import androidx.test.espresso.action.Press
 import androidx.test.espresso.action.Swipe
-import androidx.test.espresso.assertion.ViewAssertions.matches
-import androidx.test.espresso.matcher.ViewMatchers.isDisplayed
 import androidx.test.espresso.matcher.ViewMatchers.withId
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
@@ -29,8 +27,9 @@ import org.junit.runner.RunWith
  */
 @RunWith(AndroidJUnit4::class)
 class MainActivitySmokeTest {
-    // Settings is Compose now; the empty rule drives its semantics tree without
-    // launching an activity of its own (the tests use ActivityScenario).
+    // The home screen and settings are Compose now; the empty rule drives
+    // their semantics trees without launching an activity of its own (the
+    // tests use ActivityScenario).
     @get:Rule
     val composeRule = createEmptyComposeRule()
 
@@ -47,7 +46,8 @@ class MainActivitySmokeTest {
     @Test
     fun `launch displays the home clock`() {
         ActivityScenario.launch(MainActivity::class.java).use {
-            onView(withId(R.id.clock)).check(matches(isDisplayed()))
+            composeRule.waitForIdle()
+            composeRule.onNodeWithTag("home.clock").assertIsDisplayed()
         }
     }
 

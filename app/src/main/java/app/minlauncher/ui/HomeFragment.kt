@@ -3,20 +3,20 @@ package app.minlauncher.ui
 import android.content.Context
 import android.content.Intent
 import android.content.pm.LauncherApps
-import android.content.res.Configuration
-import android.os.BatteryManager
 import android.os.Bundle
-import android.text.format.DateFormat
 import android.util.Log
 import android.view.Gravity
 import android.view.LayoutInflater
+import android.view.SoundEffectConstants
 import android.view.View
 import android.view.ViewGroup
 import android.view.WindowInsets
-import android.widget.FrameLayout
-import android.widget.TextView
-import androidx.core.view.isVisible
-import androidx.core.view.setPadding
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.platform.ViewCompositionStrategy
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
@@ -28,8 +28,8 @@ import app.minlauncher.data.AppModel
 import app.minlauncher.data.Constants
 import app.minlauncher.data.Prefs
 import app.minlauncher.databinding.FragmentHomeBinding
+import app.minlauncher.helper.LockRequest
 import app.minlauncher.helper.appUsagePermissionGranted
-import app.minlauncher.helper.dpToPx
 import app.minlauncher.helper.expandNotificationDrawer
 import app.minlauncher.helper.getUserHandleFromString
 import app.minlauncher.helper.isPackageInstalled
@@ -38,18 +38,24 @@ import app.minlauncher.helper.openCameraApp
 import app.minlauncher.helper.openClock
 import app.minlauncher.helper.openDialerApp
 import app.minlauncher.helper.showToast
-import app.minlauncher.listener.OnSwipeTouchListener
-import app.minlauncher.listener.ViewSwipeTouchListener
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
+import app.minlauncher.ui.drawer.drawerFontFamily
+import app.minlauncher.ui.home.HomeCallbacks
+import app.minlauncher.ui.home.HomeColors
+import app.minlauncher.ui.home.HomeScreen
+import app.minlauncher.ui.home.HomeSlotState
+import app.minlauncher.ui.home.HomeUiState
+import app.minlauncher.ui.theme.requireColor
+import app.minlauncher.ui.theme.requireString
+import java.time.Clock
 
 private const val TAG = "HomeFragment"
 
-class HomeFragment :
-    BaseFragment(),
-    View.OnClickListener,
-    View.OnLongClickListener {
+// One small method per home action (the same layout as the old listener
+// callbacks, split by side effect); the count is inherent to binding the home
+// screen's interactions to the Fragment, not a sign of a class doing too
+// many things.
+@Suppress("TooManyFunctions")
+class HomeFragment : BaseFragment() {
     private lateinit var prefs: Prefs
 
     // Explicit factory: under Robolectric the default factory's Application
@@ -68,13 +74,29 @@ class HomeFragment :
     private var viewBinding: FragmentHomeBinding? = null
     private val binding get() = viewBinding!!
 
+    // The renderable home screen, kept as Compose state (the AppDrawerFragment
+    // pattern): each fragment-side populate/update writes state and the
+    // screen recomposes, replacing the old binding.view writes.
+    private var slots by mutableStateOf<List<HomeSlotState>>(emptyList())
+    private var homeAppAlignment by mutableIntStateOf(Gravity.START)
+    private var homeBottomAlignment by mutableStateOf(false)
+    private var dateTimeVisibility by mutableIntStateOf(Constants.DateTime.ON)
+    private var showStatusBar by mutableStateOf(false)
+    private var showFirstRunTips by mutableStateOf(false)
+    private var showSetDefaultLauncher by mutableStateOf(false)
+    private var screenTimeText by mutableStateOf<String?>(null)
+
+    // Resolved once for the whole screen lifetime; theme switches recreate.
+    private var homeColors: HomeColors? = null
+    private var callbacks: HomeCallbacks? = null
+
     companion object {
         /**
-         * Test seam: the home-screen date line is rendered from the wall clock,
-         * which would make screenshot baselines day-dependent. Tests can point
-         * this at a fixed date; production behavior is unchanged.
+         * Test seam: the home clock and date line render from this clock,
+         * which would make screenshot baselines time-dependent. Tests can
+         * point this at a fixed instant; production behavior is unchanged.
          */
-        internal var dateProvider: () -> Date = { Date() }
+        internal var clock: Clock = Clock.systemDefaultZone()
     }
 
     override fun onCreateView(
@@ -93,15 +115,20 @@ class HomeFragment :
         super.onViewCreated(view, savedInstanceState)
         prefs = Prefs(requireContext())
 
+        homeColors = resolveHomeColors()
+        callbacks = createCallbacks()
+        binding.homeContent.apply {
+            setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
+            setContent { HomeScreenHost() }
+        }
+
         initObservers()
         setHomeAlignment(viewModel.homeAppAlignment.value)
-        initSwipeTouchListener()
-        initClickListeners()
     }
 
     override fun onResume() {
         super.onResume()
-        populateHomeScreen(false)
+        populateHomeScreen()
         viewModel.isMinLauncherDefault()
         if (prefs.showStatusBar) {
             showStatusBar()
@@ -110,69 +137,39 @@ class HomeFragment :
         }
     }
 
-    override fun onClick(view: View) {
-        when (view.id) {
-            R.id.lock -> {}
-            // Home button for recents feature disabled
-            // R.id.recents -> {}
-            R.id.clock -> openClock(requireContext())
-            R.id.date -> openCalendar(requireContext())
-            R.id.setDefaultLauncher -> viewModel.requestResetLauncher()
-            R.id.tvScreenTime -> openScreenTimeDigitalWellbeing()
-
-            else -> {
-                try {
-                    // Launch app
-                    val appLocation = view.tag.toString().toInt()
-                    homeAppClicked(appLocation)
-                } catch (e: Exception) {
-                    Log.e(TAG, "Failed to launch home screen app", e)
-                }
-            }
-        }
-    }
-
-    override fun onLongClick(view: View): Boolean {
-        when (view.id) {
-            R.id.homeApp1 -> showAppList(Constants.FLAG_SET_HOME_APP_1, prefs.appName1.isNotEmpty(), true)
-            R.id.homeApp2 -> showAppList(Constants.FLAG_SET_HOME_APP_2, prefs.appName2.isNotEmpty(), true)
-            R.id.homeApp3 -> showAppList(Constants.FLAG_SET_HOME_APP_3, prefs.appName3.isNotEmpty(), true)
-            R.id.homeApp4 -> showAppList(Constants.FLAG_SET_HOME_APP_4, prefs.appName4.isNotEmpty(), true)
-            R.id.homeApp5 -> showAppList(Constants.FLAG_SET_HOME_APP_5, prefs.appName5.isNotEmpty(), true)
-            R.id.homeApp6 -> showAppList(Constants.FLAG_SET_HOME_APP_6, prefs.appName6.isNotEmpty(), true)
-            R.id.homeApp7 -> showAppList(Constants.FLAG_SET_HOME_APP_7, prefs.appName7.isNotEmpty(), true)
-            R.id.homeApp8 -> showAppList(Constants.FLAG_SET_HOME_APP_8, prefs.appName8.isNotEmpty(), true)
-
-            R.id.setDefaultLauncher -> {
-                prefs.hideSetDefaultLauncher = true
-                binding.setDefaultLauncher.visibility = View.GONE
-                if (viewModel.isMinLauncherDefault.value != true) {
-                    requireContext().showToast(R.string.set_as_default_launcher)
-                    findNavController().navigate(R.id.action_mainFragment_to_settingsFragment)
-                }
-            }
-        }
-        return true
+    @Composable
+    private fun HomeScreenHost() {
+        HomeScreen(
+            state =
+                HomeUiState(
+                    slots = slots,
+                    homeAppAlignment = homeAppAlignment,
+                    homeBottomAlignment = homeBottomAlignment,
+                    dateTimeVisibility = dateTimeVisibility,
+                    showStatusBar = showStatusBar,
+                    showFirstRunTips = showFirstRunTips,
+                    showSetDefaultLauncher = showSetDefaultLauncher,
+                    screenTime = screenTimeText,
+                ),
+            colors = requireNotNull(homeColors) { "homeColors must be set in onViewCreated" },
+            clock = clock,
+            callbacks = requireNotNull(callbacks) { "callbacks must be set in onViewCreated" },
+        )
     }
 
     private fun initObservers() {
-        if (prefs.firstSettingsOpen) {
-            binding.firstRunTips.visibility = View.VISIBLE
-            binding.setDefaultLauncher.visibility = View.GONE
-        } else {
-            binding.firstRunTips.visibility = View.GONE
-        }
+        showFirstRunTips = prefs.firstSettingsOpen
 
         collectOnStart(viewModel.refreshHome) {
-            populateHomeScreen(it)
+            populateHomeScreen()
         }
         collectOnStart(viewModel.isMinLauncherDefault) {
             if (it == false) {
                 prefs.homeBottomAlignment = false
                 setHomeAlignment()
             }
-            if (binding.firstRunTips.isVisible) return@collectOnStart
-            binding.setDefaultLauncher.isVisible = it == false && prefs.hideSetDefaultLauncher.not()
+            if (showFirstRunTips) return@collectOnStart
+            showSetDefaultLauncher = it == false && prefs.hideSetDefaultLauncher.not()
         }
         collectOnStart(viewModel.homeAppAlignment) {
             setHomeAlignment(it)
@@ -184,308 +181,128 @@ class HomeFragment :
             populateDateTime()
         }
         collectOnStart(viewModel.screenTimeValue) {
-            it?.let { binding.tvScreenTime.text = it }
+            it?.let { screenTimeText = it }
         }
-        // Home button for recents feature disabled
-        // viewModel.showRecentApps.observe(viewLifecycleOwner) {
-        //     binding.recents.performClick()
-        // }
-    }
-
-    private fun initSwipeTouchListener() {
-        val context = requireContext()
-        binding.mainLayout.setOnTouchListener(getSwipeGestureListener(context))
-        binding.homeApp1.setOnTouchListener(getViewSwipeTouchListener(context, binding.homeApp1))
-        binding.homeApp2.setOnTouchListener(getViewSwipeTouchListener(context, binding.homeApp2))
-        binding.homeApp3.setOnTouchListener(getViewSwipeTouchListener(context, binding.homeApp3))
-        binding.homeApp4.setOnTouchListener(getViewSwipeTouchListener(context, binding.homeApp4))
-        binding.homeApp5.setOnTouchListener(getViewSwipeTouchListener(context, binding.homeApp5))
-        binding.homeApp6.setOnTouchListener(getViewSwipeTouchListener(context, binding.homeApp6))
-        binding.homeApp7.setOnTouchListener(getViewSwipeTouchListener(context, binding.homeApp7))
-        binding.homeApp8.setOnTouchListener(getViewSwipeTouchListener(context, binding.homeApp8))
-    }
-
-    private fun initClickListeners() {
-        binding.lock.setOnClickListener(this)
-        // Home button for recents feature disabled
-        // binding.recents.setOnClickListener(this)
-        binding.clock.setOnClickListener(this)
-        binding.date.setOnClickListener(this)
-        binding.setDefaultLauncher.setOnClickListener(this)
-        binding.setDefaultLauncher.setOnLongClickListener(this)
-        binding.tvScreenTime.setOnClickListener(this)
-
-        // These fire only on d-pad/keyboard events; touch is consumed by ViewSwipeTouchListener
-        binding.homeApp1.setOnClickListener(this)
-        binding.homeApp2.setOnClickListener(this)
-        binding.homeApp3.setOnClickListener(this)
-        binding.homeApp4.setOnClickListener(this)
-        binding.homeApp5.setOnClickListener(this)
-        binding.homeApp6.setOnClickListener(this)
-        binding.homeApp7.setOnClickListener(this)
-        binding.homeApp8.setOnClickListener(this)
-        binding.homeApp1.setOnLongClickListener(this)
-        binding.homeApp2.setOnLongClickListener(this)
-        binding.homeApp3.setOnLongClickListener(this)
-        binding.homeApp4.setOnLongClickListener(this)
-        binding.homeApp5.setOnLongClickListener(this)
-        binding.homeApp6.setOnLongClickListener(this)
-        binding.homeApp7.setOnLongClickListener(this)
-        binding.homeApp8.setOnLongClickListener(this)
     }
 
     private fun setHomeAlignment(horizontalGravity: Int = viewModel.homeAppAlignment.value) {
-        val verticalGravity = if (viewModel.homeBottomAlignment.value) Gravity.BOTTOM else Gravity.CENTER_VERTICAL
-        binding.homeAppsLayout.gravity = horizontalGravity or verticalGravity
-        binding.dateTimeLayout.gravity = horizontalGravity
-        binding.homeApp1.gravity = horizontalGravity
-        binding.homeApp2.gravity = horizontalGravity
-        binding.homeApp3.gravity = horizontalGravity
-        binding.homeApp4.gravity = horizontalGravity
-        binding.homeApp5.gravity = horizontalGravity
-        binding.homeApp6.gravity = horizontalGravity
-        binding.homeApp7.gravity = horizontalGravity
-        binding.homeApp8.gravity = horizontalGravity
+        homeAppAlignment = horizontalGravity
+        homeBottomAlignment = viewModel.homeBottomAlignment.value
     }
 
     private fun populateDateTime() {
-        binding.dateTimeLayout.isVisible = prefs.dateTimeVisibility != Constants.DateTime.OFF
-        binding.clock.isVisible = Constants.DateTime.isTimeVisible(prefs.dateTimeVisibility)
-        binding.date.isVisible = Constants.DateTime.isDateVisible(prefs.dateTimeVisibility)
-
-        val locale = Locale.getDefault()
-        val datePattern = DateFormat.getBestDateTimePattern(locale, "EEEMMMd")
-        val dateFormat = SimpleDateFormat(datePattern, locale)
-        var dateText = dateFormat.format(dateProvider())
-
-        if (!prefs.showStatusBar) {
-            val battery =
-                (requireContext().getSystemService(Context.BATTERY_SERVICE) as BatteryManager)
-                    .getIntProperty(BatteryManager.BATTERY_PROPERTY_CAPACITY)
-            if (battery > 0) {
-                dateText = getString(R.string.day_battery, dateText, battery)
-            }
-        }
-        binding.date.text = dateText.replace(".,", ",")
+        dateTimeVisibility = prefs.dateTimeVisibility
+        // Gates the battery suffix on the date line; re-read on every
+        // populate like the old binding write.
+        showStatusBar = prefs.showStatusBar
     }
 
     private fun populateScreenTime() {
         if (requireContext().appUsagePermissionGranted().not() || prefs.screenTimeEnabled.not()) {
-            binding.tvScreenTime.visibility = View.GONE
+            screenTimeText = null
             return
         }
 
         viewModel.getTodaysScreenTime()
-        binding.tvScreenTime.visibility = View.VISIBLE
-
-        val isLandscape = resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
-        val horizontalMargin = if (isLandscape) 64.dpToPx() else 10.dpToPx()
-        val marginTop =
-            if (isLandscape) {
-                if (prefs.dateTimeVisibility == Constants.DateTime.DATE_ONLY) 36.dpToPx() else 56.dpToPx()
-            } else {
-                if (prefs.dateTimeVisibility == Constants.DateTime.DATE_ONLY) 45.dpToPx() else 72.dpToPx()
-            }
-        val params =
-            FrameLayout
-                .LayoutParams(
-                    FrameLayout.LayoutParams.WRAP_CONTENT,
-                    FrameLayout.LayoutParams.WRAP_CONTENT,
-                ).apply {
-                    topMargin = marginTop
-                    marginStart = horizontalMargin
-                    marginEnd = horizontalMargin
-                    gravity = if (viewModel.homeAppAlignment.value == Gravity.END) Gravity.START else Gravity.END
-                }
-        binding.tvScreenTime.layoutParams = params
-        binding.tvScreenTime.setPadding(10.dpToPx())
+        // The previous line stays until the flow delivers the new value, like
+        // the old TextView whose text only the collector rewrote.
     }
 
-    private fun populateHomeScreen(appCountUpdated: Boolean) {
-        if (appCountUpdated) hideHomeApps()
+    private fun populateHomeScreen() {
         populateDateTime()
-
         populateScreenTime()
 
-        val homeAppsNum = prefs.homeAppsNum
-        if (homeAppsNum == 0) return
+        // (1..0) is empty, like the old early return for homeAppsNum == 0.
+        slots =
+            (1..prefs.homeAppsNum).map { location ->
+                HomeSlotState(index = location, label = verifiedHomeAppLabel(location))
+            }
+    }
 
-        binding.homeApp1.visibility = View.VISIBLE
-        if (!setHomeAppText(
-                binding.homeApp1,
-                prefs.appName1,
-                prefs.appPackage1,
-                prefs.appUser1,
-                prefs.isShortcut1,
-                prefs.shortcutId1,
-            )
-        ) {
-            prefs.appName1 = ""
-            prefs.appPackage1 = ""
-        }
-        if (homeAppsNum == 1) return
+    /**
+     * The old setHomeAppText: verifies the slot's app or pinned shortcut
+     * still exists, clears the stored slot when it does not, and returns the
+     * label to render ("" shows the hint).
+     */
+    private fun verifiedHomeAppLabel(location: Int): String {
+        val (label, verified) =
+            if (prefs.getIsShortcut(location)) verifiedShortcutLabel(location) else verifiedAppLabel(location)
+        if (!verified) clearHomeApp(location)
+        return label
+    }
 
-        binding.homeApp2.visibility = View.VISIBLE
-        if (!setHomeAppText(
-                binding.homeApp2,
-                prefs.appName2,
-                prefs.appPackage2,
-                prefs.appUser2,
-                prefs.isShortcut2,
-                prefs.shortcutId2,
-            )
-        ) {
-            prefs.appName2 = ""
-            prefs.appPackage2 = ""
-        }
-        if (homeAppsNum == 2) return
+    private fun verifiedShortcutLabel(location: Int): Pair<String, Boolean> {
+        val launcherApps = requireContext().getSystemService(Context.LAUNCHER_APPS_SERVICE) as LauncherApps
 
-        binding.homeApp3.visibility = View.VISIBLE
-        if (!setHomeAppText(
-                binding.homeApp3,
-                prefs.appName3,
-                prefs.appPackage3,
-                prefs.appUser3,
-                prefs.isShortcut3,
-                prefs.shortcutId3,
-            )
-        ) {
-            prefs.appName3 = ""
-            prefs.appPackage3 = ""
-        }
-        if (homeAppsNum == 3) return
+        // Query for the specific shortcut
+        val query =
+            LauncherApps.ShortcutQuery().apply {
+                setPackage(prefs.getAppPackage(location))
+                setQueryFlags(LauncherApps.ShortcutQuery.FLAG_MATCH_PINNED)
+            }
 
-        binding.homeApp4.visibility = View.VISIBLE
-        if (!setHomeAppText(
-                binding.homeApp4,
-                prefs.appName4,
-                prefs.appPackage4,
-                prefs.appUser4,
-                prefs.isShortcut4,
-                prefs.shortcutId4,
-            )
-        ) {
-            prefs.appName4 = ""
-            prefs.appPackage4 = ""
-        }
-        if (homeAppsNum == 4) return
-
-        binding.homeApp5.visibility = View.VISIBLE
-        if (!setHomeAppText(
-                binding.homeApp5,
-                prefs.appName5,
-                prefs.appPackage5,
-                prefs.appUser5,
-                prefs.isShortcut5,
-                prefs.shortcutId5,
-            )
-        ) {
-            prefs.appName5 = ""
-            prefs.appPackage5 = ""
-        }
-        if (homeAppsNum == 5) return
-
-        binding.homeApp6.visibility = View.VISIBLE
-        if (!setHomeAppText(
-                binding.homeApp6,
-                prefs.appName6,
-                prefs.appPackage6,
-                prefs.appUser6,
-                prefs.isShortcut6,
-                prefs.shortcutId6,
-            )
-        ) {
-            prefs.appName6 = ""
-            prefs.appPackage6 = ""
-        }
-        if (homeAppsNum == 6) return
-
-        binding.homeApp7.visibility = View.VISIBLE
-        if (!setHomeAppText(
-                binding.homeApp7,
-                prefs.appName7,
-                prefs.appPackage7,
-                prefs.appUser7,
-                prefs.isShortcut7,
-                prefs.shortcutId7,
-            )
-        ) {
-            prefs.appName7 = ""
-            prefs.appPackage7 = ""
-        }
-        if (homeAppsNum == 7) return
-
-        binding.homeApp8.visibility = View.VISIBLE
-        if (!setHomeAppText(
-                binding.homeApp8,
-                prefs.appName8,
-                prefs.appPackage8,
-                prefs.appUser8,
-                prefs.isShortcut8,
-                prefs.shortcutId8,
-            )
-        ) {
-            prefs.appName8 = ""
-            prefs.appPackage8 = ""
+        return try {
+            val shortcuts =
+                launcherApps.getShortcuts(query, getUserHandleFromString(requireContext(), prefs.getAppUser(location)))
+            // Check if our shortcut still exists
+            if (shortcuts?.any { it.id == prefs.getShortcutId(location) } == true) {
+                prefs.getAppName(location) to true
+            } else {
+                "" to false
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to verify home screen shortcut", e)
+            "" to false
         }
     }
 
-    private fun setHomeAppText(
-        textView: TextView,
-        appName: String,
-        packageName: String,
-        userString: String,
-        isShortcut: Boolean,
-        shortcutId: String?,
-    ): Boolean {
-        // Get user handle for the app/shortcut
-        val userHandle = getUserHandleFromString(requireContext(), userString)
+    private fun verifiedAppLabel(location: Int): Pair<String, Boolean> =
+        prefs.getAppName(location) to
+            isPackageInstalled(requireContext(), prefs.getAppPackage(location), prefs.getAppUser(location))
 
-        // If it's a shortcut, verify it still exists
-        if (isShortcut) {
-            val launcherApps = requireContext().getSystemService(Context.LAUNCHER_APPS_SERVICE) as LauncherApps
+    /** The old setHomeAppText failure path: forget a slot whose app vanished. */
+    private fun clearHomeApp(location: Int) {
+        when (location) {
+            Constants.FLAG_SET_HOME_APP_1 -> {
+                prefs.appName1 = ""
+                prefs.appPackage1 = ""
+            }
 
-            // Query for the specific shortcut
-            val query =
-                LauncherApps.ShortcutQuery().apply {
-                    setPackage(packageName)
-                    setQueryFlags(LauncherApps.ShortcutQuery.FLAG_MATCH_PINNED)
-                }
+            Constants.FLAG_SET_HOME_APP_2 -> {
+                prefs.appName2 = ""
+                prefs.appPackage2 = ""
+            }
 
-            try {
-                val shortcuts = launcherApps.getShortcuts(query, userHandle)
-                // Check if our shortcut still exists
-                if (shortcuts?.any { it.id == shortcutId } == true) {
-                    textView.text = appName
-                    return true
-                }
-                textView.text = ""
-                return false
-            } catch (e: Exception) {
-                Log.e(TAG, "Failed to verify home screen shortcut", e)
-                textView.text = ""
-                return false
+            Constants.FLAG_SET_HOME_APP_3 -> {
+                prefs.appName3 = ""
+                prefs.appPackage3 = ""
+            }
+
+            Constants.FLAG_SET_HOME_APP_4 -> {
+                prefs.appName4 = ""
+                prefs.appPackage4 = ""
+            }
+
+            Constants.FLAG_SET_HOME_APP_5 -> {
+                prefs.appName5 = ""
+                prefs.appPackage5 = ""
+            }
+
+            Constants.FLAG_SET_HOME_APP_6 -> {
+                prefs.appName6 = ""
+                prefs.appPackage6 = ""
+            }
+
+            Constants.FLAG_SET_HOME_APP_7 -> {
+                prefs.appName7 = ""
+                prefs.appPackage7 = ""
+            }
+
+            Constants.FLAG_SET_HOME_APP_8 -> {
+                prefs.appName8 = ""
+                prefs.appPackage8 = ""
             }
         }
-
-        // Regular app check
-        if (isPackageInstalled(requireContext(), packageName, userString)) {
-            textView.text = appName
-            return true
-        }
-        textView.text = ""
-        return false
-    }
-
-    private fun hideHomeApps() {
-        binding.homeApp1.visibility = View.GONE
-        binding.homeApp2.visibility = View.GONE
-        binding.homeApp3.visibility = View.GONE
-        binding.homeApp4.visibility = View.GONE
-        binding.homeApp5.visibility = View.GONE
-        binding.homeApp6.visibility = View.GONE
-        binding.homeApp7.visibility = View.GONE
-        binding.homeApp8.visibility = View.GONE
     }
 
     private fun launchAppOrShortcut(
@@ -665,84 +482,68 @@ class HomeFragment :
 
     private fun showLongPressToast() = requireContext().showToast(getString(R.string.long_press_to_select_app))
 
-    private fun textOnClick(view: View) = onClick(view)
+    private fun onSetDefaultLauncherLongPressed() {
+        prefs.hideSetDefaultLauncher = true
+        showSetDefaultLauncher = false
+        if (viewModel.isMinLauncherDefault.value != true) {
+            requireContext().showToast(R.string.set_as_default_launcher)
+            findNavController().navigate(R.id.action_mainFragment_to_settingsFragment)
+        }
+    }
 
-    private fun textOnLongClick(view: View) = onLongClick(view)
-
-    private fun getSwipeGestureListener(context: Context): View.OnTouchListener {
-        return object : OnSwipeTouchListener(context) {
-            override fun onSwipeLeft() {
-                super.onSwipeLeft()
-                openSwipeLeftApp()
-            }
-
-            override fun onSwipeRight() {
-                super.onSwipeRight()
-                openSwipeRightApp()
-            }
-
-            override fun onSwipeUp() {
-                super.onSwipeUp()
-                showAppList(Constants.FLAG_LAUNCH_APP)
-            }
-
-            override fun onSwipeDown() {
-                super.onSwipeDown()
-                expandNotificationDrawer(context)
-            }
-
-            override fun onLongClick() {
-                super.onLongClick()
+    private fun createCallbacks(): HomeCallbacks =
+        HomeCallbacks(
+            onSwipeLeft = ::openSwipeLeftApp,
+            onSwipeRight = ::openSwipeRightApp,
+            onSwipeUp = { showAppList(Constants.FLAG_LAUNCH_APP) },
+            onSwipeDown = { expandNotificationDrawer(requireContext()) },
+            onBackgroundLongPress = {
                 try {
                     findNavController().navigate(R.id.action_mainFragment_to_settingsFragment)
                 } catch (e: Exception) {
                     Log.e(TAG, "Failed to navigate to settings fragment", e)
                 }
-            }
+            },
+            onBackgroundDoubleTap = {
+                if (prefs.lockModeOn) {
+                    // Preserve the system click feedback the old lock tap played.
+                    binding.root.playSoundEffect(SoundEffectConstants.CLICK)
+                    LockRequest.send(requireContext())
+                }
+            },
+            onSlotTap = ::homeAppClicked,
+            // The slot number doubles as Constants.FLAG_SET_HOME_APP_n (1..8).
+            onSlotLongPress = { location ->
+                showAppList(location, prefs.getAppName(location).isNotEmpty(), true)
+            },
+            onClockTap = { openClock(requireContext()) },
+            onDateTap = { openCalendar(requireContext()) },
+            onScreenTimeTap = ::openScreenTimeDigitalWellbeing,
+            onSetDefaultLauncherTap = { viewModel.requestResetLauncher() },
+            onSetDefaultLauncherLongPress = ::onSetDefaultLauncherLongPressed,
+        )
 
-            override fun onDoubleClick() {
-                super.onDoubleClick()
-                if (!prefs.lockModeOn) return
-                binding.lock.performClick()
-            }
+    private fun resolveHomeColors(): HomeColors {
+        // Resolve once, from the activity theme, so the day/night variant is the
+        // one the (about to be displayed) screen uses. Theme switches recreate.
+        val typedArray = requireActivity().obtainStyledAttributes(R.styleable.HomeColors)
+        return try {
+            HomeColors(
+                primaryColor =
+                    typedArray.requireColor(R.styleable.HomeColors_primaryColor, "primaryColor"),
+                primaryColorTrans80 =
+                    typedArray.requireColor(R.styleable.HomeColors_primaryColorTrans80, "primaryColorTrans80"),
+                textShadow =
+                    typedArray.requireColor(R.styleable.HomeColors_primaryTextShadowColor, "primaryTextShadowColor"),
+                fontFamily =
+                    drawerFontFamily(
+                        typedArray.requireString(R.styleable.HomeColors_mainFontFamily, "mainFontFamily"),
+                    ),
+            )
+        } finally {
+            typedArray.recycle()
         }
     }
-
-    private fun getViewSwipeTouchListener(
-        context: Context,
-        view: View,
-    ): View.OnTouchListener =
-        object : ViewSwipeTouchListener(context, view) {
-            override fun onSwipeLeft() {
-                super.onSwipeLeft()
-                openSwipeLeftApp()
-            }
-
-            override fun onSwipeRight() {
-                super.onSwipeRight()
-                openSwipeRightApp()
-            }
-
-            override fun onSwipeUp() {
-                super.onSwipeUp()
-                showAppList(Constants.FLAG_LAUNCH_APP)
-            }
-
-            override fun onSwipeDown() {
-                super.onSwipeDown()
-                expandNotificationDrawer(context)
-            }
-
-            override fun onLongClick(view: View) {
-                super.onLongClick(view)
-                textOnLongClick(view)
-            }
-
-            override fun onClick(view: View) {
-                super.onClick(view)
-                textOnClick(view)
-            }
-        }
 
     override fun onDestroyView() {
         super.onDestroyView()
