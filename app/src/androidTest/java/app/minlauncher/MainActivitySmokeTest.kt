@@ -68,6 +68,9 @@ class MainActivitySmokeTest {
             // Waiting for the list container alone is not enough — it composes
             // even with a permanently empty list — so also require at least one
             // child node: LazyColumn only composes children for actual items.
+            // The item itself comes from DummyLauncherActivity in this test
+            // APK: the aosp-atd image has no other launchable apps, and the
+            // drawer never lists the launcher itself.
             composeRule.waitUntil(timeoutMillis = 10_000L) {
                 composeRule
                     .onAllNodesWithTag("drawer.list")
