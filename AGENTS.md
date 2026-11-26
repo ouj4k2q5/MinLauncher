@@ -2,7 +2,17 @@
 
 MinLauncher: a minimal, offline Android home-screen launcher (personal fork of
 Olauncher). Single Gradle module `:app`, Kotlin sources under
-`app/src/main/java/app/minlauncher/`, JVM tests under `app/src/test/`.
+`app/src/main/java/app/minlauncher/`, JVM tests under `app/src/test/`, on-device
+smoke tests under `app/src/androidTest/`.
+
+The UI is Jetpack Compose (Material 3 Expressive via `ui/theme/`): all three
+screens — home (`ui/home/`), app drawer (`ui/drawer/`), settings
+(`ui/settings/`) — are Compose content hosted by their fragments. Only
+`HomeFragment` still inflates a ViewBinding layout as its shell. The Robolectric
+suite drives the debug-only `TestMainActivity`
+(`app/src/debug/java/app/minlauncher/testing/`), and the smoke tests ship a
+launchable `DummyLauncherActivity` in the test APK so the drawer has exactly one
+entry on the bare aosp-atd image.
 
 ## Hard constraints
 
@@ -31,8 +41,17 @@ CI (`.github/workflows/ci.yml`) runs exactly this — run the same locally:
 `assembleRelease` is intentional: R8 shrinking problems only surface there.
 `verifyRoborazziDebug` compares the main screens against the screenshot baselines
 committed in `app/roborazzi/` (plain `test` silently skips the capture). When a
-visual change is intentional, re-record with `./gradlew recordRoborazziDebug`
-and describe the visual diff in the commit message. Useful subsets:
+UI change intentionally alters a screen, update the baselines:
+
+1. `./gradlew recordRoborazziDebug` — re-capture the screenshots
+2. `./gradlew verifyRoborazziDebug` — confirm they now match
+3. Commit the baselines that intentionally changed (`app/roborazzi/*.png`) and
+   describe the visual diff in the commit message; an unintentionally changed
+   screenshot means the UI changed more than you expected
+
+When verification fails, the `*_actual.png` / `*_compare.png` diff images land in
+`app/build/intermediates/roborazzi/` (CI uploads them in the `reports`
+artifact). Useful subsets:
 
 ```bash
 ./gradlew ktlintFormat                          # auto-fix formatting (.editorconfig, 120-col)
@@ -48,10 +67,18 @@ JVM tests are JUnit 4 only.
 
 ## Toolchain quirks
 
-- JDK 17 required. AGP 9.4.1, Gradle 9.8.0 via the wrapper, Kotlin 2.2 via AGP's
-  built-in Kotlin support (no `kotlin-android` plugin, no buildscript classpath).
+- JDK 17 required. AGP 9.5.3, Gradle 9.9.2 via the wrapper, Kotlin 2.2 via AGP's
+  built-in Kotlin support (no `kotlin-android` plugin, no buildscript classpath);
+  the Compose compiler comes from the `kotlin-compose` plugin alias
+  (`org.jetbrains.kotlin.plugin.compose`, versioned with Kotlin).
+- Kotlin versions are pinned to AGP's embedded compiler (AGP 9.5.x embeds
+  2.2.10): stdlib/plugin versions above it fail every compile with a Kotlin
+  metadata mismatch, so Dependabot ignores `org.jetbrains.kotlin*` updates past
+  2.2.10 (see `.github/dependabot.yml`). When AGP is bumped, check which Kotlin
+  it embeds and raise that ceiling before letting the updates through.
 - AGP 9 DSL differs from older examples you may know:
-  `compileSdk { version = release(36) }`, `minSdk { version = release(30) }`,
+  `compileSdk { version = release(37) { minorApiLevel = 1 } }`,
+  `minSdk { version = release(30) }`,
   `androidResources { localeFilters += setOf("en", "ja") }` — not
   `resourceConfigurations`.
 - Versions are centralized in `gradle/libs.versions.toml` (plugins DSL).

@@ -29,8 +29,8 @@ import java.util.TimeZone
 @Config(sdk = [35], qualifiers = RobolectricDeviceQualifiers.Pixel4)
 @RunWith(RobolectricTestRunner::class)
 class ScreenShotTest {
-    // The settings screen is Compose; this settles its composition before the
-    // decorView is captured. Other screens have no Compose roots yet.
+    // All screens are Compose; this settles their compositions before the
+    // decorView is captured.
     @get:Rule
     val composeRule = createEmptyComposeRule()
 

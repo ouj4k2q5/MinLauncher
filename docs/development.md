@@ -5,9 +5,10 @@
 | Component | Version                    |
 |---|----------------------------|
 | JDK | 17                         |
-| Gradle | 9.8.0, through the wrapper |
-| Android Gradle Plugin | 9.4.1                      |
-| `compileSdk` / `targetSdk` | 36                         |
+| Gradle | 9.9.2, through the wrapper |
+| Android Gradle Plugin | 9.5.3                      |
+| `compileSdk` | 37                         |
+| `targetSdk` | 36                         |
 | `minSdk` | 30 (Android 11)            |
 
 ## Build and check
@@ -35,6 +36,28 @@ The first run downloads a ~1.2 GB system image. Because of that cost these tests
 are not part of the per-push CI command; `.github/workflows/instrumented.yml`
 runs them nightly and on demand (workflow_dispatch), where the runner's KVM makes
 the emulator fast enough.
+
+## Screenshot tests
+
+The Robolectric suite includes Roborazzi screenshot tests
+([ScreenShotTest.kt](../app/src/test/java/app/minlauncher/ui/ScreenShotTest.kt))
+that capture the home screen (dark and light), the app drawer, a filtered drawer,
+and the settings screen. The baselines are the PNGs committed in
+[`app/roborazzi/`](../app/roborazzi/), and CI's `verifyRoborazziDebug` step fails
+when a screenshot no longer matches its baseline (plain `test` silently skips
+the capture).
+
+When a UI change intentionally alters a screen, re-record the baselines:
+
+1. `./gradlew recordRoborazziDebug` — re-capture the screenshots
+2. `./gradlew verifyRoborazziDebug` — confirm they now match
+3. Commit the baselines that intentionally changed (`app/roborazzi/*.png`) and
+   describe the visual diff in the commit message; an unintentionally changed
+   screenshot means the UI changed more than you expected
+
+When verification fails locally or in CI, the `*_actual.png` / `*_compare.png`
+diff images land in `app/build/intermediates/roborazzi/` (CI uploads them in
+the `reports` artifact).
 
 ## Test coverage
 
@@ -111,5 +134,5 @@ Published release APKs include a SLSA build provenance attestation. Verify a
 download before installing it with:
 
 ```bash
-gh attestation verify MinLauncher-0.0.3.apk --repo ouj4k2q5/MinLauncher
+gh attestation verify MinLauncher-0.0.4.apk --repo ouj4k2q5/MinLauncher
 ```

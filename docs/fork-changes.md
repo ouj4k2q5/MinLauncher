@@ -21,8 +21,14 @@ by the original author. Report issues for this fork to this repository, not upst
   permission. The local solid-colour wallpaper is now drawn as an in-app backdrop
   instead of overwriting the system wallpaper, so toggling it is fully reversible
   and the `SET_WALLPAPER` permission is gone. The lock screen wallpaper is never touched.
-- Removes unused dependencies and resources, and explicitly declares the coroutine and
-  lifecycle dependencies used by the app.
+- Removes unused dependencies and resources, and explicitly declares the
+  coroutine, lifecycle, and Compose dependencies used by the app.
+- Rebuilds all three screens — home, app drawer, and settings — with Jetpack
+  Compose (Material 3 Expressive via a shared `MinLauncherTheme`), replacing
+  upstream's View-based UI. The old swipe-listener classes are gone; their
+  gesture contracts live on inside the Compose home screen. Fragments remain
+  as hosts (and `HomeFragment` keeps a small ViewBinding shell), with Compose
+  content inside.
 - Removes the ability to long-press the clock, date, or screen-time text and assign
   any installed app to it. Tapping them now always opens a fixed destination: the
   installed clock app (falling back to the system alarm intent), the calendar, or

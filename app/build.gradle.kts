@@ -153,8 +153,8 @@ dependencies {
     implementation(libs.recyclerview)
     implementation(libs.datastore.preferences)
 
-    // Android lifecycle (runtime-compose provides collectAsStateWithLifecycle for
-    // the Compose settings screen; the Fragment keeps owning the ViewModel).
+    // Android lifecycle (runtime-compose provides collectAsStateWithLifecycle
+    // for the Compose screens; the fragments keep owning their ViewModels).
     implementation(libs.lifecycle.runtime.ktx)
     implementation(libs.lifecycle.runtime.compose)
     implementation(libs.lifecycle.viewmodel.ktx)
@@ -162,9 +162,9 @@ dependencies {
     // Navigation
     implementation(libs.navigation.fragment.ktx)
 
-    // Compose (Stage 0 foundation — BOM 2026.11.01 / material3 1.5.0, which
-    // requires compileSdk 37 (now satisfied). Compose screens are still zero;
-    // Stage 8a settings will be the first consumer of these.)
+    // Compose (BOM 2026.11.01 / material3 1.5.0, which requires compileSdk 37,
+    // now satisfied). All three screens — home, drawer, settings — consume
+    // these through their fragments' Compose content.
     implementation(platform(libs.compose.bom))
     implementation(libs.compose.ui)
     implementation(libs.compose.foundation)
@@ -186,7 +186,8 @@ dependencies {
     androidTestImplementation(libs.androidx.test.core.ktx)
     androidTestImplementation(libs.androidx.test.ext.junit)
     androidTestImplementation(libs.espresso.core)
-    // The on-device smoke test drives the Compose settings screen.
+    // The on-device smoke tests drive the Compose home, drawer, and settings
+    // screens.
     androidTestImplementation(platform(libs.compose.bom))
     androidTestImplementation(libs.compose.ui.test.junit4)
 }
