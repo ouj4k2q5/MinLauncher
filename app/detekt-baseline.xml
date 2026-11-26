@@ -4,33 +4,20 @@
     <CurrentIssues>
         <ID>ComplexCondition:MainActivity.kt$MainActivity$( prefs.appTheme == AppCompatDelegate.MODE_NIGHT_YES &amp;&amp; getColorFromAttr(R.attr.primaryColor) != getColor(R.color.white) ) || ( prefs.appTheme == AppCompatDelegate.MODE_NIGHT_NO &amp;&amp; getColorFromAttr(R.attr.primaryColor) != getColor(R.color.black) )</ID>
         <ID>CyclomaticComplexMethod:EventLogWrapper.kt$EventLogWrapper$fun getForegroundStatsByTimestamps( start: Long, end: Long, ): List&lt;ComponentForegroundStat&gt;</ID>
-        <ID>CyclomaticComplexMethod:HomeFragment.kt$HomeFragment$private fun populateHomeScreen(appCountUpdated: Boolean)</ID>
         <ID>CyclomaticComplexMethod:LauncherRepository.kt$LauncherRepository$fun selectedApp( appModel: AppModel, flag: Int, )</ID>
         <ID>CyclomaticComplexMethod:LauncherRepository.kt$LauncherRepository$private fun saveHomeApp( appModel: AppModel, position: Int, )</ID>
         <ID>LongMethod:EventLogWrapper.kt$EventLogWrapper$fun getForegroundStatsByTimestamps( start: Long, end: Long, ): List&lt;ComponentForegroundStat&gt;</ID>
-        <ID>LongMethod:HomeFragment.kt$HomeFragment$private fun populateHomeScreen(appCountUpdated: Boolean)</ID>
         <ID>LongMethod:LauncherRepository.kt$LauncherRepository$private fun saveHomeApp( appModel: AppModel, position: Int, )</ID>
         <ID>LongParameterList:HomeFragment.kt$HomeFragment$( appName: String, packageName: String, activityClassName: String?, shortcutId: String?, isShortcut: Boolean, userString: String, fallback: (() -&gt; Unit)? = null, )</ID>
-        <ID>LongParameterList:HomeFragment.kt$HomeFragment$( textView: TextView, appName: String, packageName: String, userString: String, isShortcut: Boolean, shortcutId: String?, )</ID>
         <ID>NestedBlockDepth:EventLogWrapper.kt$EventLogWrapper$fun getForegroundStatsByTimestamps( start: Long, end: Long, ): List&lt;ComponentForegroundStat&gt;</ID>
-        <ID>NestedBlockDepth:OnSwipeTouchListener.kt$OnSwipeTouchListener.GestureListener$override fun onFling( event1: MotionEvent?, event2: MotionEvent, velocityX: Float, velocityY: Float, ): Boolean</ID>
         <ID>NestedBlockDepth:UnmatchedCloseEventGuardian.kt$UnmatchedCloseEventGuardian$fun test( event: UsageEvents.Event, queryStart: Long, ): Boolean</ID>
-        <ID>NestedBlockDepth:ViewSwipeTouchListener.kt$ViewSwipeTouchListener.GestureListener$override fun onFling( event1: MotionEvent?, event2: MotionEvent, velocityX: Float, velocityY: Float, ): Boolean</ID>
         <ID>ReturnCount:Extensions.kt$private fun isKnownEinkModel(): Boolean</ID>
-        <ID>ReturnCount:HomeFragment.kt$HomeFragment$private fun populateHomeScreen(appCountUpdated: Boolean)</ID>
-        <ID>ReturnCount:HomeFragment.kt$HomeFragment$private fun setHomeAppText( textView: TextView, appName: String, packageName: String, userString: String, isShortcut: Boolean, shortcutId: String?, ): Boolean</ID>
-        <ID>ReturnCount:MyAccessibilityService.kt$MyAccessibilityService$override fun onAccessibilityEvent(event: AccessibilityEvent)</ID>
         <ID>ReturnCount:Utils.kt$fun getPrivateSpaceUserHandle(context: Context): UserHandle?</ID>
         <ID>TooGenericExceptionCaught:Extensions.kt$e: Exception</ID>
         <ID>TooGenericExceptionCaught:HomeFragment.kt$HomeFragment$e: Exception</ID>
-        <ID>TooGenericExceptionCaught:HomeFragment.kt$HomeFragment.&lt;no name provided&gt;$e: Exception</ID>
         <ID>TooGenericExceptionCaught:LauncherRepository.kt$LauncherRepository$e: Exception</ID>
-        <ID>TooGenericExceptionCaught:MyAccessibilityService.kt$MyAccessibilityService$e: Exception</ID>
-        <ID>TooGenericExceptionCaught:OnSwipeTouchListener.kt$OnSwipeTouchListener.GestureListener$exception: Exception</ID>
         <ID>TooGenericExceptionCaught:Utils.kt$e: Exception</ID>
-        <ID>TooGenericExceptionCaught:ViewSwipeTouchListener.kt$ViewSwipeTouchListener.GestureListener$exception: Exception</ID>
         <ID>TooManyFunctions:Extensions.kt$app.minlauncher.helper.Extensions.kt</ID>
-        <ID>TooManyFunctions:HomeFragment.kt$HomeFragment : BaseFragmentOnClickListenerOnLongClickListener</ID>
         <ID>TooManyFunctions:MainActivity.kt$MainActivity : AppCompatActivity</ID>
         <ID>TooManyFunctions:LauncherRepository.kt$LauncherRepository</ID>
         <ID>TooManyFunctions:Utils.kt$app.minlauncher.helper.Utils.kt</ID>

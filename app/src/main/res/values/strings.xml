@@ -1,7 +1,6 @@
 <resources>
     <string name="app_name" translatable="false">MinLauncher</string>
     <string name="app_info">App info</string>
-    <string name="lock_layout_description" translatable="false">lock layout description to be used a unique id to lock screen</string>
     <string name="day_battery" formatted="false" translatable="false">%s, %d%%</string>
     <string name="tag_1" translatable="false">1</string>
     <string name="tag_2" translatable="false">2</string>
@@ -16,8 +15,8 @@
 
     <string name="app">App</string>
     <string name="set_as_default_launcher">Set as default launcher</string>
-    <string name="set_as_default_launcher_u"><u>Set as default launcher</u></string>
     <string name="double_tap_to_lock_screen">Double-tap to lock the screen</string>
+    <string name="lock_screen_action">Lock the screen</string>
     <string name="home_button_show_recents">Home button shows recent apps</string>
     <string name="off">Off</string>
     <string name="on">On</string>
@@ -43,11 +42,11 @@
     <string name="dark">Dark</string>
     <string name="light">Light</string>
     <string name="welcome_to_minlauncher_settings">Thank you for choosing MinLauncher.
-   \n\nEnjoy your clean home screen.</string>
+  \n\nEnjoy your clean home screen.</string>
     <string name="keyboard_message">The keyboard is the fastest way to find apps.
-   \n\nYou can change this setting anytime.</string>
+  \n\nYou can change this setting anytime.</string>
     <string name="app_usage_message">To show screen time on the home screen, allow access to app usage.
-   \n\nThis feature is used only to display screen time. No data is collected or shared.</string>
+  \n\nThis feature is used only to display screen time. No data is collected or shared.</string>
     <string name="accessibility_service_description">Accessibility permission is required to enable \"Double-tap to lock the screen\". This service is used only for this gesture. No data is collected or shared.</string>
     <string name="close">Close</string>
     <string name="date">Date</string>

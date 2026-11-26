@@ -17,8 +17,9 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
+import java.time.Clock
 import java.time.Instant
-import java.util.Date
+import java.time.ZoneId
 import java.util.Locale
 import java.util.TimeZone
 
@@ -35,9 +36,9 @@ class ScreenShotTest {
 
     private val homeApps = fakeApps("Browser", "Camera", "Mail", "Chat", "Maps", "Music", "Notes", "Files")
 
-    // The TextClock renders Robolectric's frozen SystemClock in the JVM default
-    // timezone, and the date line follows the wall clock. Pin both, or baselines
-    // differ between machines and recording days.
+    // Both the clock and the date line render from HomeFragment's injected
+    // clock, so pin it (and the timezone it formats in), or baselines differ
+    // between machines and recording days.
     private val fixedInstant = Instant.parse("2026-10-06T00:00:00Z") // Tue, Oct 6 in Asia/Tokyo
 
     private lateinit var originalTimeZone: TimeZone
@@ -49,14 +50,14 @@ class ScreenShotTest {
         originalLocale = Locale.getDefault()
         TimeZone.setDefault(TimeZone.getTimeZone("Asia/Tokyo"))
         Locale.setDefault(Locale.US)
-        HomeFragment.dateProvider = { Date(fixedInstant.toEpochMilli()) }
+        HomeFragment.clock = Clock.fixed(fixedInstant, ZoneId.of("Asia/Tokyo"))
     }
 
     @After
     fun restoreRenderingEnvironment() {
         TimeZone.setDefault(originalTimeZone)
         Locale.setDefault(originalLocale)
-        HomeFragment.dateProvider = { Date() }
+        HomeFragment.clock = Clock.systemDefaultZone()
         TestMainActivity.testAppListProvider = null
     }
 

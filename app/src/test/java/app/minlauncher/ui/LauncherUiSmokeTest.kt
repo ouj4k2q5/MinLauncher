@@ -2,12 +2,8 @@ package app.minlauncher.ui
 
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createEmptyComposeRule
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
-import androidx.test.espresso.Espresso.onView
-import androidx.test.espresso.assertion.ViewAssertions.matches
-import androidx.test.espresso.matcher.ViewMatchers.isDisplayed
-import androidx.test.espresso.matcher.ViewMatchers.withId
-import app.minlauncher.R
 import app.minlauncher.testing.TestMainActivity
 import org.junit.After
 import org.junit.Rule
@@ -20,8 +16,8 @@ import org.robolectric.annotation.Config
 @Config(sdk = [35])
 @RunWith(RobolectricTestRunner::class)
 class LauncherUiSmokeTest {
-    // The drawer is Compose; the empty rule drives its semantics tree while
-    // the tests launch their own ActivityScenario.
+    // The home screen and the drawer are Compose; the empty rule drives
+    // their semantics trees while the tests launch their own ActivityScenario.
     @get:Rule
     val composeRule = createEmptyComposeRule()
 
@@ -33,9 +29,10 @@ class LauncherUiSmokeTest {
     @Test
     fun `home screen is shown after launch`() {
         launchLauncher(fakeApps("Browser", "Camera", "Mail")).use {
-            // The clock itself stays zero-width until its first tick under
-            // Robolectric, so assert on its always-laid-out container.
-            onView(withId(R.id.dateTimeLayout)).check(matches(isDisplayed()))
+            // The clock is Compose too now; it renders text immediately
+            // (the old TextClock stayed zero-width until its first tick).
+            composeRule.onNodeWithTag("home.dateTime").assertIsDisplayed()
+            composeRule.onNodeWithTag("home.clock").assertIsDisplayed()
         }
     }
 

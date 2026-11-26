@@ -25,6 +25,14 @@
         <attr name="primaryTextShadowColor" />
     </declare-styleable>
 
+    <!-- Resolved once by HomeFragment for the Compose home-screen palette. -->
+    <declare-styleable name="HomeColors">
+        <attr name="primaryColor" />
+        <attr name="primaryColorTrans80" />
+        <attr name="primaryTextShadowColor" />
+        <attr name="mainFontFamily" />
+    </declare-styleable>
+
     <!-- Resolved once by AppDrawerFragment for the Compose drawer palette. -->
     <declare-styleable name="DrawerColors">
         <attr name="primaryColor" />

@@ -111,12 +111,12 @@ fun openSettings() {
 fun testPrefs(): Prefs = Prefs(ApplicationProvider.getApplicationContext())
 
 /**
- * Performs a long press that stays down long enough for
- * [app.minlauncher.listener.ViewSwipeTouchListener], which fires its
- * onLongClick only after an additional LONG_PRESS_DELAY_MS posted on top of
- * the system long-press timeout. Espresso's built-in longClick() holds only
- * the system timeout, so the listener's delayed task would be cancelled by
- * the ACTION_UP before it runs.
+ * Performs a long press that stays down long enough for the Compose home
+ * background detector, which fires its long press only after an additional
+ * LONG_PRESS_DELAY_MS posted on top of the system long-press timeout (the
+ * old ViewSwipeTouchListener timing). Espresso's built-in longClick() holds
+ * only the system timeout, so the handler task would be cancelled by the
+ * ACTION_UP before it runs.
  */
 fun holdLongPress(
     at: CoordinatesProvider = GeneralLocation.CENTER,
