@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <application>
+        <!-- The aosp-atd system image ships no MAIN/LAUNCHER activity besides
+             the app under test (it strips Launcher3, Settings, Dialer, ...), and
+             the drawer never lists the launcher itself, so without this entry
+             the app list on the smoke-test emulator is always empty. This test-
+             APK activity gives the drawer exactly one deterministic entry. -->
+        <activity
+            android:name="app.minlauncher.DummyLauncherActivity"
+            android:exported="true"
+            android:label="Drawer smoke target">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+    </application>
+</manifest>
