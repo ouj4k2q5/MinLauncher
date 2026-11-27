@@ -1,12 +1,12 @@
 [versions]
 appcompat = "1.8.0"
 coreKtx = "1.19.1"
-coroutines = "1.7.3"
+coroutines = "1.11.0"
 datastore = "1.3.0"
 detekt = "1.23.8"
 agp = "9.5.1"
 ktlintGradle = "14.2.0"
-kotlinStdlib = "2.2.10"
+kotlinStdlib = "2.4.21"
 # The app itself only needs this floor: the Compose graph's androidx.lifecycle
 # atomic group resolves the whole family to 2.11.0 at build time, which is fine
 # now that the project compiles against compileSdk 37.
@@ -22,7 +22,7 @@ roborazzi = "1.79.0"
 jacoco = "0.8.16"
 # Must track kotlinStdlib: the Compose compiler Gradle plugin is versioned
 # with the Kotlin compiler it is built against.
-kotlinComposePlugin = "2.2.10"
+kotlinComposePlugin = "2.4.21"
 composeBom = "2026.11.01"
 [libraries]
 appcompat = { module = "androidx.appcompat:appcompat", version.ref = "appcompat" }
