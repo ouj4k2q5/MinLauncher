@@ -52,7 +52,15 @@ private const val TAG = "HomeEntry"
  * composition (returning from the drawer disposes and recreates the entry) and
  * once from the ACTIVITY lifecycle, because the entry-scoped
  * `LocalLifecycleOwner`'s identity is not guaranteed.
+ *
+ * The composition-time initialization below is deliberately synchronous: it
+ * mutates ViewModel state before [HomeScreenHost] reads it, so the first drawn
+ * frame already has the slots. SideEffect/LaunchedEffect run after composition
+ * and would let the first frame draw empty (the decor-view screenshot capture
+ * does not wait for an effect), so the remember-returns-Unit pattern is
+ * intentional here rather than the misuse RememberReturnType warns about.
  */
+@Suppress("RememberReturnType")
 @Composable
 internal fun HomeEntry(
     repository: LauncherRepository,

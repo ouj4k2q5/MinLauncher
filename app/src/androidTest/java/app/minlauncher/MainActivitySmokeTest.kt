@@ -97,7 +97,11 @@ class MainActivitySmokeTest {
         // A point on the home background clear of the top-start clock/date
         // column and of the vertically centered home app slots, so the press
         // cannot be consumed by an interactive child. The top centre is not
-        // safe: the large clock text is wide enough to reach it on a phone.
+        // safe: the large clock text is wide enough to reach it on a phone. The
+        // 0.9w x-coordinate can overlap the screen-time text (top-end, ~72dp
+        // top margin) when state.screenTime != null; it is null on a fresh GMD
+        // because usage access is not granted, which is why the point is safe
+        // today.
         private val backgroundPoint =
             CoordinatesProvider { view ->
                 val location = IntArray(2)

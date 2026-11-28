@@ -135,6 +135,12 @@ private class DrawerEntryDeps(
  * be on top across that cycle (the private-space settings round trip skips
  * backToHomeScreen). So the CJK cache reset and keyboard-show bump also ride the
  * activity lifecycle: START resets them, STOP hides the keyboard.
+ *
+ * There is deliberately no separate composition-time bump: adding an observer
+ * to a STARTED/RESUMED activity replays every state event up to the current
+ * state, so registration itself delivers an ON_START (and a CREATED activity
+ * delivers the real one when it starts). Bumping here as well would increment
+ * keyboardShowSignal twice per drawer open.
  */
 @Composable
 private fun DrawerStartStopParity(
@@ -142,10 +148,6 @@ private fun DrawerStartStopParity(
     deps: DrawerEntryDeps,
 ) {
     val state = deps.state
-    LaunchedEffect(state) {
-        state.cachedIsCjkKeyboard = null
-        state.keyboardShowSignal++
-    }
     DisposableEffect(activity, deps) {
         val activityLifecycle = (activity as LifecycleOwner).lifecycle
         val observer =
