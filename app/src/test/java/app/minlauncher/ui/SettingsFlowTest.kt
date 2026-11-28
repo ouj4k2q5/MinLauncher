@@ -28,8 +28,8 @@ import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
 import java.util.concurrent.TimeUnit
 
-// SDK 36 requires Java 21 in Robolectric, so pin the highest SDK that runs on JDK 17.
-@Config(sdk = [35])
+// Pin the Robolectric SDK to targetSdk (36).
+@Config(sdk = [36])
 @RunWith(RobolectricTestRunner::class)
 class SettingsFlowTest {
     // Empty rule: the test launches its own ActivityScenario (per-test seeding

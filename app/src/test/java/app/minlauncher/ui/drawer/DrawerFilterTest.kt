@@ -11,8 +11,9 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
 // Regression protection for the old adapter's matching rules, extracted into
-// filterApps verbatim. SDK 36 requires Java 21 in Robolectric.
-@Config(sdk = [35])
+// filterApps verbatim.
+// Pin the Robolectric SDK to targetSdk (36).
+@Config(sdk = [36])
 @RunWith(RobolectricTestRunner::class)
 class DrawerFilterTest {
     private val apps =

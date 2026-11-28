@@ -110,7 +110,8 @@ JVM tests are JUnit 4 only.
 
 - Debug builds use the `.debug` application-ID suffix, so they install alongside
   release builds.
-- Robolectric tests use `@Config(sdk = [35])` (SDK 36 needs Java 21) and never
+- Robolectric tests use `@Config(sdk = [36])` (matching `targetSdk`; SDK 36 needs
+  the Java 21 daemon) and never
   use the `preferencesDataStore` delegate (a static singleton goes stale across
   tests); DataStore tests create the store with `PreferenceDataStoreFactory.create`
   and a per-test file.

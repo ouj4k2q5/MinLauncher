@@ -22,14 +22,14 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
-// SDK 36 requires Java 21 in Robolectric, so pin the highest SDK that runs on JDK 17.
+// Pin the Robolectric SDK to targetSdk (36).
 
 /**
  * Pins the two Navigation 3 behaviors the fragment removal relies on: back at
  * the home root is swallowed (no crash, no app exit), and the remembered back
  * stack survives activity recreation.
  */
-@Config(sdk = [35])
+@Config(sdk = [36])
 @RunWith(RobolectricTestRunner::class)
 class Nav3BehaviorTest {
     @get:Rule

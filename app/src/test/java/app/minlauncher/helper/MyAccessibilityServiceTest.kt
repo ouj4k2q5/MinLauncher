@@ -19,9 +19,9 @@ import org.robolectric.annotation.Config
  * is sent) is covered by LockRequestTest, while this proves [MyAccessibilityService]
  * performs the global lock action on receipt and stops listening after onDestroy.
  *
- * SDK 36 requires Java 21 in Robolectric, so pin the highest SDK that runs on JDK 17.
+ * Pin the Robolectric SDK to targetSdk (36).
  */
-@Config(sdk = [35])
+@Config(sdk = [36])
 @RunWith(RobolectricTestRunner::class)
 class MyAccessibilityServiceTest {
     private val application = ApplicationProvider.getApplicationContext<Application>()

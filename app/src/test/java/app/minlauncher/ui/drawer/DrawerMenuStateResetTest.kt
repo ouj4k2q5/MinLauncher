@@ -25,9 +25,9 @@ import org.robolectric.annotation.Config
  * be cleared on disposal, otherwise the menu reappears (and the rename field
  * resets the user's typed text) when the row scrolls back.
  *
- * SDK 36 requires Java 21 in Robolectric, so pin the highest SDK that runs on JDK 17.
+ * Pin the Robolectric SDK to targetSdk (36).
  */
-@Config(sdk = [35])
+@Config(sdk = [36])
 @RunWith(RobolectricTestRunner::class)
 class DrawerMenuStateResetTest {
     @get:Rule

@@ -117,14 +117,32 @@ private fun newLauncherActivityInfo(
             name = app.activityClassName
         }
     val internalClass = Class.forName("android.content.pm.LauncherActivityInfoInternal")
+    val incrementalStatesInfo = Class.forName("android.content.pm.IncrementalStatesInfo")
+    // Android 16 (SDK 36) appended a `supportsMultiInstance` boolean to this
+    // hidden constructor; older SDKs stop at UserHandle.
     val internalCtor =
-        internalClass
-            .getDeclaredConstructor(
+        runCatching {
+            internalClass.getDeclaredConstructor(
                 ActivityInfo::class.java,
-                Class.forName("android.content.pm.IncrementalStatesInfo"),
+                incrementalStatesInfo,
                 UserHandle::class.java,
-            ).apply { isAccessible = true }
-    val internal = internalCtor.newInstance(activityInfo, null, app.user)
+                java.lang.Boolean.TYPE,
+            )
+        }.getOrElse {
+            internalClass.getDeclaredConstructor(
+                ActivityInfo::class.java,
+                incrementalStatesInfo,
+                UserHandle::class.java,
+            )
+        }.apply { isAccessible = true }
+    val internalArgs =
+        buildList {
+            add(activityInfo)
+            add(null)
+            add(app.user)
+            repeat(internalCtor.parameterCount - 3) { add(false) }
+        }
+    val internal = internalCtor.newInstance(*internalArgs.toTypedArray())
     return android.content.pm.LauncherActivityInfo::class.java
         .getDeclaredConstructor(Context::class.java, internalClass)
         .apply { isAccessible = true }
