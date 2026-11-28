@@ -166,6 +166,9 @@ dependencies {
     // navigation3-dynamic-features: it pulls Play Feature Delivery.
     implementation(libs.androidx.navigation3.runtime)
     implementation(libs.androidx.navigation3.ui)
+    // Entry-scoped ViewModels for Nav3: provides the NavEntry decorator that
+    // installs a ViewModelStoreOwner per entry (Task 5 consumes it).
+    implementation(libs.androidx.lifecycle.viewmodel.navigation3)
 
     // Compose (BOM 2026.11.01 / material3 1.5.0, which requires compileSdk 37,
     // now satisfied). All three screens — home, drawer, settings — consume
