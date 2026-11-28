@@ -8,7 +8,6 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.view.inputmethod.InputMethodManager
-import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -34,9 +33,7 @@ import app.minlauncher.helper.openUrl
 import app.minlauncher.helper.showToast
 import app.minlauncher.helper.uninstall
 import app.minlauncher.ui.drawer.DrawerCallbacks
-import app.minlauncher.ui.drawer.DrawerColors
-import app.minlauncher.ui.drawer.DrawerScreen
-import app.minlauncher.ui.drawer.DrawerUiState
+import app.minlauncher.ui.drawer.DrawerScreenHost
 import app.minlauncher.ui.drawer.resolveDrawerColors
 
 // One small method per drawer action (the same layout as the old callback
@@ -101,19 +98,10 @@ class AppDrawerFragment : BaseFragment() {
         return ComposeView(requireContext()).apply {
             setBackgroundColor(colors.shadeDark)
             setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
-            setContent { DrawerScreenHost(colors, callbacks, searchHint) }
-        }
-    }
-
-    @Composable
-    private fun DrawerScreenHost(
-        colors: DrawerColors,
-        callbacks: DrawerCallbacks,
-        searchHint: String,
-    ) {
-        DrawerScreen(
-            state =
-                DrawerUiState(
+            setContent {
+                DrawerScreenHost(
+                    colors = colors,
+                    callbacks = callbacks,
                     apps = combinedList,
                     flag = flag,
                     searchHint = searchHint,
@@ -121,10 +109,9 @@ class AppDrawerFragment : BaseFragment() {
                     appLabelAlignment = prefs.appLabelAlignment,
                     autoShowKeyboard = prefs.autoShowKeyboard,
                     showKeyboardSignal = keyboardShowSignal,
-                ),
-            colors = colors,
-            callbacks = callbacks,
-        )
+                )
+            }
+        }
     }
 
     override fun onViewCreated(
