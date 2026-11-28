@@ -8,7 +8,7 @@ import app.minlauncher.ui.theme.requireString
 
 /**
  * Resolves [HomeColors] from the activity theme. Lives next to the screen so the
- * color resolution can move with the rest of the home UI; the Fragment only
+ * color resolution can move with the rest of the home UI; HomeEntry only
  * calls it.
  */
 internal fun Activity.resolveHomeColors(): HomeColors {

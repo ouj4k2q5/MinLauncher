@@ -72,7 +72,7 @@ internal fun holdLongPress(
     }
 
 /**
- * Zero animation scales keep fragment transitions and RecyclerView layout
+ * Zero animation scales keep Navigation 3 transitions and RecyclerView layout
  * animations out of the way, matching how the Robolectric suite runs. The
  * managed device is discarded after the run, so nothing restores them.
  */

@@ -1,9 +1,10 @@
 package app.minlauncher.ui
 
 import android.graphics.Color
-import android.graphics.drawable.ColorDrawable
-import android.view.View
 import androidx.appcompat.app.AppCompatDelegate
+import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.graphics.toPixelMap
+import androidx.compose.ui.test.captureToImage
 import androidx.compose.ui.test.junit4.createEmptyComposeRule
 import androidx.compose.ui.test.longClick
 import androidx.compose.ui.test.onNodeWithTag
@@ -22,8 +23,11 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
+import org.robolectric.annotation.GraphicsMode
 
 // SDK 36 requires Java 21 in Robolectric, so pin the highest SDK that runs on JDK 17.
+// NATIVE graphics are required for the root-node screenshot comparison below.
+@GraphicsMode(GraphicsMode.Mode.NATIVE)
 @Config(sdk = [35])
 @RunWith(RobolectricTestRunner::class)
 class SolidWallpaperFlowTest {
@@ -62,12 +66,15 @@ class SolidWallpaperFlowTest {
             openSettings()
 
             composeRule.onNodeWithTag("settings.wallpaper").performScrollTo().performClick()
+            scenario.popToHome()
             scenario.assertBackgroundColor { activity ->
                 activity.getColorFromAttr(R.attr.primaryInverseColor)
             }
 
-            composeRule.onNodeWithTag("settings.wallpaper").performClick()
+            openSettings()
+            composeRule.onNodeWithTag("settings.wallpaper").performScrollTo().performClick()
             assertEquals(false, testPrefs().solidWallpaper)
+            scenario.popToHome()
             scenario.assertBackgroundColor { Color.TRANSPARENT }
         }
     }
@@ -85,7 +92,6 @@ class SolidWallpaperFlowTest {
             composeRule.onNodeWithTag("settings.wallpaper").performScrollTo().performTouchInput { longClick() }
             assertEquals(false, testPrefs().solidWallpaper)
             assertEquals(AppCompatDelegate.MODE_NIGHT_YES, testPrefs().appTheme)
-            scenario.assertBackgroundColor { Color.TRANSPARENT }
 
             // The forced theme must apply immediately, not only after the next
             // recreation for an unrelated reason: the activity itself is
@@ -93,6 +99,8 @@ class SolidWallpaperFlowTest {
             scenario.onActivity { activity ->
                 assertNotSame(activityBeforeLongPress, activity)
             }
+            scenario.popToHome()
+            scenario.assertBackgroundColor { Color.TRANSPARENT }
         }
     }
 
@@ -112,16 +120,27 @@ class SolidWallpaperFlowTest {
             // theme attr: if setAppTheme's recreate() stopped happening, a stale
             // light-themed activity would resolve the attr to the light value
             // and match its own (unrepainted) background, hiding the bug.
+            scenario.popToHome()
             scenario.assertBackgroundColor { activity ->
                 activity.getColor(R.color.whiteInverse)
             }
         }
     }
 
+    private fun ActivityScenario<TestMainActivity>.popToHome() {
+        onActivity { activity -> activity.handle!!.collapseToHome() }
+    }
+
+    /**
+     * The root Box paints the wallpaper behind the navigation content. The
+     * corner is always background on the home screen (the clock/date sit below
+     * and right of it), so the captured pixel is the root background composited
+     * with whatever is behind it — [Color.TRANSPARENT] for no solid wallpaper.
+     */
     private fun ActivityScenario<TestMainActivity>.assertBackgroundColor(expected: (TestMainActivity) -> Int) {
-        onActivity { activity ->
-            val background = activity.findViewById<View>(R.id.mainActivityLayout).background as ColorDrawable
-            assertEquals(expected(activity), background.color)
-        }
+        var expectedColor = 0
+        onActivity { activity -> expectedColor = expected(activity) }
+        val corner = composeRule.onNodeWithTag("root").captureToImage().toPixelMap()[0, 0]
+        assertEquals(expectedColor, corner.toArgb())
     }
 }

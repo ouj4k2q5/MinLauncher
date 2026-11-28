@@ -63,9 +63,9 @@ class LauncherRepository(
     // Read-only StateFlow mirrors of the settings the screens render. Seeded
     // from the warmed Prefs snapshot at construction (LauncherApp.onCreate
     // warms the store before building the repository) and kept fresh by
-    // collecting [Prefs.snapshotFlow] in the init block below: fragments write
-    // prefs directly, so the mirrors observe the store instead of owning
-    // writes. Values are re-read through the Prefs getters (which apply the
+    // collecting [Prefs.snapshotFlow] in the init block below: the screens'
+    // actions write prefs directly, so the mirrors observe the store instead of
+    // owning writes. Values are re-read through the Prefs getters (which apply the
     // defaults), keeping the key -> default mapping private to Prefs.
     // appTheme is deliberately not mirrored: theme changes go through
     // Activity.recreate().
@@ -103,7 +103,7 @@ class LauncherRepository(
     val swipeRightEnabled: StateFlow<Boolean> = _swipeRightEnabled.asStateFlow()
 
     // App-scoped so the value survives activity recreation (theme change,
-    // rotation): a fragment-scoped holder would reset to null while the
+    // rotation): a screen-scoped holder would reset to null while the
     // one-minute throttle in getTodaysScreenTime() blocks recomputation.
     val screenTimeValue = MutableStateFlow<String?>(null)
 

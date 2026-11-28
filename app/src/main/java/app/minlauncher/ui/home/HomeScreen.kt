@@ -39,7 +39,7 @@ import app.minlauncher.data.Constants
 import java.time.Clock
 
 /**
- * The home screen: the layout of the old fragment_home.xml (portrait and
+ * The home screen: the layout of the old home XML (portrait and
  * landscape variants merged — Compose re-lays out on configuration changes),
  * with the background gesture detector on the root box and each interactive
  * child consuming its own downs so the background skips those gestures.
@@ -54,34 +54,42 @@ internal fun HomeScreen(
     val palette = homePalette(colors)
     val lockActionLabel = stringResource(R.string.lock_screen_action)
     val isLandscape = LocalConfiguration.current.orientation == Configuration.ORIENTATION_LANDSCAPE
+    // Outer node is the background target for the on-device gesture tests; the
+    // inner node keeps the pre-Compose "home.root" semantics and gestures.
     Box(
         Modifier
             .fillMaxSize()
-            .homeBackgroundGestures(callbacks)
-            // TalkBack has no pointer gestures, so the old invisible 1dp lock
-            // view is replaced by this click action on the background. The
-            // callback is the same one the touch double tap uses (and is
-            // gated on lock mode in HomeFragment).
-            .testTag("home.root")
-            .semantics {
-                onClick(label = lockActionLabel) {
-                    callbacks.onBackgroundDoubleTap()
-                    true
-                }
-            },
+            .testTag("home.background"),
     ) {
-        if (state.dateTimeVisibility != Constants.DateTime.OFF) {
-            HomeDateTime(state, palette, clock, callbacks, isLandscape)
-        }
-        if (state.screenTime != null) {
-            HomeScreenTime(state, palette, callbacks, isLandscape)
-        }
-        HomeAppSlots(state, palette, callbacks, isLandscape)
-        if (state.showFirstRunTips) {
-            HomeFirstRunTips(palette, isLandscape)
-        }
-        if (state.showSetDefaultLauncher) {
-            HomeSetDefaultLauncher(palette, callbacks, isLandscape)
+        Box(
+            Modifier
+                .fillMaxSize()
+                .homeBackgroundGestures(callbacks)
+                // TalkBack has no pointer gestures, so the old invisible 1dp lock
+                // view is replaced by this click action on the background. The
+                // callback is the same one the touch double tap uses (and is
+                // gated on lock mode in HomeEntry).
+                .testTag("home.root")
+                .semantics {
+                    onClick(label = lockActionLabel) {
+                        callbacks.onBackgroundDoubleTap()
+                        true
+                    }
+                },
+        ) {
+            if (state.dateTimeVisibility != Constants.DateTime.OFF) {
+                HomeDateTime(state, palette, clock, callbacks, isLandscape)
+            }
+            if (state.screenTime != null) {
+                HomeScreenTime(state, palette, callbacks, isLandscape)
+            }
+            HomeAppSlots(state, palette, callbacks, isLandscape)
+            if (state.showFirstRunTips) {
+                HomeFirstRunTips(palette, isLandscape)
+            }
+            if (state.showSetDefaultLauncher) {
+                HomeSetDefaultLauncher(palette, callbacks, isLandscape)
+            }
         }
     }
 }

@@ -8,13 +8,17 @@ agp = "9.5.3"
 ktlintGradle = "14.2.0"
 kotlinStdlib = "2.2.10"
 # The app itself only needs this floor: the Compose graph's androidx.lifecycle
-# atomic group resolves the whole family to 2.11.0 at build time, which is fine
-# now that the project compiles against compileSdk 37.
+# atomic group resolves the whole family to 2.11.1 at build time (raised from
+# 2.11.0 by lifecycle-viewmodel-navigation3 below), which is fine now that the
+# project compiles against compileSdk 37.
 lifecycle = "2.9.0"
-navigationFragmentKtx = "2.10.2"
 # navigation3-ui transitively raises androidx.activity 1.8.2 -> 1.12.0, whose
 # non-null onNewIntent(Intent) required MainActivity's override to drop its "?".
 navigation3 = "1.2.2"
+# Stable companion of Navigation 3 1.2.x (released 2026-11-18). Deliberately
+# pinned separately from the `lifecycle` ref above: this artifact ships the
+# NavEntry decorator that gives each Nav3 entry its own ViewModelStore.
+lifecycleViewmodelNav3 = "2.11.1"
 recyclerview = "1.4.0"
 junit = "4.13.2"
 robolectric = "4.18.1"
@@ -38,9 +42,9 @@ lifecycle-runtime-compose = { module = "androidx.lifecycle:lifecycle-runtime-com
 lifecycle-viewmodel-ktx = { module = "androidx.lifecycle:lifecycle-viewmodel-ktx", version.ref = "lifecycle" }
 kotlinx-coroutines-android = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-android", version.ref = "coroutines" }
 kotlinx-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "coroutines" }
-navigation-fragment-ktx = { module = "androidx.navigation:navigation-fragment-ktx", version.ref = "navigationFragmentKtx" }
 androidx-navigation3-runtime = { module = "androidx.navigation3:navigation3-runtime", version.ref = "navigation3" }
 androidx-navigation3-ui = { module = "androidx.navigation3:navigation3-ui", version.ref = "navigation3" }
+androidx-lifecycle-viewmodel-navigation3 = { module = "androidx.lifecycle:lifecycle-viewmodel-navigation3", version.ref = "lifecycleViewmodelNav3" }
 recyclerview = { module = "androidx.recyclerview:recyclerview", version.ref = "recyclerview" }
 junit = { module = "junit:junit", version.ref = "junit" }
 robolectric = { module = "org.robolectric:robolectric", version.ref = "robolectric" }

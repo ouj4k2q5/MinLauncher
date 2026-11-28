@@ -12,21 +12,15 @@ import android.content.pm.ShortcutInfo
 import android.content.res.Configuration
 import android.os.Build
 import android.os.Bundle
-import android.provider.Settings
-import android.view.View
 import android.view.WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS
-import androidx.activity.OnBackPressedCallback
+import androidx.activity.compose.setContent
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
-import androidx.navigation.NavController
-import androidx.navigation.findNavController
 import app.minlauncher.data.Constants
 import app.minlauncher.data.Prefs
-import app.minlauncher.databinding.ActivityMainBinding
-import app.minlauncher.helper.applySolidWallpaper
 import app.minlauncher.helper.getColorFromAttr
 import app.minlauncher.helper.hasBeenHours
 import app.minlauncher.helper.isDefaultLauncher
@@ -34,26 +28,21 @@ import app.minlauncher.helper.isEinkDisplay
 import app.minlauncher.helper.isTablet
 import app.minlauncher.helper.resetLauncherViaFakeActivity
 import app.minlauncher.helper.showLauncherSelector
+import app.minlauncher.ui.AppRoot
+import app.minlauncher.ui.AppRootHandle
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.launch
 import kotlin.time.Duration.Companion.milliseconds
 
 class MainActivity : AppCompatActivity() {
     private lateinit var prefs: Prefs
-    private lateinit var navController: NavController
     private val repository by lazy { (application as LauncherApp).launcherRepository }
-    private lateinit var binding: ActivityMainBinding
+    private var appRootHandle: AppRootHandle? = null
     private var timerJob: Job? = null
     private var isResumed = false
     private var profileReceiver: BroadcastReceiver? = null
     private var launcherAppsCallback: LauncherApps.Callback? = null
-
-//    override fun onBackPressed() {
-//        if (navController.currentDestination?.id != R.id.mainFragment)
-//            super.onBackPressed()
-//    }
 
     override fun attachBaseContext(context: Context) {
         val newConfig = Configuration(context.resources.configuration)
@@ -67,28 +56,15 @@ class MainActivity : AppCompatActivity() {
         AppCompatDelegate.setDefaultNightMode(prefs.appTheme)
         super.onCreate(savedInstanceState)
         if (prefs.boldFont) theme.applyStyle(R.style.BoldFontOverlay, true)
-        binding = ActivityMainBinding.inflate(layoutInflater)
-        setContentView(binding.root)
-        binding.mainActivityLayout.applySolidWallpaper(prefs.solidWallpaper)
-
-        navController = this.findNavController(R.id.nav_host_fragment)
-
-        val onBackPressedCallback =
-            object : OnBackPressedCallback(true) {
-                override fun handleOnBackPressed() {
-                    if (navController.currentDestination?.id != R.id.mainFragment) {
-                        // then we might want to finish the activity or disable this callback.
-                        if (navController.popBackStack()) {
-                            // Successfully popped back
-                        } else {
-                            // if you want other system/activity level handling
-                        }
-                    } else {
-                        binding.messageLayout.visibility = View.GONE
-                    }
-                }
-            }
-        onBackPressedDispatcher.addCallback(this, onBackPressedCallback)
+        // The theme is read once here: theme changes go through prefs +
+        // Activity.recreate(), so AppRoot gets a fresh value per activity.
+        setContent {
+            AppRoot(
+                repository = repository,
+                appTheme = prefs.appTheme,
+                onHandleReady = { appRootHandle = it },
+            )
+        }
 
         if (prefs.firstOpen) {
             prefs.firstOpen = false
@@ -96,8 +72,7 @@ class MainActivity : AppCompatActivity() {
             repository.requestResetLauncher()
         }
 
-        initClickListeners()
-        initObservers()
+        observeLauncherResets()
         repository.getAppList()
         registerShortcutCallback()
         setupOrientation()
@@ -191,10 +166,7 @@ class MainActivity : AppCompatActivity() {
 
     override fun onNewIntent(intent: Intent) {
         // Home button for recents feature disabled
-        // val alreadyHome = navController.currentDestination?.id == R.id.mainFragment
         backToHomeScreen()
-        // if (alreadyHome && isResumed && prefs.homeButtonShowRecents)
-        //     viewModel.showRecentApps.call()
         super.onNewIntent(intent)
     }
 
@@ -208,80 +180,22 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun initClickListeners() {
-        binding.ivClose.setOnClickListener {
-            binding.messageLayout.visibility = View.GONE
-        }
-    }
-
-    private fun initObservers() {
-        collectOnStarted(repository.solidWallpaper) {
-            binding.mainActivityLayout.applySolidWallpaper(it)
-        }
-        collectOnStarted(repository.resetLauncher) {
-            if (isDefaultLauncher()) {
-                resetLauncherViaFakeActivity()
-            } else {
-                showLauncherSelector(Constants.REQUEST_CODE_LAUNCHER_SELECTOR)
-            }
-        }
-        collectOnStarted(repository.showDialog) {
-            when (it) {
-                Constants.Dialog.ABOUT -> {
-                    showMessageDialog(R.string.app_name, R.string.welcome_to_minlauncher_settings, R.string.okay) {
-                        binding.messageLayout.visibility = View.GONE
-                    }
-                }
-
-                Constants.Dialog.HIDDEN -> {
-                    showMessageDialog(R.string.hidden_apps, R.string.hidden_apps_message, R.string.okay) {
-                    }
-                }
-
-                Constants.Dialog.KEYBOARD -> {
-                    showMessageDialog(R.string.app_name, R.string.keyboard_message, R.string.okay) {
-                    }
-                }
-
-                Constants.Dialog.DIGITAL_WELLBEING -> {
-                    showMessageDialog(R.string.screen_time, R.string.app_usage_message, R.string.permission) {
-                        startActivity(Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS))
-                    }
-                }
-            }
-        }
-    }
-
     /**
-     * Collects [flow] while this activity is at least STARTED, cancelling and
-     * restarting collection across stop/start cycles. Activity counterpart of
-     * [app.minlauncher.ui.BaseFragment.collectOnStart].
+     * Resets the launcher (fake home activity or the system selector) while the
+     * activity is at least STARTED; the dialog signals now belong to [AppRoot].
      */
-    private fun <T> collectOnStarted(
-        flow: Flow<T>,
-        block: (T) -> Unit,
-    ) {
+    private fun observeLauncherResets() {
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
-                flow.collect { block(it) }
+                repository.resetLauncher.collect {
+                    if (isDefaultLauncher()) {
+                        resetLauncherViaFakeActivity()
+                    } else {
+                        showLauncherSelector(Constants.REQUEST_CODE_LAUNCHER_SELECTOR)
+                    }
+                }
             }
         }
-    }
-
-    private fun showMessageDialog(
-        title: Int,
-        message: Int,
-        action: Int,
-        clickListener: () -> Unit,
-    ) {
-        binding.tvTitle.text = getString(title)
-        binding.tvMessage.text = getString(message)
-        binding.tvAction.text = getString(action)
-        binding.tvAction.setOnClickListener {
-            clickListener()
-            binding.messageLayout.visibility = View.GONE
-        }
-        binding.messageLayout.visibility = View.VISIBLE
     }
 
     @SuppressLint("SourceLockedOrientationActivity")
@@ -292,10 +206,8 @@ class MainActivity : AppCompatActivity() {
 
     private fun backToHomeScreen() {
         if (repository.isPrivateSpaceToggling) return
-        binding.messageLayout.visibility = View.GONE
-        if (navController.currentDestination?.id != R.id.mainFragment) {
-            navController.popBackStack(R.id.mainFragment, false)
-        }
+        // Main thread, so mutating the Nav3 back stack (SnapshotStateList) is safe.
+        appRootHandle?.collapseToHome()
     }
 
     private fun restartLauncherOrCheckTheme(forceRestart: Boolean = false) {

@@ -13,7 +13,7 @@
     <attr name="primaryShadeDarkColor" format="color" />
     <attr name="mainFontFamily" format="string" />
 
-    <!-- Resolved once by SettingsFragment for the Compose settings palette. -->
+    <!-- Resolved once by SettingsEntry for the Compose settings palette. -->
     <declare-styleable name="SettingsColors">
         <attr name="primaryColor" />
         <attr name="primaryShadeDarkColor" />
@@ -25,7 +25,7 @@
         <attr name="primaryTextShadowColor" />
     </declare-styleable>
 
-    <!-- Resolved once by HomeFragment for the Compose home-screen palette. -->
+    <!-- Resolved once by HomeEntry for the Compose home-screen palette. -->
     <declare-styleable name="HomeColors">
         <attr name="primaryColor" />
         <attr name="primaryColorTrans80" />
@@ -33,7 +33,7 @@
         <attr name="mainFontFamily" />
     </declare-styleable>
 
-    <!-- Resolved once by AppDrawerFragment for the Compose drawer palette. -->
+    <!-- Resolved once by DrawerEntry for the Compose drawer palette. -->
     <declare-styleable name="DrawerColors">
         <attr name="primaryColor" />
         <attr name="primaryShadeDarkColor" />

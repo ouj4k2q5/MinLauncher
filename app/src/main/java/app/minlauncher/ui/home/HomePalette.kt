@@ -16,11 +16,12 @@ import app.minlauncher.R
 
 /**
  * The home screen's text styles. Every entry keeps the old XML style's size,
- * color, shadow and family: slots are TextLarge (mainFontFamily, pressed
- * state at primaryColorTrans80 like the old text_colors_default selector),
- * the set-as-default line is TextMedium plus the old <u> underline, screen
- * time and tips are TextSmall, and the clock fixes sans-serif-light like
- * fragment_home.xml's TextClock did (independent of the bold-font overlay).
+ * color, shadow and family: slots match the old TextLarge (mainFontFamily,
+ * pressed state at primaryColorTrans80 like the old text_colors_default
+ * selector), the set-as-default line matches TextMedium plus the old <u>
+ * underline, screen time and tips match TextSmall, and the clock fixes
+ * sans-serif-light as the old TextClock did (independent of the bold-font
+ * overlay).
  */
 @Immutable
 internal data class HomePalette(

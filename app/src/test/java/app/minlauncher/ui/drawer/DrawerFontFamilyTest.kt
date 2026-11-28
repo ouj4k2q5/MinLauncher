@@ -20,7 +20,7 @@ class DrawerFontFamilyTest {
         assertEquals("sans-serif", resolveFontName(bold = true))
     }
 
-    /** Mirrors AppDrawerFragment's resolution, including MainActivity's overlay. */
+    /** Mirrors DrawerEntry's resolution, including MainActivity's overlay. */
     private fun resolveFontName(bold: Boolean): String {
         val context =
             ContextThemeWrapper(ApplicationProvider.getApplicationContext(), R.style.AppTheme).apply {

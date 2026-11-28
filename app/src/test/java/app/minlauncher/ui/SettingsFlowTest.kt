@@ -1,7 +1,10 @@
 package app.minlauncher.ui
 
 import android.app.Application
+import android.os.Looper
 import android.provider.Settings
+import android.view.ViewConfiguration
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertTextContains
 import androidx.compose.ui.test.assertTextEquals
@@ -12,9 +15,7 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTouchInput
-import androidx.navigation.fragment.NavHostFragment
 import androidx.test.core.app.ApplicationProvider
-import app.minlauncher.R
 import app.minlauncher.data.Constants
 import app.minlauncher.testing.TestMainActivity
 import org.junit.After
@@ -25,6 +26,7 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
+import java.util.concurrent.TimeUnit
 
 // SDK 36 requires Java 21 in Robolectric, so pin the highest SDK that runs on JDK 17.
 @Config(sdk = [35])
@@ -43,7 +45,25 @@ class SettingsFlowTest {
     @Test
     fun `long press on the home background opens settings`() {
         launchLauncher(fakeApps("Browser")) { firstOpen = false }.use {
-            openSettings()
+            // Drive the production wiring (home.root's long-press callback adds
+            // SettingsKey). The detector fires only after the extra
+            // LONG_PRESS_DELAY_MS on top of the system timeout, so hold a
+            // background point — top center, clear of the clock/date at the
+            // top start and of the centered app slots — and advance the shadow
+            // clock, like SetHomeAppFlowTest's slot long press.
+            composeRule.onNodeWithTag("home.root").performTouchInput {
+                down(Offset(width * 0.5f, height * 0.1f))
+            }
+            shadowOf(Looper.getMainLooper()).idleFor(
+                Constants.LONG_PRESS_DELAY_MS + ViewConfiguration.getLongPressTimeout() + 100,
+                TimeUnit.MILLISECONDS,
+            )
+            // Nav3 keeps one Compose root alive, so release the pointer before
+            // letting the navigation settle. Target the tagged app root rather
+            // than onRoot(): settings-first-open also composes the about dialog
+            // in its own window, so onRoot() matches two roots here.
+            composeRule.onNodeWithTag("root").performTouchInput { up() }
+            composeRule.waitForIdle()
 
             composeRule.onNodeWithTag("settings.hiddenApps").assertIsDisplayed()
             composeRule.onNodeWithTag("settings.alignment").performScrollTo().assertIsDisplayed()
@@ -96,11 +116,7 @@ class SettingsFlowTest {
             composeRule.onNodeWithText("Hidden apps").assertIsDisplayed()
 
             scenario.onActivity { activity ->
-                val navHost =
-                    activity.supportFragmentManager.findFragmentById(
-                        R.id.nav_host_fragment,
-                    ) as NavHostFragment
-                navHost.navController.popBackStack()
+                activity.handle!!.backStack.removeLastOrNull()
             }
 
             composeRule.onNodeWithTag("settings.textSize").performScrollTo().assertTextContains("1.1")

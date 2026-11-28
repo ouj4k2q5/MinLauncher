@@ -18,10 +18,10 @@ import app.minlauncher.ui.home.HomeSlotState
  * observe the same data.
  *
  * The home screen is the launcher's permanent screen, so its renderable state
- * lives here rather than in the Fragment. The properties are Compose state so
+ * lives here rather than in the entry. The properties are Compose state so
  * the host composable recomposes when a collector writes them.
  *
- * Constructed only through the explicit factory in HomeFragment, which reads
+ * Constructed only through the explicit factory in HomeEntry, which reads
  * the current activity's application (under Robolectric the default factory's
  * Application fallback can be stale across tests).
  */
@@ -40,7 +40,7 @@ class HomeViewModel(
     val homeBottomAlignmentFlow get() = repository.homeBottomAlignment
 
     // The renderable home screen. Initial values match the old Fragment fields;
-    // the Fragment's collectors populate them.
+    // the entry's collectors populate them.
     var slots by mutableStateOf<List<HomeSlotState>>(emptyList())
     var homeAppAlignment by mutableIntStateOf(Gravity.START)
     var homeBottomAlignment by mutableStateOf(false)

@@ -126,7 +126,6 @@ android {
         }
     }
     buildFeatures {
-        viewBinding = true
         buildConfig = true
         compose = true
     }
@@ -155,21 +154,22 @@ dependencies {
     implementation(libs.datastore.preferences)
 
     // Android lifecycle (runtime-compose provides collectAsStateWithLifecycle
-    // for the Compose screens; the fragments keep owning their ViewModels).
+    // for the Compose screens; the Nav3 entries own their ViewModels).
     implementation(libs.lifecycle.runtime.ktx)
     implementation(libs.lifecycle.runtime.compose)
     implementation(libs.lifecycle.viewmodel.ktx)
 
-    // Navigation
-    implementation(libs.navigation.fragment.ktx)
     // Navigation 3 foundation (Phase 9 spike). Deliberately not adding
     // navigation3-dynamic-features: it pulls Play Feature Delivery.
     implementation(libs.androidx.navigation3.runtime)
     implementation(libs.androidx.navigation3.ui)
+    // Entry-scoped ViewModels for Nav3: provides the NavEntry decorator that
+    // installs a ViewModelStoreOwner per entry (Task 5 consumes it).
+    implementation(libs.androidx.lifecycle.viewmodel.navigation3)
 
     // Compose (BOM 2026.11.01 / material3 1.5.0, which requires compileSdk 37,
-    // now satisfied). All three screens — home, drawer, settings — consume
-    // these through their fragments' Compose content.
+    // now satisfied). All three screens — home, drawer, settings — are Nav3
+    // entries that consume these directly.
     implementation(platform(libs.compose.bom))
     implementation(libs.compose.ui)
     implementation(libs.compose.foundation)

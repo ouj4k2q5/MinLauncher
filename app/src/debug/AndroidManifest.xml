@@ -3,9 +3,9 @@
 
     <application>
 
-        <!-- Hosts the launcher's real navigation graph with a test-injectable
+        <!-- Hosts the launcher's real AppRoot with a test-injectable
              LauncherRepository; exists only in debug builds so that JVM UI
-             tests can drive the real fragments. -->
+             tests can drive the real screens. -->
         <activity
             android:name="app.minlauncher.testing.TestMainActivity"
             android:exported="false" />

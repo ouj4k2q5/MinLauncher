@@ -26,9 +26,9 @@ by the original author. Report issues for this fork to this repository, not upst
 - Rebuilds all three screens — home, app drawer, and settings — with Jetpack
   Compose (Material 3 Expressive via a shared `MinLauncherTheme`), replacing
   upstream's View-based UI. The old swipe-listener classes are gone; their
-  gesture contracts live on inside the Compose home screen. Fragments remain
-  as hosts (and `HomeFragment` keeps a small ViewBinding shell), with Compose
-  content inside.
+  gesture contracts live on inside the Compose home screen. Navigation runs on
+  Navigation 3 (`ui/AppRoot.kt`), with each screen a `NavDisplay` entry; no
+  fragments or ViewBinding remain.
 - Removes the ability to long-press the clock, date, or screen-time text and assign
   any installed app to it. Tapping them now always opens a fixed destination: the
   installed clock app (falling back to the system alarm intent), the calendar, or

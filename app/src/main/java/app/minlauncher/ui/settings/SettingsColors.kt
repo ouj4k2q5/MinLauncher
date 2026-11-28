@@ -6,7 +6,7 @@ import app.minlauncher.ui.theme.requireColor
 
 /**
  * Resolves [SettingsColors] from the activity theme. Lives next to the screen so
- * the color resolution can move with the rest of the settings UI; the Fragment
+ * the color resolution can move with the rest of the settings UI; SettingEntry
  * only calls it.
  */
 internal fun Activity.resolveSettingsColors(): SettingsColors {

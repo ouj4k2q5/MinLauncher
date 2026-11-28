@@ -3,30 +3,21 @@ package app.minlauncher.ui
 import android.content.Context
 import android.content.pm.ActivityInfo
 import android.content.pm.LauncherApps
-import android.os.Bundle
 import android.os.Process
-import android.os.SystemClock
 import android.os.UserHandle
 import android.provider.Settings
-import android.view.MotionEvent
-import android.view.View
-import android.view.ViewConfiguration
 import androidx.test.core.app.ActivityScenario
 import androidx.test.core.app.ApplicationProvider
-import androidx.test.espresso.Espresso.onView
-import androidx.test.espresso.UiController
-import androidx.test.espresso.ViewAction
-import androidx.test.espresso.action.CoordinatesProvider
-import androidx.test.espresso.action.GeneralLocation
-import androidx.test.espresso.matcher.ViewMatchers.isDisplayed
-import androidx.test.espresso.matcher.ViewMatchers.withId
-import app.minlauncher.R
+import androidx.test.platform.app.InstrumentationRegistry
+import androidx.test.runner.lifecycle.ActivityLifecycleMonitorRegistry
+import androidx.test.runner.lifecycle.Stage
 import app.minlauncher.data.AppModel
 import app.minlauncher.data.Constants
 import app.minlauncher.data.Prefs
 import app.minlauncher.helper.FakeAppListProvider
 import app.minlauncher.testing.TestMainActivity
-import org.hamcrest.Matcher
+import app.minlauncher.ui.nav.DrawerKey
+import app.minlauncher.ui.nav.SettingsKey
 import org.robolectric.Shadows.shadowOf
 
 private const val TEST_PACKAGE_PREFIX = "app.minlauncher.ui.fixture"
@@ -54,7 +45,7 @@ fun otherProfileUser(): UserHandle = UserHandle.getUserHandleForUid(1_010_000)
 /**
  * Launches [TestMainActivity] with the given apps as the whole world:
  * the fake provider feeds the ViewModel, and LauncherApps is seeded so that
- * `isPackageInstalled` passes for the fake packages (HomeFragment clears home
+ * `isPackageInstalled` passes for the fake packages (the home entry clears home
  * slots whose package does not resolve).
  *
  * The returned scenario must be closed by the caller, e.g. with `use { }`.
@@ -79,95 +70,29 @@ fun ActivityScenario<TestMainActivity>.openDrawer(
     canRename: Boolean = false,
 ) {
     onActivity { activity ->
-        val navHost =
-            activity.supportFragmentManager.findFragmentById(R.id.nav_host_fragment)
-                as androidx.navigation.fragment.NavHostFragment
-        navHost.navController.navigate(
-            app.minlauncher.R.id.appListFragment,
-            Bundle().apply {
-                putInt(Constants.Key.FLAG, flag)
-                putBoolean(Constants.Key.RENAME, canRename)
-            },
-        )
+        activity.handle!!.backStack.add(DrawerKey(flag, canRename))
     }
 }
 
 /**
- * Opens Settings with the home-screen gesture: a long press on the left edge
- * of the home screen, clear of the home app slots, lands on the background
- * where a long press opens settings.
+ * Opens Settings by pushing it onto the Nav3 back stack. The signature stays
+ * scenario-free (twelve call sites) so the resumed test activity is found
+ * through the instrumentation's lifecycle monitor.
  */
 fun openSettings() {
-    onView(withId(R.id.mainLayout)).perform(
-        holdLongPress(
-            at = { view ->
-                floatArrayOf(view.width * 0.02f, view.height * 0.5f)
-            },
-        ),
-    )
+    InstrumentationRegistry.getInstrumentation().runOnMainSync {
+        val activity =
+            ActivityLifecycleMonitorRegistry
+                .getInstance()
+                .getActivitiesInStage(Stage.RESUMED)
+                .filterIsInstance<TestMainActivity>()
+                .single()
+        activity.handle!!.backStack.add(SettingsKey)
+    }
 }
 
 /** The app under test, for asserting persisted state from within a test. */
 fun testPrefs(): Prefs = Prefs(ApplicationProvider.getApplicationContext())
-
-/**
- * Performs a long press that stays down long enough for the Compose home
- * background detector, which fires its long press only after an additional
- * LONG_PRESS_DELAY_MS posted on top of the system long-press timeout (the
- * old ViewSwipeTouchListener timing). Espresso's built-in longClick() holds
- * only the system timeout, so the handler task would be cancelled by the
- * ACTION_UP before it runs.
- */
-fun holdLongPress(
-    at: CoordinatesProvider = GeneralLocation.CENTER,
-    durationMs: Long = Constants.LONG_PRESS_DELAY_MS + ViewConfiguration.getLongPressTimeout(),
-): ViewAction =
-    object : ViewAction {
-        override fun getConstraints(): Matcher<View> = isDisplayed()
-
-        override fun getDescription(): String = "hold a long press for $durationMs ms"
-
-        override fun perform(
-            uiController: UiController,
-            view: View,
-        ) {
-            val coords = at.calculateCoordinates(view)
-            val downTime = SystemClock.uptimeMillis()
-            uiController.injectMotionEvent(
-                MotionEvent.obtain(
-                    downTime,
-                    downTime,
-                    MotionEvent.ACTION_DOWN,
-                    coords[0],
-                    coords[1],
-                    1f,
-                    1f,
-                    0,
-                    1f,
-                    1f,
-                    0,
-                    0,
-                ),
-            )
-            uiController.loopMainThreadForAtLeast(durationMs)
-            uiController.injectMotionEvent(
-                MotionEvent.obtain(
-                    downTime,
-                    SystemClock.uptimeMillis(),
-                    MotionEvent.ACTION_UP,
-                    coords[0],
-                    coords[1],
-                    1f,
-                    1f,
-                    0,
-                    1f,
-                    1f,
-                    0,
-                    0,
-                ),
-            )
-        }
-    }
 
 private fun seedLauncherApps(
     context: Context,
@@ -207,8 +132,8 @@ private fun newLauncherActivityInfo(
 }
 
 /**
- * Zero animation scales keep RecyclerView's layout animation (and fragment
- * transaction animations) out of the way under Robolectric, matching how the
+ * Zero animation scales keep RecyclerView's layout animation (and Navigation 3
+ * transitions) out of the way under Robolectric, matching how the
  * app itself behaves on animation-disabled devices.
  */
 private fun disableSystemAnimations(context: Context) {

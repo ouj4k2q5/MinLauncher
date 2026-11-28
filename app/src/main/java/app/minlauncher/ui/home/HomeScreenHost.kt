@@ -5,10 +5,9 @@ import app.minlauncher.HomeViewModel
 
 /**
  * The home screen's host: adapts the [HomeViewModel] state and the resolved
- * colors/callbacks into [HomeScreen]. Moved out of the Fragment (Stage 1 of the
- * fragment removal) so the UI no longer depends on the fragment's held state;
- * the fragment still owns the observers that populate the ViewModel until
- * Stage 2.
+ * colors/callbacks into [HomeScreen]. Moved out of the old fragment (Stage 1 of
+ * the fragment removal) so the UI no longer depends on the fragment's held
+ * state; HomeEntry now owns the observers that populate the ViewModel.
  */
 @Composable
 internal fun HomeScreenHost(
