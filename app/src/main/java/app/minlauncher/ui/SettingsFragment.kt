@@ -39,8 +39,8 @@ import app.minlauncher.ui.settings.SettingsCallbacks
 import app.minlauncher.ui.settings.SettingsColors
 import app.minlauncher.ui.settings.SettingsScreen
 import app.minlauncher.ui.settings.SettingsUiState
+import app.minlauncher.ui.settings.resolveSettingsColors
 import app.minlauncher.ui.theme.MinLauncherTheme
-import app.minlauncher.ui.theme.requireColor
 import kotlin.math.roundToInt
 
 // One small method per settings action (the same layout as the old onClick
@@ -92,7 +92,7 @@ class SettingsFragment : BaseFragment() {
         populateLockSettings()
         refreshSwipeApps()
 
-        val colors = resolveSettingsColors()
+        val colors = requireActivity().resolveSettingsColors()
         val callbacks = createCallbacks()
 
         return ComposeView(requireContext()).apply {
@@ -391,41 +391,5 @@ class SettingsFragment : BaseFragment() {
             R.id.action_settingsFragment_to_appListFragment,
             Bundle().apply { putInt(Constants.Key.FLAG, flag) },
         )
-    }
-
-    private fun resolveSettingsColors(): SettingsColors {
-        // Resolve once, from the activity theme, so the day/night variant is the
-        // one the (about to be displayed) screen uses. Theme switches recreate.
-        val typedArray = requireActivity().obtainStyledAttributes(R.styleable.SettingsColors)
-        return try {
-            SettingsColors(
-                primaryColor = typedArray.requireColor(R.styleable.SettingsColors_primaryColor, "primaryColor"),
-                shadeDark =
-                    typedArray.requireColor(R.styleable.SettingsColors_primaryShadeDarkColor, "primaryShadeDarkColor"),
-                colorTrans50 =
-                    typedArray.requireColor(R.styleable.SettingsColors_primaryColorTrans50, "primaryColorTrans50"),
-                inverse =
-                    typedArray.requireColor(R.styleable.SettingsColors_primaryInverseColor, "primaryInverseColor"),
-                inverseTrans80 =
-                    typedArray.requireColor(
-                        R.styleable.SettingsColors_primaryColorInverseTrans80,
-                        "primaryColorInverseTrans80",
-                    ),
-                inverseTrans90 =
-                    typedArray.requireColor(
-                        R.styleable.SettingsColors_primaryColorInverseTrans90,
-                        "primaryColorInverseTrans90",
-                    ),
-                dialogShade =
-                    typedArray.requireColor(R.styleable.SettingsColors_dialogShadeColor, "dialogShadeColor"),
-                textShadow =
-                    typedArray.requireColor(
-                        R.styleable.SettingsColors_primaryTextShadowColor,
-                        "primaryTextShadowColor",
-                    ),
-            )
-        } finally {
-            typedArray.recycle()
-        }
     }
 }

@@ -37,9 +37,7 @@ import app.minlauncher.ui.drawer.DrawerCallbacks
 import app.minlauncher.ui.drawer.DrawerColors
 import app.minlauncher.ui.drawer.DrawerScreen
 import app.minlauncher.ui.drawer.DrawerUiState
-import app.minlauncher.ui.drawer.drawerFontFamily
-import app.minlauncher.ui.theme.requireColor
-import app.minlauncher.ui.theme.requireString
+import app.minlauncher.ui.drawer.resolveDrawerColors
 
 // One small method per drawer action (the same layout as the old callback
 // lambdas, split by side effect); the count is inherent to binding the drawer's
@@ -90,7 +88,7 @@ class AppDrawerFragment : BaseFragment() {
             canRename = it.getBoolean(Constants.Key.RENAME, false)
         }
 
-        val colors = resolveDrawerColors()
+        val colors = requireActivity().resolveDrawerColors()
         val callbacks = createCallbacks()
         val searchHint =
             when {
@@ -348,44 +346,6 @@ class AppDrawerFragment : BaseFragment() {
         val controller = findNavController()
         if (controller.currentDestination?.id == R.id.appListFragment) {
             controller.popBackStack()
-        }
-    }
-
-    private fun resolveDrawerColors(): DrawerColors {
-        // Resolve once, from the activity theme, so the day/night variant is the
-        // one the (about to be displayed) screen uses. Theme switches recreate.
-        val typedArray = requireActivity().obtainStyledAttributes(R.styleable.DrawerColors)
-        return try {
-            DrawerColors(
-                primaryColor =
-                    typedArray.requireColor(R.styleable.DrawerColors_primaryColor, "primaryColor"),
-                shadeDark =
-                    typedArray.requireColor(
-                        R.styleable.DrawerColors_primaryShadeDarkColor,
-                        "primaryShadeDarkColor",
-                    ),
-                colorTrans50 =
-                    typedArray.requireColor(R.styleable.DrawerColors_primaryColorTrans50, "primaryColorTrans50"),
-                primaryColorTrans80 =
-                    typedArray.requireColor(
-                        R.styleable.DrawerColors_primaryColorTrans80,
-                        "primaryColorTrans80",
-                    ),
-                textShadow =
-                    typedArray.requireColor(
-                        R.styleable.DrawerColors_primaryTextShadowColor,
-                        "primaryTextShadowColor",
-                    ),
-                fontFamily =
-                    drawerFontFamily(
-                        typedArray.requireString(
-                            R.styleable.DrawerColors_mainFontFamily,
-                            "mainFontFamily",
-                        ),
-                    ),
-            )
-        } finally {
-            typedArray.recycle()
         }
     }
 

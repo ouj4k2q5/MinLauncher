@@ -38,14 +38,12 @@ import app.minlauncher.helper.openCameraApp
 import app.minlauncher.helper.openClock
 import app.minlauncher.helper.openDialerApp
 import app.minlauncher.helper.showToast
-import app.minlauncher.ui.drawer.drawerFontFamily
 import app.minlauncher.ui.home.HomeCallbacks
 import app.minlauncher.ui.home.HomeColors
 import app.minlauncher.ui.home.HomeScreen
 import app.minlauncher.ui.home.HomeSlotState
 import app.minlauncher.ui.home.HomeUiState
-import app.minlauncher.ui.theme.requireColor
-import app.minlauncher.ui.theme.requireString
+import app.minlauncher.ui.home.resolveHomeColors
 import java.time.Clock
 
 private const val TAG = "HomeFragment"
@@ -115,7 +113,7 @@ class HomeFragment : BaseFragment() {
         super.onViewCreated(view, savedInstanceState)
         prefs = Prefs(requireContext())
 
-        homeColors = resolveHomeColors()
+        homeColors = requireActivity().resolveHomeColors()
         callbacks = createCallbacks()
         binding.homeContent.apply {
             setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
@@ -522,28 +520,6 @@ class HomeFragment : BaseFragment() {
             onSetDefaultLauncherTap = { viewModel.requestResetLauncher() },
             onSetDefaultLauncherLongPress = ::onSetDefaultLauncherLongPressed,
         )
-
-    private fun resolveHomeColors(): HomeColors {
-        // Resolve once, from the activity theme, so the day/night variant is the
-        // one the (about to be displayed) screen uses. Theme switches recreate.
-        val typedArray = requireActivity().obtainStyledAttributes(R.styleable.HomeColors)
-        return try {
-            HomeColors(
-                primaryColor =
-                    typedArray.requireColor(R.styleable.HomeColors_primaryColor, "primaryColor"),
-                primaryColorTrans80 =
-                    typedArray.requireColor(R.styleable.HomeColors_primaryColorTrans80, "primaryColorTrans80"),
-                textShadow =
-                    typedArray.requireColor(R.styleable.HomeColors_primaryTextShadowColor, "primaryTextShadowColor"),
-                fontFamily =
-                    drawerFontFamily(
-                        typedArray.requireString(R.styleable.HomeColors_mainFontFamily, "mainFontFamily"),
-                    ),
-            )
-        } finally {
-            typedArray.recycle()
-        }
-    }
 
     override fun onDestroyView() {
         super.onDestroyView()
