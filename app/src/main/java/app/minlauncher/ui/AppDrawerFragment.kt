@@ -1,13 +1,10 @@
 package app.minlauncher.ui
 
-import android.content.Context
 import android.net.Uri
 import android.os.Bundle
-import android.os.Process
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.view.inputmethod.InputMethodManager
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -24,17 +21,18 @@ import app.minlauncher.R
 import app.minlauncher.data.AppModel
 import app.minlauncher.data.Constants
 import app.minlauncher.data.Prefs
-import app.minlauncher.helper.deletePinnedShortcut
 import app.minlauncher.helper.hideKeyboard
-import app.minlauncher.helper.isSystemApp
 import app.minlauncher.helper.openAppInfo
 import app.minlauncher.helper.openSearch
 import app.minlauncher.helper.openUrl
 import app.minlauncher.helper.showToast
-import app.minlauncher.helper.uninstall
 import app.minlauncher.ui.drawer.DrawerCallbacks
 import app.minlauncher.ui.drawer.DrawerScreenHost
 import app.minlauncher.ui.drawer.resolveDrawerColors
+import app.minlauncher.ui.drawer.isCjkKeyboard as isCjkKeyboardAction
+import app.minlauncher.ui.drawer.onAppDeleted as onAppDeletedAction
+import app.minlauncher.ui.drawer.renameHomeSlot as renameHomeSlotAction
+import app.minlauncher.ui.drawer.updateCombinedAppList as updateCombinedAppListAction
 
 // One small method per drawer action (the same layout as the old callback
 // lambdas, split by side effect); the count is inherent to binding the drawer's
@@ -150,17 +148,13 @@ class AppDrawerFragment : BaseFragment() {
     }
 
     private fun updateCombinedAppList() {
-        val apps = currentAppList ?: return
-        val combined = apps.toMutableList()
-
-        if (flag == Constants.FLAG_LAUNCH_APP && currentPrivateSpaceAvailable) {
-            combined.add(AppModel.PrivateSpaceHeader(isLocked = currentPrivateSpaceLocked))
-            if (!currentPrivateSpaceLocked) {
-                currentPrivateSpaceApps?.let { combined.addAll(it) }
-            }
-        }
-
-        combinedList = combined
+        updateCombinedAppListAction(
+            flag = flag,
+            currentAppList = currentAppList,
+            privateSpaceAvailable = currentPrivateSpaceAvailable,
+            privateSpaceLocked = currentPrivateSpaceLocked,
+            privateSpaceApps = currentPrivateSpaceApps,
+        )?.let { combinedList = it }
     }
 
     private fun createCallbacks(): DrawerCallbacks =
@@ -198,27 +192,11 @@ class AppDrawerFragment : BaseFragment() {
     }
 
     private fun onAppDeleted(appModel: AppModel) {
-        when (appModel) {
-            is AppModel.PrivateSpaceHeader -> {}
-            is AppModel.PinnedShortcut ->
-                requireContext().deletePinnedShortcut(
-                    packageName = appModel.appPackage,
-                    shortcutIdToDelete = appModel.shortcutId,
-                    user = appModel.user,
-                )
-
-            is AppModel.App -> {
-                if (appModel.user != Process.myUserHandle()) {
-                    openAppInfo(requireContext(), appModel.user, appModel.appPackage)
-                } else if (requireContext().isSystemApp(appModel.appPackage, appModel.user)) {
-                    requireContext().showToast(getString(R.string.system_app_cannot_delete))
-                    openAppInfo(requireContext(), appModel.user, appModel.appPackage)
-                } else {
-                    requireContext().uninstall(appModel.appPackage)
-                }
-            }
-        }
-        viewModel.getAppList()
+        onAppDeletedAction(
+            context = requireContext(),
+            viewModel = viewModel,
+            appModel = appModel,
+        )
     }
 
     private fun onAppHidden(appModel: AppModel) {
@@ -272,22 +250,15 @@ class AppDrawerFragment : BaseFragment() {
 
     /** Saves the typed name to the home slot being customized; false means the name was empty. */
     private fun renameHomeSlot(name: String): Boolean {
-        if (name.isEmpty()) {
-            requireContext().showToast(getString(R.string.type_a_new_app_name_first))
-            return false
-        }
-        when (flag) {
-            Constants.FLAG_SET_HOME_APP_1 -> prefs.appName1 = name
-            Constants.FLAG_SET_HOME_APP_2 -> prefs.appName2 = name
-            Constants.FLAG_SET_HOME_APP_3 -> prefs.appName3 = name
-            Constants.FLAG_SET_HOME_APP_4 -> prefs.appName4 = name
-            Constants.FLAG_SET_HOME_APP_5 -> prefs.appName5 = name
-            Constants.FLAG_SET_HOME_APP_6 -> prefs.appName6 = name
-            Constants.FLAG_SET_HOME_APP_7 -> prefs.appName7 = name
-            Constants.FLAG_SET_HOME_APP_8 -> prefs.appName8 = name
-        }
-        exitDrawer()
-        return true
+        val renamed =
+            renameHomeSlotAction(
+                context = requireContext(),
+                prefs = prefs,
+                flag = flag,
+                name = name,
+            )
+        if (renamed) exitDrawer()
+        return renamed
     }
 
     private fun openPrivateSpaceSettings() {
@@ -305,21 +276,7 @@ class AppDrawerFragment : BaseFragment() {
 
     private fun isCjkKeyboard(): Boolean {
         cachedIsCjkKeyboard?.let { return it }
-
-        val result =
-            runCatching {
-                val imm = requireContext().getSystemService(Context.INPUT_METHOD_SERVICE) as? InputMethodManager
-                val subtype = imm?.currentInputMethodSubtype ?: return@runCatching false
-
-                val language =
-                    subtype.languageTag.ifEmpty {
-                        @Suppress("DEPRECATION")
-                        subtype.locale
-                    }
-
-                language.startsWith("zh") || language.startsWith("ja") || language.startsWith("ko")
-            }.getOrElse { false }
-
+        val result = isCjkKeyboardAction(requireContext())
         cachedIsCjkKeyboard = result
         return result
     }
