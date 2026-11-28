@@ -2,13 +2,17 @@ package app.minlauncher.ui.nav
 
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createEmptyComposeRule
+import androidx.compose.ui.test.longClick
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performTouchInput
 import androidx.test.core.app.ActivityScenario
 import app.minlauncher.testing.TestMainActivity
 import app.minlauncher.ui.fakeApps
 import app.minlauncher.ui.launchLauncher
 import app.minlauncher.ui.openDrawer
+import app.minlauncher.ui.openSettings
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -86,6 +90,33 @@ class Nav3BehaviorTest {
             composeRule.onNodeWithText("Browser").assertIsDisplayed()
             scenario.onActivity { activity ->
                 assertTrue(activity.handle!!.backStack.last() is DrawerKey)
+            }
+        }
+    }
+
+    @Test
+    fun `first hide from a settings-opened drawer keeps settings on the stack once`() {
+        launchLauncher(fakeApps("Browser", "Camera")) {
+            firstOpen = false
+            firstSettingsOpen = false
+            firstHide = true
+        }.use { scenario ->
+            // The drawer can be opened from settings (hidden apps, swipe-app
+            // rows); the stack is [home, settings, drawer].
+            openSettings()
+            scenario.openDrawer()
+
+            composeRule.onNodeWithText("Camera").performTouchInput { longClick() }
+            composeRule.onNodeWithTag("drawer.appHide").performClick()
+            composeRule.waitForIdle()
+
+            // The first hide swaps the drawer for settings, but a settings
+            // entry is already on the stack below the drawer, so the swap may
+            // not stack a second one on top of it.
+            scenario.onActivity { activity ->
+                val backStack = activity.handle!!.backStack
+                assertEquals(2, backStack.size)
+                assertTrue(backStack.last() is SettingsKey)
             }
         }
     }

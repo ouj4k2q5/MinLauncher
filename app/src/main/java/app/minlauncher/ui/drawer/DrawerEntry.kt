@@ -297,10 +297,14 @@ private fun onAppHidden(
         deps.prefs.firstHide = false
         deps.viewModel.postDialog(Constants.Dialog.HIDDEN)
         // Replace the drawer with settings only while it is still showing: an
-        // empty hidden list already popped it above.
+        // empty hidden list already popped it above. The drawer may itself
+        // sit on top of settings (hidden apps, swipe-app rows); reuse that
+        // entry instead of stacking a second settings on top of it.
         if (deps.backStack.lastOrNull() is DrawerKey) {
             deps.backStack.removeLastOrNull()
-            deps.backStack.add(SettingsKey)
+            if (deps.backStack.lastOrNull() !is SettingsKey) {
+                deps.backStack.add(SettingsKey)
+            }
         }
     }
     deps.viewModel.getAppList()
