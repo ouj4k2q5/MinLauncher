@@ -19,7 +19,6 @@ navigation3 = "1.2.2"
 # pinned separately from the `lifecycle` ref above: this artifact ships the
 # NavEntry decorator that gives each Nav3 entry its own ViewModelStore.
 lifecycleViewmodelNav3 = "2.11.1"
-recyclerview = "1.4.0"
 junit = "4.13.2"
 robolectric = "4.18.1"
 androidxTestCore = "1.7.0"
@@ -45,7 +44,6 @@ kotlinx-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-t
 androidx-navigation3-runtime = { module = "androidx.navigation3:navigation3-runtime", version.ref = "navigation3" }
 androidx-navigation3-ui = { module = "androidx.navigation3:navigation3-ui", version.ref = "navigation3" }
 androidx-lifecycle-viewmodel-navigation3 = { module = "androidx.lifecycle:lifecycle-viewmodel-navigation3", version.ref = "lifecycleViewmodelNav3" }
-recyclerview = { module = "androidx.recyclerview:recyclerview", version.ref = "recyclerview" }
 junit = { module = "junit:junit", version.ref = "junit" }
 robolectric = { module = "org.robolectric:robolectric", version.ref = "robolectric" }
 androidx-test-core-ktx = { module = "androidx.test:core-ktx", version.ref = "androidxTestCore" }
