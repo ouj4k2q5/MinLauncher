@@ -30,8 +30,8 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
-// SDK 36 requires Java 21 in Robolectric, so pin the highest SDK that runs on JDK 17.
-@Config(sdk = [35])
+// Pin the Robolectric SDK to targetSdk (36).
+@Config(sdk = [36])
 @RunWith(RobolectricTestRunner::class)
 class DrawerScrollKeyboardTest {
     @get:Rule

@@ -17,8 +17,8 @@ import java.util.Collections
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 
-// SDK 36 requires Java 21 in Robolectric, so pin the highest SDK that runs on JDK 17.
-@Config(sdk = [35])
+// Pin the Robolectric SDK to targetSdk (36).
+@Config(sdk = [36])
 @RunWith(RobolectricTestRunner::class)
 class AppSettingsStoreConcurrencyTest {
     private val context = ApplicationProvider.getApplicationContext<Context>()

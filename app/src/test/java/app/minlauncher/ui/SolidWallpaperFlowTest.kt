@@ -25,10 +25,10 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 
-// SDK 36 requires Java 21 in Robolectric, so pin the highest SDK that runs on JDK 17.
+// Pin the Robolectric SDK to targetSdk (36).
 // NATIVE graphics are required for the root-node screenshot comparison below.
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
-@Config(sdk = [35])
+@Config(sdk = [36])
 @RunWith(RobolectricTestRunner::class)
 class SolidWallpaperFlowTest {
     @get:Rule

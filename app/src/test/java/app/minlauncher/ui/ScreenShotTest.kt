@@ -24,10 +24,10 @@ import java.time.ZoneId
 import java.util.Locale
 import java.util.TimeZone
 
-// SDK 36 requires Java 21 in Robolectric, so pin the highest SDK that runs on JDK 17.
+// Pin the Robolectric SDK to targetSdk (36).
 // Pixel4: the default Robolectric screen (320x470dp) is too short for eight app slots.
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
-@Config(sdk = [35], qualifiers = RobolectricDeviceQualifiers.Pixel4)
+@Config(sdk = [36], qualifiers = RobolectricDeviceQualifiers.Pixel4)
 @RunWith(RobolectricTestRunner::class)
 class ScreenShotTest {
     // All screens are Compose; this settles their compositions before the
