@@ -1,8 +1,6 @@
 package app.minlauncher.ui
 
-import android.content.Context
 import android.content.Intent
-import android.content.pm.LauncherApps
 import android.os.Bundle
 import android.util.Log
 import android.view.LayoutInflater
@@ -18,26 +16,25 @@ import androidx.navigation.fragment.findNavController
 import app.minlauncher.HomeViewModel
 import app.minlauncher.LauncherApp
 import app.minlauncher.R
-import app.minlauncher.data.AppModel
 import app.minlauncher.data.Constants
 import app.minlauncher.data.Prefs
 import app.minlauncher.databinding.FragmentHomeBinding
 import app.minlauncher.helper.LockRequest
 import app.minlauncher.helper.appUsagePermissionGranted
 import app.minlauncher.helper.expandNotificationDrawer
-import app.minlauncher.helper.getUserHandleFromString
-import app.minlauncher.helper.isPackageInstalled
 import app.minlauncher.helper.openCalendar
-import app.minlauncher.helper.openCameraApp
 import app.minlauncher.helper.openClock
-import app.minlauncher.helper.openDialerApp
 import app.minlauncher.helper.showToast
 import app.minlauncher.ui.home.HomeCallbacks
 import app.minlauncher.ui.home.HomeClockSource
 import app.minlauncher.ui.home.HomeColors
 import app.minlauncher.ui.home.HomeScreenHost
 import app.minlauncher.ui.home.HomeSlotState
+import app.minlauncher.ui.home.homeAppClicked
+import app.minlauncher.ui.home.openSwipeLeftApp
+import app.minlauncher.ui.home.openSwipeRightApp
 import app.minlauncher.ui.home.resolveHomeColors
+import app.minlauncher.ui.home.verifiedHomeAppLabel
 import java.time.Clock
 
 private const val TAG = "HomeFragment"
@@ -187,201 +184,11 @@ class HomeFragment : BaseFragment() {
         // (1..0) is empty, like the old early return for homeAppsNum == 0.
         viewModel.slots =
             (1..prefs.homeAppsNum).map { location ->
-                HomeSlotState(index = location, label = verifiedHomeAppLabel(location))
+                HomeSlotState(
+                    index = location,
+                    label = verifiedHomeAppLabel(requireContext(), prefs, location),
+                )
             }
-    }
-
-    /**
-     * The old setHomeAppText: verifies the slot's app or pinned shortcut
-     * still exists, clears the stored slot when it does not, and returns the
-     * label to render ("" shows the hint).
-     */
-    private fun verifiedHomeAppLabel(location: Int): String {
-        val (label, verified) =
-            if (prefs.getIsShortcut(location)) verifiedShortcutLabel(location) else verifiedAppLabel(location)
-        if (!verified) clearHomeApp(location)
-        return label
-    }
-
-    private fun verifiedShortcutLabel(location: Int): Pair<String, Boolean> {
-        val launcherApps = requireContext().getSystemService(Context.LAUNCHER_APPS_SERVICE) as LauncherApps
-
-        // Query for the specific shortcut
-        val query =
-            LauncherApps.ShortcutQuery().apply {
-                setPackage(prefs.getAppPackage(location))
-                setQueryFlags(LauncherApps.ShortcutQuery.FLAG_MATCH_PINNED)
-            }
-
-        return try {
-            val shortcuts =
-                launcherApps.getShortcuts(query, getUserHandleFromString(requireContext(), prefs.getAppUser(location)))
-            // Check if our shortcut still exists
-            if (shortcuts?.any { it.id == prefs.getShortcutId(location) } == true) {
-                prefs.getAppName(location) to true
-            } else {
-                "" to false
-            }
-        } catch (e: Exception) {
-            Log.e(TAG, "Failed to verify home screen shortcut", e)
-            "" to false
-        }
-    }
-
-    private fun verifiedAppLabel(location: Int): Pair<String, Boolean> =
-        prefs.getAppName(location) to
-            isPackageInstalled(requireContext(), prefs.getAppPackage(location), prefs.getAppUser(location))
-
-    /** The old setHomeAppText failure path: forget a slot whose app vanished. */
-    private fun clearHomeApp(location: Int) {
-        when (location) {
-            Constants.FLAG_SET_HOME_APP_1 -> {
-                prefs.appName1 = ""
-                prefs.appPackage1 = ""
-            }
-
-            Constants.FLAG_SET_HOME_APP_2 -> {
-                prefs.appName2 = ""
-                prefs.appPackage2 = ""
-            }
-
-            Constants.FLAG_SET_HOME_APP_3 -> {
-                prefs.appName3 = ""
-                prefs.appPackage3 = ""
-            }
-
-            Constants.FLAG_SET_HOME_APP_4 -> {
-                prefs.appName4 = ""
-                prefs.appPackage4 = ""
-            }
-
-            Constants.FLAG_SET_HOME_APP_5 -> {
-                prefs.appName5 = ""
-                prefs.appPackage5 = ""
-            }
-
-            Constants.FLAG_SET_HOME_APP_6 -> {
-                prefs.appName6 = ""
-                prefs.appPackage6 = ""
-            }
-
-            Constants.FLAG_SET_HOME_APP_7 -> {
-                prefs.appName7 = ""
-                prefs.appPackage7 = ""
-            }
-
-            Constants.FLAG_SET_HOME_APP_8 -> {
-                prefs.appName8 = ""
-                prefs.appPackage8 = ""
-            }
-        }
-    }
-
-    private fun launchAppOrShortcut(
-        appName: String,
-        packageName: String,
-        activityClassName: String?,
-        shortcutId: String?,
-        isShortcut: Boolean,
-        userString: String,
-        fallback: (() -> Unit)? = null,
-    ) {
-        if (appName.isEmpty()) {
-            showLongPressToast()
-            return
-        }
-        if (isShortcut && !shortcutId.isNullOrEmpty()) {
-            launchShortcut(
-                packageName = packageName,
-                shortcutId = shortcutId,
-                shortcutLabel = appName,
-                userString = userString,
-            )
-        } else if (packageName.isNotEmpty()) {
-            launchApp(
-                appName = appName,
-                packageName = packageName,
-                activityClassName = activityClassName,
-                userString = userString,
-            )
-        } else {
-            fallback?.invoke()
-        }
-    }
-
-    private fun launchShortcut(
-        shortcutId: String,
-        packageName: String,
-        shortcutLabel: String,
-        userString: String,
-    ) {
-        viewModel.selectedApp(
-            AppModel.PinnedShortcut(
-                shortcutId = shortcutId,
-                appLabel = shortcutLabel,
-                user = getUserHandleFromString(requireContext(), userString),
-                key = null,
-                appPackage = packageName,
-                isNew = false,
-            ),
-            Constants.FLAG_LAUNCH_APP,
-        )
-    }
-
-    private fun launchApp(
-        appName: String,
-        packageName: String,
-        activityClassName: String?,
-        userString: String,
-    ) {
-        viewModel.selectedApp(
-            AppModel.App(
-                appLabel = appName,
-                key = null,
-                appPackage = packageName,
-                activityClassName = activityClassName,
-                isNew = false,
-                user = getUserHandleFromString(requireContext(), userString),
-            ),
-            Constants.FLAG_LAUNCH_APP,
-        )
-    }
-
-    private fun homeAppClicked(location: Int) {
-        launchAppOrShortcut(
-            appName = prefs.getAppName(location),
-            packageName = prefs.getAppPackage(location),
-            activityClassName = prefs.getAppActivityClassName(location),
-            shortcutId = prefs.getShortcutId(location),
-            isShortcut = prefs.getIsShortcut(location),
-            userString = prefs.getAppUser(location),
-        )
-    }
-
-    private fun openSwipeRightApp() {
-        if (!prefs.swipeRightEnabled) return
-        launchAppOrShortcut(
-            appName = prefs.appNameSwipeRight.ifEmpty { getString(R.string.swipe_right_app_default) },
-            packageName = prefs.appPackageSwipeRight,
-            activityClassName = prefs.appActivityClassNameRight,
-            shortcutId = prefs.shortcutIdSwipeRight,
-            isShortcut = prefs.isShortcutSwipeRight,
-            userString = prefs.appUserSwipeRight,
-            fallback = { openDialerApp(requireContext()) },
-        )
-    }
-
-    private fun openSwipeLeftApp() {
-        if (!prefs.swipeLeftEnabled) return
-        launchAppOrShortcut(
-            appName = prefs.appNameSwipeLeft.ifEmpty { getString(R.string.swipe_left_app_default) },
-            packageName = prefs.appPackageSwipeLeft,
-            activityClassName = prefs.appActivityClassNameSwipeLeft,
-            shortcutId = prefs.shortcutIdSwipeLeft,
-            isShortcut = prefs.isShortcutSwipeLeft,
-            userString = prefs.appUserSwipeLeft,
-            fallback = { openCameraApp(requireContext()) },
-        )
     }
 
     private fun showAppList(
@@ -452,8 +259,6 @@ class HomeFragment : BaseFragment() {
         }
     }
 
-    private fun showLongPressToast() = requireContext().showToast(getString(R.string.long_press_to_select_app))
-
     private fun onSetDefaultLauncherLongPressed() {
         prefs.hideSetDefaultLauncher = true
         viewModel.showSetDefaultLauncher = false
@@ -465,8 +270,8 @@ class HomeFragment : BaseFragment() {
 
     private fun createCallbacks(): HomeCallbacks =
         HomeCallbacks(
-            onSwipeLeft = ::openSwipeLeftApp,
-            onSwipeRight = ::openSwipeRightApp,
+            onSwipeLeft = { openSwipeLeftApp(requireContext(), prefs, viewModel) },
+            onSwipeRight = { openSwipeRightApp(requireContext(), prefs, viewModel) },
             onSwipeUp = { showAppList(Constants.FLAG_LAUNCH_APP) },
             onSwipeDown = { expandNotificationDrawer(requireContext()) },
             onBackgroundLongPress = {
@@ -483,7 +288,7 @@ class HomeFragment : BaseFragment() {
                     LockRequest.send(requireContext())
                 }
             },
-            onSlotTap = ::homeAppClicked,
+            onSlotTap = { location -> homeAppClicked(requireContext(), prefs, viewModel, location) },
             // The slot number doubles as Constants.FLAG_SET_HOME_APP_n (1..8).
             onSlotLongPress = { location ->
                 showAppList(location, prefs.getAppName(location).isNotEmpty(), true)
