@@ -5,19 +5,13 @@ import android.content.Intent
 import android.content.pm.LauncherApps
 import android.os.Bundle
 import android.util.Log
-import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.SoundEffectConstants
 import android.view.View
 import android.view.ViewGroup
 import android.view.WindowInsets
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.ViewCompositionStrategy
-import androidx.fragment.app.viewModels
+import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import androidx.navigation.fragment.findNavController
@@ -38,14 +32,12 @@ import app.minlauncher.helper.openCameraApp
 import app.minlauncher.helper.openClock
 import app.minlauncher.helper.openDialerApp
 import app.minlauncher.helper.showToast
-import app.minlauncher.ui.drawer.drawerFontFamily
 import app.minlauncher.ui.home.HomeCallbacks
+import app.minlauncher.ui.home.HomeClockSource
 import app.minlauncher.ui.home.HomeColors
-import app.minlauncher.ui.home.HomeScreen
+import app.minlauncher.ui.home.HomeScreenHost
 import app.minlauncher.ui.home.HomeSlotState
-import app.minlauncher.ui.home.HomeUiState
-import app.minlauncher.ui.theme.requireColor
-import app.minlauncher.ui.theme.requireString
+import app.minlauncher.ui.home.resolveHomeColors
 import java.time.Clock
 
 private const val TAG = "HomeFragment"
@@ -62,7 +54,9 @@ class HomeFragment : BaseFragment() {
     // fallback can be stale across tests, so read the repository from the
     // current activity's app. In production the activity's app is the one
     // and only LauncherApp instance.
-    private val viewModel: HomeViewModel by viewModels {
+    // Activity-scoped so the permanent home screen's state survives fragment
+    // view recreation (Stage 2 removes the fragment entirely).
+    private val viewModel: HomeViewModel by activityViewModels {
         viewModelFactory {
             initializer {
                 val app = requireActivity().application
@@ -74,29 +68,21 @@ class HomeFragment : BaseFragment() {
     private var viewBinding: FragmentHomeBinding? = null
     private val binding get() = viewBinding!!
 
-    // The renderable home screen, kept as Compose state (the AppDrawerFragment
-    // pattern): each fragment-side populate/update writes state and the
-    // screen recomposes, replacing the old binding.view writes.
-    private var slots by mutableStateOf<List<HomeSlotState>>(emptyList())
-    private var homeAppAlignment by mutableIntStateOf(Gravity.START)
-    private var homeBottomAlignment by mutableStateOf(false)
-    private var dateTimeVisibility by mutableIntStateOf(Constants.DateTime.ON)
-    private var showStatusBar by mutableStateOf(false)
-    private var showFirstRunTips by mutableStateOf(false)
-    private var showSetDefaultLauncher by mutableStateOf(false)
-    private var screenTimeText by mutableStateOf<String?>(null)
-
     // Resolved once for the whole screen lifetime; theme switches recreate.
     private var homeColors: HomeColors? = null
     private var callbacks: HomeCallbacks? = null
 
     companion object {
         /**
-         * Test seam: the home clock and date line render from this clock,
-         * which would make screenshot baselines time-dependent. Tests can
-         * point this at a fixed instant; production behavior is unchanged.
+         * Test seam: delegation alias to [HomeClockSource], kept so existing
+         * tests referencing `HomeFragment.clock` keep compiling while the
+         * seam moves next to the home UI.
          */
-        internal var clock: Clock = Clock.systemDefaultZone()
+        internal var clock: Clock
+            get() = HomeClockSource.clock
+            set(value) {
+                HomeClockSource.clock = value
+            }
     }
 
     override fun onCreateView(
@@ -115,15 +101,21 @@ class HomeFragment : BaseFragment() {
         super.onViewCreated(view, savedInstanceState)
         prefs = Prefs(requireContext())
 
-        homeColors = resolveHomeColors()
+        homeColors = requireActivity().resolveHomeColors()
         callbacks = createCallbacks()
         binding.homeContent.apply {
             setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
-            setContent { HomeScreenHost() }
+            setContent {
+                HomeScreenHost(
+                    viewModel = viewModel,
+                    colors = requireNotNull(homeColors) { "homeColors must be set in onViewCreated" },
+                    callbacks = requireNotNull(callbacks) { "callbacks must be set in onViewCreated" },
+                )
+            }
         }
 
         initObservers()
-        setHomeAlignment(viewModel.homeAppAlignment.value)
+        setHomeAlignment(viewModel.homeAppAlignmentFlow.value)
     }
 
     override fun onResume() {
@@ -137,28 +129,8 @@ class HomeFragment : BaseFragment() {
         }
     }
 
-    @Composable
-    private fun HomeScreenHost() {
-        HomeScreen(
-            state =
-                HomeUiState(
-                    slots = slots,
-                    homeAppAlignment = homeAppAlignment,
-                    homeBottomAlignment = homeBottomAlignment,
-                    dateTimeVisibility = dateTimeVisibility,
-                    showStatusBar = showStatusBar,
-                    showFirstRunTips = showFirstRunTips,
-                    showSetDefaultLauncher = showSetDefaultLauncher,
-                    screenTime = screenTimeText,
-                ),
-            colors = requireNotNull(homeColors) { "homeColors must be set in onViewCreated" },
-            clock = clock,
-            callbacks = requireNotNull(callbacks) { "callbacks must be set in onViewCreated" },
-        )
-    }
-
     private fun initObservers() {
-        showFirstRunTips = prefs.firstSettingsOpen
+        viewModel.showFirstRunTips = prefs.firstSettingsOpen
 
         collectOnStart(viewModel.refreshHome) {
             populateHomeScreen()
@@ -168,38 +140,38 @@ class HomeFragment : BaseFragment() {
                 prefs.homeBottomAlignment = false
                 setHomeAlignment()
             }
-            if (showFirstRunTips) return@collectOnStart
-            showSetDefaultLauncher = it == false && prefs.hideSetDefaultLauncher.not()
+            if (viewModel.showFirstRunTips) return@collectOnStart
+            viewModel.showSetDefaultLauncher = it == false && prefs.hideSetDefaultLauncher.not()
         }
-        collectOnStart(viewModel.homeAppAlignment) {
+        collectOnStart(viewModel.homeAppAlignmentFlow) {
             setHomeAlignment(it)
         }
-        collectOnStart(viewModel.homeBottomAlignment) {
+        collectOnStart(viewModel.homeBottomAlignmentFlow) {
             setHomeAlignment()
         }
         collectOnStart(viewModel.toggleDateTime) {
             populateDateTime()
         }
         collectOnStart(viewModel.screenTimeValue) {
-            it?.let { screenTimeText = it }
+            it?.let { viewModel.screenTimeText = it }
         }
     }
 
-    private fun setHomeAlignment(horizontalGravity: Int = viewModel.homeAppAlignment.value) {
-        homeAppAlignment = horizontalGravity
-        homeBottomAlignment = viewModel.homeBottomAlignment.value
+    private fun setHomeAlignment(horizontalGravity: Int = viewModel.homeAppAlignmentFlow.value) {
+        viewModel.homeAppAlignment = horizontalGravity
+        viewModel.homeBottomAlignment = viewModel.homeBottomAlignmentFlow.value
     }
 
     private fun populateDateTime() {
-        dateTimeVisibility = prefs.dateTimeVisibility
+        viewModel.dateTimeVisibility = prefs.dateTimeVisibility
         // Gates the battery suffix on the date line; re-read on every
         // populate like the old binding write.
-        showStatusBar = prefs.showStatusBar
+        viewModel.showStatusBar = prefs.showStatusBar
     }
 
     private fun populateScreenTime() {
         if (requireContext().appUsagePermissionGranted().not() || prefs.screenTimeEnabled.not()) {
-            screenTimeText = null
+            viewModel.screenTimeText = null
             return
         }
 
@@ -213,7 +185,7 @@ class HomeFragment : BaseFragment() {
         populateScreenTime()
 
         // (1..0) is empty, like the old early return for homeAppsNum == 0.
-        slots =
+        viewModel.slots =
             (1..prefs.homeAppsNum).map { location ->
                 HomeSlotState(index = location, label = verifiedHomeAppLabel(location))
             }
@@ -484,7 +456,7 @@ class HomeFragment : BaseFragment() {
 
     private fun onSetDefaultLauncherLongPressed() {
         prefs.hideSetDefaultLauncher = true
-        showSetDefaultLauncher = false
+        viewModel.showSetDefaultLauncher = false
         if (viewModel.isMinLauncherDefault.value != true) {
             requireContext().showToast(R.string.set_as_default_launcher)
             findNavController().navigate(R.id.action_mainFragment_to_settingsFragment)
@@ -522,28 +494,6 @@ class HomeFragment : BaseFragment() {
             onSetDefaultLauncherTap = { viewModel.requestResetLauncher() },
             onSetDefaultLauncherLongPress = ::onSetDefaultLauncherLongPressed,
         )
-
-    private fun resolveHomeColors(): HomeColors {
-        // Resolve once, from the activity theme, so the day/night variant is the
-        // one the (about to be displayed) screen uses. Theme switches recreate.
-        val typedArray = requireActivity().obtainStyledAttributes(R.styleable.HomeColors)
-        return try {
-            HomeColors(
-                primaryColor =
-                    typedArray.requireColor(R.styleable.HomeColors_primaryColor, "primaryColor"),
-                primaryColorTrans80 =
-                    typedArray.requireColor(R.styleable.HomeColors_primaryColorTrans80, "primaryColorTrans80"),
-                textShadow =
-                    typedArray.requireColor(R.styleable.HomeColors_primaryTextShadowColor, "primaryTextShadowColor"),
-                fontFamily =
-                    drawerFontFamily(
-                        typedArray.requireString(R.styleable.HomeColors_mainFontFamily, "mainFontFamily"),
-                    ),
-            )
-        } finally {
-            typedArray.recycle()
-        }
-    }
 
     override fun onDestroyView() {
         super.onDestroyView()
