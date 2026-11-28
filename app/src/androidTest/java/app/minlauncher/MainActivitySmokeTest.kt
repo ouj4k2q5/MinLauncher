@@ -1,20 +1,20 @@
 package app.minlauncher
 
+import android.view.ViewConfiguration
 import androidx.compose.ui.test.assertIsDisplayed
-import androidx.compose.ui.test.junit4.createEmptyComposeRule
+import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithTag
-import androidx.test.core.app.ActivityScenario
+import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.test.swipe
 import androidx.test.espresso.Espresso.onView
-import androidx.test.espresso.action.GeneralLocation
-import androidx.test.espresso.action.GeneralSwipeAction
-import androidx.test.espresso.action.Press
-import androidx.test.espresso.action.Swipe
+import androidx.test.espresso.action.CoordinatesProvider
 import androidx.test.espresso.matcher.ViewMatchers.withId
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
+import app.minlauncher.data.Constants
 import app.minlauncher.data.Prefs
-import org.junit.Before
+import org.junit.BeforeClass
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -24,71 +24,106 @@ import org.junit.runner.RunWith
  * prove that the app launches and its three core flows work on a real
  * (emulated) Android at minSdk; exact behavior is covered by the Robolectric
  * suite. Run with ./gradlew pixel2api30DebugAndroidTest.
+ *
+ * The activity is the production [MainActivity] hosting the Nav3 `AppRoot`
+ * compose tree; the tests drive the same tags the Robolectric suite uses and
+ * assert the resulting screens, not fragment/View internals.
  */
 @RunWith(AndroidJUnit4::class)
 class MainActivitySmokeTest {
-    // The home screen and settings are Compose now; the empty rule drives
-    // their semantics trees without launching an activity of its own (the
-    // tests use ActivityScenario).
+    // Launching the activity through the rule gives the tests the live Compose
+    // tree; the one-time steady-state prefs are set in @BeforeClass so they are
+    // in place before this rule creates the activity.
     @get:Rule
-    val composeRule = createEmptyComposeRule()
-
-    @Before
-    fun setUp() {
-        disableSystemAnimations()
-        // Skip the first-open flow: it fires the system "choose home app"
-        // dialog, which covers the activity and breaks every subsequent
-        // Espresso interaction. The flow itself is covered by the Robolectric
-        // suite; here we assert steady-state behavior.
-        Prefs(InstrumentationRegistry.getInstrumentation().targetContext).firstOpen = false
-    }
+    val composeRule = createAndroidComposeRule<MainActivity>()
 
     @Test
     fun `launch displays the home clock`() {
-        ActivityScenario.launch(MainActivity::class.java).use {
-            composeRule.waitForIdle()
-            composeRule.onNodeWithTag("home.clock").assertIsDisplayed()
-        }
+        composeRule.waitForIdle()
+        composeRule.onNodeWithTag("home.clock").assertIsDisplayed()
     }
 
     @Test
     fun `swipe up opens the drawer with apps`() {
-        ActivityScenario.launch(MainActivity::class.java).use {
-            // Not ViewActions.swipeUp(): it starts at BOTTOM_CENTER, which on
-            // gesture navigation lies inside the system home-gesture zone, so
-            // the system steals the stroke and the launcher never sees it.
-            // Swipe from screen center to top instead.
-            onView(withId(R.id.mainLayout)).perform(
-                GeneralSwipeAction(Swipe.FAST, GeneralLocation.CENTER, GeneralLocation.TOP_CENTER, Press.FINGER),
-            )
+        // Compose tests inject the whole gesture into the app's view hierarchy
+        // directly, so the system gesture zone that stole Espresso's
+        // bottom-start swipe cannot intercept it. Start at the screen center
+        // and fling up to the top edge anyway, matching the fling the home
+        // background detector expects (>100px travel, >100px/s).
+        composeRule.onNodeWithTag("home.background").performTouchInput {
+            swipe(start = center, end = topCenter, durationMillis = 200L)
+        }
 
-            // The drawer is Compose; the app list is populated asynchronously
-            // from LauncherApps on a background thread, which idling cannot
-            // see, so poll the semantics tree instead of the old RecyclerView.
-            // Waiting for the list container alone is not enough — it composes
-            // even with a permanently empty list — so also require at least one
-            // child node: LazyColumn only composes children for actual items.
-            // The item itself comes from DummyLauncherActivity in this test
-            // APK: the aosp-atd image has no other launchable apps, and the
-            // drawer never lists the launcher itself.
-            composeRule.waitUntil(timeoutMillis = 10_000L) {
-                composeRule
-                    .onAllNodesWithTag("drawer.list")
-                    .fetchSemanticsNodes()
-                    .firstOrNull()
-                    ?.children
-                    ?.isNotEmpty() == true
-            }
+        // The drawer is populated asynchronously from LauncherApps on a
+        // background thread that idling cannot see, so poll the semantics
+        // tree. Waiting for the list container alone is not enough — it
+        // composes even with a permanently empty list — so also require at
+        // least one child node: LazyColumn only composes children for actual
+        // items. The item comes from DummyLauncherActivity in this test APK:
+        // the aosp-atd image has no other launchable apps, and the drawer
+        // never lists the launcher itself.
+        composeRule.waitUntil(timeoutMillis = 10_000L) {
+            composeRule
+                .onAllNodesWithTag("drawer.list")
+                .fetchSemanticsNodes()
+                .firstOrNull()
+                ?.children
+                ?.isNotEmpty() == true
         }
     }
 
     @Test
     fun `long press on the home screen opens settings`() {
-        ActivityScenario.launch(MainActivity::class.java).use {
-            onView(withId(R.id.mainLayout)).perform(holdLongPress())
+        // The home background detector posts its long-press Runnable on the
+        // main Handler, so it needs real elapsed time with the main thread
+        // free. Compose's performTouchInput flushes the whole gesture into one
+        // main-thread batch, which would deliver the up before the Runnable
+        // runs, so inject the down/up with Espresso and hold the looper in
+        // between, like the pre-Compose test did.
+        onView(withId(android.R.id.content)).perform(
+            holdLongPress(
+                at = backgroundPoint,
+                durationMs = Constants.LONG_PRESS_DELAY_MS + ViewConfiguration.getLongPressTimeout() + 250L,
+            ),
+        )
 
-            composeRule.waitForIdle()
-            composeRule.onNodeWithTag("settings.appInfo").assertIsDisplayed()
+        composeRule.waitUntil(timeoutMillis = 10_000L) {
+            composeRule.onAllNodesWithTag("settings.appInfo").fetchSemanticsNodes().isNotEmpty()
+        }
+        composeRule.onNodeWithTag("settings.appInfo").assertIsDisplayed()
+    }
+
+    companion object {
+        // A point on the home background clear of the top-start clock/date
+        // column and of the vertically centered home app slots, so the press
+        // cannot be consumed by an interactive child. The top centre is not
+        // safe: the large clock text is wide enough to reach it on a phone.
+        private val backgroundPoint =
+            CoordinatesProvider { view ->
+                val location = IntArray(2)
+                view.getLocationOnScreen(location)
+                floatArrayOf(
+                    location[0] + view.width * 0.9f,
+                    location[1] + view.height * 0.1f,
+                )
+            }
+
+        /**
+         * Puts the device in the steady state the smoke tests assert, before
+         * the rule launches the activity: skip the first-open flow (it fires
+         * the system "choose home app" dialog, which covers the activity and
+         * breaks every later interaction) and the four-hour background
+         * restart (a fresh install would otherwise recreate the activity while
+         * the compose rule is attaching to it).
+         */
+        @JvmStatic
+        @BeforeClass
+        fun reachSteadyState() {
+            disableSystemAnimations()
+            Prefs(InstrumentationRegistry.getInstrumentation().targetContext).apply {
+                firstOpen = false
+                launcherRestartTimestamp = System.currentTimeMillis()
+            }
         }
     }
 }
