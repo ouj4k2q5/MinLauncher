@@ -150,7 +150,6 @@ dependencies {
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.core.ktx)
     implementation(libs.appcompat)
-    implementation(libs.recyclerview)
     implementation(libs.datastore.preferences)
 
     // Android lifecycle (runtime-compose provides collectAsStateWithLifecycle

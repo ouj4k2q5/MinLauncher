@@ -56,7 +56,7 @@ artifact). Useful subsets:
 
 ```bash
 ./gradlew ktlintFormat                          # auto-fix formatting (.editorconfig, 120-col)
-./gradlew test --tests "app.minlauncher.data.ShortcutIdentityTest"   # single test class
+./gradlew testDebugUnitTest --tests "app.minlauncher.data.ShortcutIdentityTest"   # single test class
 ```
 
 On-device smoke tests run on a Gradle Managed Device (Pixel 2, API 30, headless
