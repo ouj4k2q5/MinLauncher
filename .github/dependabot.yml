@@ -17,6 +17,18 @@ updates:
     schedule:
       interval: weekly
     open-pull-requests-limit: 5
+    # The Kotlin compiler is not a declared dependency in this repo: it comes
+    # from AGP's built-in Kotlin support (AGP 9.5.x embeds Kotlin 2.2.10 via its
+    # kotlin-gradle-plugin runtime dependency). Bumping org.jetbrains.kotlin
+    # artifacts (stdlib, plugin.compose) past the embedded compiler breaks
+    # every compile task: "module was compiled with an incompatible version of
+    # Kotlin. The binary version of its metadata is 2.4.0, expected version is
+    # 2.2.0." kotlinx-* (coroutines) is independent of that pin, so it stays
+    # updatable. When AGP is updated, check which Kotlin it embeds and raise
+    # this ceiling to match before letting these updates through again.
+    ignore:
+      - dependency-name: "org.jetbrains.kotlin*"
+        versions: ["> 2.2.10"]
     groups:
       # AndroidX artifacts share a release train, so bumping them one PR at a time both
       # creates noise and risks mismatched versions inside a single group.
