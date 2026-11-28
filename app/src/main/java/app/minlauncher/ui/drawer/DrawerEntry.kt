@@ -86,8 +86,8 @@ internal fun DrawerEntry(
         }
 
     DrawerStartStopParity(activity as LifecycleOwner, deps)
-    hideKeyboardWhenNoLongerTop(deps)
-    drawerObservers(deps)
+    HideKeyboardWhenNoLongerTop(deps)
+    DrawerObservers(deps)
 
     val callbacks = remember(deps) { createDrawerCallbacks(deps) }
     DrawerScreenHost(
@@ -187,7 +187,7 @@ internal fun DrawerStartStopParity(
  * screen for the whole transition.
  */
 @Composable
-internal fun hideKeyboardWhenNoLongerTop(deps: DrawerEntryDeps) {
+internal fun HideKeyboardWhenNoLongerTop(deps: DrawerEntryDeps) {
     LaunchedEffect(deps) {
         snapshotFlow { deps.backStack.lastOrNull() }
             .collect { top -> if (top != deps.key) deps.hideKeyboard() }
@@ -195,7 +195,7 @@ internal fun hideKeyboardWhenNoLongerTop(deps: DrawerEntryDeps) {
 }
 
 @Composable
-private fun drawerObservers(deps: DrawerEntryDeps) {
+private fun DrawerObservers(deps: DrawerEntryDeps) {
     val viewModel = deps.viewModel
     val flag = deps.key.flag
     if (flag == Constants.FLAG_HIDDEN_APPS) {

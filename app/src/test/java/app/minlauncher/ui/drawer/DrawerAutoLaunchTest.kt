@@ -55,7 +55,7 @@ class DrawerAutoLaunchTest {
             activity.setContentView(
                 ComposeView(activity).apply {
                     setContent {
-                        autoLaunchOnSingleResult(
+                        AutoLaunchOnSingleResult(
                             filtered = filtered.value,
                             query = query.value,
                             userEditedQuery = userEdited.value,

@@ -78,9 +78,9 @@ internal fun DrawerScreen(
 
     val filtered = remember(state.apps, query.text) { filterApps(state.apps, query.text) }
 
-    autoLaunchOnSingleResult(filtered, query, userEditedQuery, state.flag, callbacks)
-    observeScrollForKeyboard(listState, state.autoShowKeyboard, searchFocus, keyboard)
-    showKeyboardOnStart(state, searchFocus, keyboard)
+    AutoLaunchOnSingleResult(filtered, query, userEditedQuery, state.flag, callbacks)
+    ObserveScrollForKeyboard(listState, state.autoShowKeyboard, searchFocus, keyboard)
+    ShowKeyboardOnStart(state, searchFocus, keyboard)
 
     Column(
         modifier =

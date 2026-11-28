@@ -58,7 +58,7 @@ internal fun rememberPullDownExit(onExitDrawer: () -> Unit): NestedScrollConnect
  * later run when the app list arrives asynchronously after process death.
  */
 @Composable
-internal fun autoLaunchOnSingleResult(
+internal fun AutoLaunchOnSingleResult(
     filtered: List<AppModel>,
     query: TextFieldValue,
     userEditedQuery: Boolean,
@@ -104,7 +104,7 @@ private fun autoLaunchAllowed(
  * ([idleAtTop]) and consulted at drag start instead.
  */
 @Composable
-internal fun observeScrollForKeyboard(
+internal fun ObserveScrollForKeyboard(
     listState: LazyListState,
     autoShowKeyboard: Boolean,
     searchFocus: FocusRequester,
@@ -138,7 +138,7 @@ internal fun observeScrollForKeyboard(
 
 /** The old onStart: show the keyboard when the auto-show pref is on. */
 @Composable
-internal fun showKeyboardOnStart(
+internal fun ShowKeyboardOnStart(
     state: DrawerUiState,
     searchFocus: FocusRequester,
     keyboard: SoftwareKeyboardController?,
