@@ -1,7 +1,10 @@
 package app.minlauncher.ui
 
 import android.app.Application
+import android.os.Looper
 import android.provider.Settings
+import android.view.ViewConfiguration
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertTextContains
 import androidx.compose.ui.test.assertTextEquals
@@ -9,6 +12,7 @@ import androidx.compose.ui.test.junit4.createEmptyComposeRule
 import androidx.compose.ui.test.longClick
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTouchInput
@@ -23,6 +27,7 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
+import java.util.concurrent.TimeUnit
 
 // SDK 36 requires Java 21 in Robolectric, so pin the highest SDK that runs on JDK 17.
 @Config(sdk = [35])
@@ -41,7 +46,23 @@ class SettingsFlowTest {
     @Test
     fun `long press on the home background opens settings`() {
         launchLauncher(fakeApps("Browser")) { firstOpen = false }.use {
-            openSettings()
+            // Drive the production wiring (home.root's long-press callback adds
+            // SettingsKey). The detector fires only after the extra
+            // LONG_PRESS_DELAY_MS on top of the system timeout, so hold a
+            // background point — top center, clear of the clock/date at the
+            // top start and of the centered app slots — and advance the shadow
+            // clock, like SetHomeAppFlowTest's slot long press.
+            composeRule.onNodeWithTag("home.root").performTouchInput {
+                down(Offset(width * 0.5f, height * 0.1f))
+            }
+            shadowOf(Looper.getMainLooper()).idleFor(
+                Constants.LONG_PRESS_DELAY_MS + ViewConfiguration.getLongPressTimeout() + 100,
+                TimeUnit.MILLISECONDS,
+            )
+            // Nav3 keeps one Compose root alive, so release the pointer before
+            // letting the navigation settle.
+            composeRule.onRoot().performTouchInput { up() }
+            composeRule.waitForIdle()
 
             composeRule.onNodeWithTag("settings.hiddenApps").assertIsDisplayed()
             composeRule.onNodeWithTag("settings.alignment").performScrollTo().assertIsDisplayed()

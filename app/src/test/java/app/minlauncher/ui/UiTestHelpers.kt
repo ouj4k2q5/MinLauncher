@@ -4,19 +4,10 @@ import android.content.Context
 import android.content.pm.ActivityInfo
 import android.content.pm.LauncherApps
 import android.os.Process
-import android.os.SystemClock
 import android.os.UserHandle
 import android.provider.Settings
-import android.view.MotionEvent
-import android.view.View
-import android.view.ViewConfiguration
 import androidx.test.core.app.ActivityScenario
 import androidx.test.core.app.ApplicationProvider
-import androidx.test.espresso.UiController
-import androidx.test.espresso.ViewAction
-import androidx.test.espresso.action.CoordinatesProvider
-import androidx.test.espresso.action.GeneralLocation
-import androidx.test.espresso.matcher.ViewMatchers.isDisplayed
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.runner.lifecycle.ActivityLifecycleMonitorRegistry
 import androidx.test.runner.lifecycle.Stage
@@ -27,7 +18,6 @@ import app.minlauncher.helper.FakeAppListProvider
 import app.minlauncher.testing.TestMainActivity
 import app.minlauncher.ui.nav.DrawerKey
 import app.minlauncher.ui.nav.SettingsKey
-import org.hamcrest.Matcher
 import org.robolectric.Shadows.shadowOf
 
 private const val TEST_PACKAGE_PREFIX = "app.minlauncher.ui.fixture"
@@ -103,65 +93,6 @@ fun openSettings() {
 
 /** The app under test, for asserting persisted state from within a test. */
 fun testPrefs(): Prefs = Prefs(ApplicationProvider.getApplicationContext())
-
-/**
- * Performs a long press that stays down long enough for the Compose home
- * background detector, which fires its long press only after an additional
- * LONG_PRESS_DELAY_MS posted on top of the system long-press timeout (the
- * old ViewSwipeTouchListener timing). Espresso's built-in longClick() holds
- * only the system timeout, so the handler task would be cancelled by the
- * ACTION_UP before it runs.
- */
-fun holdLongPress(
-    at: CoordinatesProvider = GeneralLocation.CENTER,
-    durationMs: Long = Constants.LONG_PRESS_DELAY_MS + ViewConfiguration.getLongPressTimeout(),
-): ViewAction =
-    object : ViewAction {
-        override fun getConstraints(): Matcher<View> = isDisplayed()
-
-        override fun getDescription(): String = "hold a long press for $durationMs ms"
-
-        override fun perform(
-            uiController: UiController,
-            view: View,
-        ) {
-            val coords = at.calculateCoordinates(view)
-            val downTime = SystemClock.uptimeMillis()
-            uiController.injectMotionEvent(
-                MotionEvent.obtain(
-                    downTime,
-                    downTime,
-                    MotionEvent.ACTION_DOWN,
-                    coords[0],
-                    coords[1],
-                    1f,
-                    1f,
-                    0,
-                    1f,
-                    1f,
-                    0,
-                    0,
-                ),
-            )
-            uiController.loopMainThreadForAtLeast(durationMs)
-            uiController.injectMotionEvent(
-                MotionEvent.obtain(
-                    downTime,
-                    SystemClock.uptimeMillis(),
-                    MotionEvent.ACTION_UP,
-                    coords[0],
-                    coords[1],
-                    1f,
-                    1f,
-                    0,
-                    1f,
-                    1f,
-                    0,
-                    0,
-                ),
-            )
-        }
-    }
 
 private fun seedLauncherApps(
     context: Context,
