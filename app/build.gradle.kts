@@ -5,6 +5,7 @@ import java.util.Properties
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
+    alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.ktlint)
     alias(libs.plugins.detekt)
     alias(libs.plugins.roborazzi)
@@ -161,6 +162,10 @@ dependencies {
 
     // Navigation
     implementation(libs.navigation.fragment.ktx)
+    // Navigation 3 foundation (Phase 9 spike). Deliberately not adding
+    // navigation3-dynamic-features: it pulls Play Feature Delivery.
+    implementation(libs.androidx.navigation3.runtime)
+    implementation(libs.androidx.navigation3.ui)
 
     // Compose (BOM 2026.11.01 / material3 1.5.0, which requires compileSdk 37,
     // now satisfied). All three screens — home, drawer, settings — consume

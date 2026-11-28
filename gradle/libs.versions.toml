@@ -12,6 +12,9 @@ kotlinStdlib = "2.2.10"
 # now that the project compiles against compileSdk 37.
 lifecycle = "2.9.0"
 navigationFragmentKtx = "2.10.2"
+# navigation3-ui transitively raises androidx.activity 1.8.2 -> 1.12.0, whose
+# non-null onNewIntent(Intent) required MainActivity's override to drop its "?".
+navigation3 = "1.2.2"
 recyclerview = "1.4.0"
 junit = "4.13.2"
 robolectric = "4.18.1"
@@ -21,7 +24,8 @@ espressoCore = "3.7.0"
 roborazzi = "1.79.0"
 jacoco = "0.8.16"
 # Must track kotlinStdlib: the Compose compiler Gradle plugin is versioned
-# with the Kotlin compiler it is built against.
+# with the Kotlin compiler it is built against. The kotlinx-serialization
+# plugin reuses this ref for the same reason.
 kotlinComposePlugin = "2.2.10"
 composeBom = "2026.11.01"
 [libraries]
@@ -35,6 +39,8 @@ lifecycle-viewmodel-ktx = { module = "androidx.lifecycle:lifecycle-viewmodel-ktx
 kotlinx-coroutines-android = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-android", version.ref = "coroutines" }
 kotlinx-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "coroutines" }
 navigation-fragment-ktx = { module = "androidx.navigation:navigation-fragment-ktx", version.ref = "navigationFragmentKtx" }
+androidx-navigation3-runtime = { module = "androidx.navigation3:navigation3-runtime", version.ref = "navigation3" }
+androidx-navigation3-ui = { module = "androidx.navigation3:navigation3-ui", version.ref = "navigation3" }
 recyclerview = { module = "androidx.recyclerview:recyclerview", version.ref = "recyclerview" }
 junit = { module = "junit:junit", version.ref = "junit" }
 robolectric = { module = "org.robolectric:robolectric", version.ref = "robolectric" }
@@ -56,3 +62,4 @@ ktlint = { id = "org.jlleitschuh.gradle.ktlint", version.ref = "ktlintGradle" }
 detekt = { id = "io.gitlab.arturbosch.detekt", version.ref = "detekt" }
 roborazzi = { id = "io.github.takahirom.roborazzi", version.ref = "roborazzi" }
 kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlinComposePlugin" }
+kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlinComposePlugin" }
