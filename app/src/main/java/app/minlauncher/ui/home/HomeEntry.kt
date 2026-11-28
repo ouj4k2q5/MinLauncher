@@ -88,7 +88,7 @@ internal fun HomeEntry(
     remember(viewModel) {
         initializeHome(context, activity, prefs, viewModel)
     }
-    initHomeObservers(context, prefs, viewModel)
+    InitHomeObservers(context, prefs, viewModel)
     // The entry-scoped LocalLifecycleOwner is not relied upon; the activity's
     // lifecycle is the documented resume source, gated on home being on top.
     DisposableEffect(activity, backStack) {
@@ -126,7 +126,7 @@ private fun initializeHome(
 }
 
 @Composable
-private fun initHomeObservers(
+private fun InitHomeObservers(
     context: Context,
     prefs: Prefs,
     viewModel: HomeViewModel,

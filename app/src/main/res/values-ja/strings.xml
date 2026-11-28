@@ -5,12 +5,11 @@
     <string name="set_as_default_launcher">デフォルトのランチャーとして設定</string>
     <string name="double_tap_to_lock_screen">ダブルタップで画面をロック</string>
     <string name="lock_screen_action">画面をロック</string>
-    <string name="home_button_show_recents">ホームボタンで最近のアプリを表示</string>
     <string name="off">オフ</string>
     <string name="on">オン</string>
     <string name="change_default_launcher">デフォルトのランチャーを変更</string>
     <string name="swipe_up_for_apps">上にスワイプすると、すべてのアプリが表示されます
-      \n画面の任意の場所を長押しすると、設定が開きます</string>
+     \n画面の任意の場所を長押しすると、設定が開きます</string>
     <string name="apps_on_home_screen">ホーム画面に表示するアプリの数</string>
     <string name="solid_wallpaper">壁紙</string>
     <string name="left">左</string>
@@ -21,7 +20,6 @@
     <string name="swipe_right_app">右スワイプ</string>
     <string name="okay">OK</string>
     <string name="auto_show_keyboard">キーボードの自動表示</string>
-    <string name="hide">非表示</string>
     <string name="rename">名前を変更</string>
     <string name="show_date_time">日付と時刻を表示</string>
     <string name="appearance">外観</string>
@@ -31,11 +29,11 @@
     <string name="dark">ダーク</string>
     <string name="light">ライト</string>
     <string name="welcome_to_minlauncher_settings">MinLauncher をお選びいただき、ありがとうございます。
-      \n\nすっきりとしたホーム画面をお楽しみください。</string>
+     \n\nすっきりとしたホーム画面をお楽しみください。</string>
     <string name="keyboard_message">アプリを探すなら、キーボードが一番速い方法です。
-      \n\nこの設定はいつでも変更できます。</string>
+     \n\nこの設定はいつでも変更できます。</string>
     <string name="app_usage_message">ホーム画面にスクリーンタイムを表示するには、アプリの使用状況へのアクセス許可が必要です。
-   \n\nこの機能はスクリーンタイムの表示のためだけに使用され、データの収集や共有は一切行いません。</string>
+  \n\nこの機能はスクリーンタイムの表示のためだけに使用され、データの収集や共有は一切行いません。</string>
     <string name="accessibility_service_description">「ダブルタップで画面をロック」を有効にするには、ユーザー補助サービスの許可が必要です。このサービスはこのジェスチャーのためだけに使用され、データの収集や共有は一切行いません。</string>
     <string name="close">閉じる</string>
     <string name="date">日付</string>

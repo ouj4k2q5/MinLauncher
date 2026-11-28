@@ -79,7 +79,7 @@ class DrawerScrollKeyboardTest {
                                 items(50) { index -> Text("row $index", Modifier.height(40.dp)) }
                             }
                             Box(Modifier.focusRequester(searchFocus).focusable())
-                            observeScrollForKeyboard(
+                            ObserveScrollForKeyboard(
                                 listState = state,
                                 autoShowKeyboard = true,
                                 searchFocus = searchFocus,
@@ -94,7 +94,7 @@ class DrawerScrollKeyboardTest {
         }
         composeRule.waitForIdle()
         // The composition-time emission fires before the first layout, when
-        // canScrollForward is still false — the real app's showKeyboardOnStart
+        // canScrollForward is still false — the real app's ShowKeyboardOnStart
         // would override it right after. Drop that noise so every test only
         // sees its own scrolls.
         keyboard.calls.clear()

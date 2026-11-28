@@ -115,7 +115,7 @@ class DrawerKeyboardLifecycleTest {
         val key = DrawerKey(Constants.FLAG_LAUNCH_APP, canRename = false)
         val (deps, backStack) = createDeps(key, state) { hidden = true }
 
-        host { hideKeyboardWhenNoLongerTop(deps) }.use {
+        host { HideKeyboardWhenNoLongerTop(deps) }.use {
             composeRule.waitForIdle()
             assertFalse(hidden)
 
