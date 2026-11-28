@@ -8,8 +8,7 @@ import java.time.Clock
  * instant; production behavior is unchanged.
  *
  * Named [HomeClockSource] (not HomeClock) to avoid colliding with the
- * existing composables in HomeClock.kt. [app.minlauncher.ui.HomeFragment.clock]
- * is a delegation alias so existing tests keep working unmodified.
+ * existing composables in HomeClock.kt.
  */
 internal object HomeClockSource {
     var clock: Clock = Clock.systemDefaultZone()

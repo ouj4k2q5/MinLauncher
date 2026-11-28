@@ -18,7 +18,7 @@ private const val TAG = "HomeAppLauncher"
 
 /**
  * The home screen's slot validation and app/shortcut launching, moved out of
- * [app.minlauncher.ui.HomeFragment] (Stage 2 of the fragment removal) so the
+ * the old HomeFragment (Stage 2 of the fragment removal) so the
  * home entry composable can run the same actions without a fragment.
  *
  * These are the fragment's originals with its `requireContext()`/`getString()`
@@ -171,8 +171,8 @@ internal fun launchAppOrShortcut(
     }
 }
 
-// The explicit context/view model parameters mirror the two fragment fields
-// this used to reach implicitly; the rest is the shortcut's identity.
+// The explicit context/view model parameters mirror the old fragment's two
+// fields this used to reach implicitly; the rest is the shortcut's identity.
 @Suppress("LongParameterList")
 internal fun launchShortcut(
     context: Context,
@@ -195,7 +195,7 @@ internal fun launchShortcut(
     )
 }
 
-// Same as launchShortcut: the implicit fragment fields named explicitly.
+// Same as launchShortcut: the old fragment's implicit fields named explicitly.
 @Suppress("LongParameterList")
 internal fun launchApp(
     context: Context,

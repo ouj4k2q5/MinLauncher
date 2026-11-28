@@ -45,7 +45,7 @@ fun otherProfileUser(): UserHandle = UserHandle.getUserHandleForUid(1_010_000)
 /**
  * Launches [TestMainActivity] with the given apps as the whole world:
  * the fake provider feeds the ViewModel, and LauncherApps is seeded so that
- * `isPackageInstalled` passes for the fake packages (HomeFragment clears home
+ * `isPackageInstalled` passes for the fake packages (the home entry clears home
  * slots whose package does not resolve).
  *
  * The returned scenario must be closed by the caller, e.g. with `use { }`.
@@ -132,8 +132,8 @@ private fun newLauncherActivityInfo(
 }
 
 /**
- * Zero animation scales keep RecyclerView's layout animation (and fragment
- * transaction animations) out of the way under Robolectric, matching how the
+ * Zero animation scales keep RecyclerView's layout animation (and Navigation 3
+ * transitions) out of the way under Robolectric, matching how the
  * app itself behaves on animation-disabled devices.
  */
 private fun disableSystemAnimations(context: Context) {

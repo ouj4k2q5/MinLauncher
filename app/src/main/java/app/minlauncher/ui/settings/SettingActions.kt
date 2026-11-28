@@ -2,10 +2,10 @@
 // switch, split by side effect); the count is inherent to binding a dense
 // settings screen, not a sign of a file doing too many things.
 //
-// These are the settings screen's non-navigation actions, moved out of
-// [app.minlauncher.ui.SettingsFragment] (Stage 2 of the fragment removal) so the
-// settings entry composable can run the same actions without a fragment. They
-// are the fragment's originals with its `requireContext()`/`requireActivity()`/
+// These are the settings screen's non-navigation actions, moved out of the
+// old fragment (Stage 2 of the fragment removal) so the settings entry
+// composable can run the same actions without a fragment. They are the
+// fragment's originals with its `requireContext()`/`requireActivity()`/
 // `activity`/`getString()` calls and its `prefs`/`viewModel` fields turned into
 // explicit parameters; the bodies are otherwise unchanged.
 @file:Suppress("TooManyFunctions")

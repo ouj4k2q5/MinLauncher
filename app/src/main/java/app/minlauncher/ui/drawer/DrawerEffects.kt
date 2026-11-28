@@ -26,7 +26,7 @@ import kotlinx.coroutines.delay
 internal fun rememberPullDownExit(onExitDrawer: () -> Unit): NestedScrollConnection {
     // Same rule as the old LinearLayoutManager override — any single finger
     // drag that leaves more than 10px unconsumed above the top of the list
-    // exits the drawer (the Fragment guards double pops). Compose nested
+    // exits the drawer (DrawerEntry guards double pops). Compose nested
     // scroll deltas follow the pointer direction (a downward drag is positive
     // y), the opposite of View's dy, hence > and not <.
     val exitDrawer by rememberUpdatedState(onExitDrawer)

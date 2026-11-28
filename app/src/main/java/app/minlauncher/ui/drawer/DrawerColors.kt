@@ -7,7 +7,7 @@ import app.minlauncher.ui.theme.requireString
 
 /**
  * Resolves [DrawerColors] from the activity theme. Lives next to the screen so
- * the color resolution can move with the rest of the drawer UI; the Fragment
+ * the color resolution can move with the rest of the drawer UI; DrawerEntry
  * only calls it.
  */
 internal fun Activity.resolveDrawerColors(): DrawerColors {

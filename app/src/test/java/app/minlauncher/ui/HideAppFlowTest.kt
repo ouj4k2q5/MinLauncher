@@ -40,7 +40,7 @@ class HideAppFlowTest {
             composeRule.onNodeWithText("Camera").performTouchInput { longClick() }
             composeRule.onNodeWithTag("drawer.appHide").performClick()
 
-            // The removal is an optimistic state update in the Fragment;
+            // The removal is an optimistic state update in the drawer entry;
             // settle the recomposition before asserting.
             composeRule.waitForIdle()
             // While the row menu is open the title is alpha(0f) with cleared

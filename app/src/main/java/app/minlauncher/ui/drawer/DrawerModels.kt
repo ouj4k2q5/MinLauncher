@@ -10,7 +10,7 @@ import androidx.compose.ui.text.style.TextAlign
 import app.minlauncher.data.AppModel
 
 /**
- * Theme attributes resolved once by the Fragment from the activity theme (so
+ * Theme attributes resolved once by DrawerEntry from the activity theme (so
  * the day/night variant is the one the activity is currently using). Compose
  * must not hardcode the palette or extend MinLauncherTheme's M3 color scheme
  * with it.
@@ -33,7 +33,7 @@ data class DrawerColors(
  * The combined list already includes the Private Space header (and its apps
  * while unlocked) for the current flag; the screen owns only the query, the
  * open menu/rename rows and scroll state. [showKeyboardSignal] is bumped by
- * the Fragment on every onStart so the screen re-shows the keyboard the way
+ * DrawerEntry on every ON_START so the screen re-shows the keyboard the way
  * the old onStart listener did, including across activity stop/start cycles.
  */
 @Immutable
@@ -49,12 +49,12 @@ data class DrawerUiState(
 )
 
 /**
- * Side effects stay in the Fragment: selection, launch intents, uninstall,
+ * Side effects live in DrawerEntry: selection, launch intents, uninstall,
  * app-info, the SharedPreferences hidden-apps write, navigation, toasts and
- * dialog posting. [isCjkKeyboard] is a query, cached by the Fragment, used to
+ * dialog posting. [isCjkKeyboard] is a query, cached by DrawerEntry, used to
  * suppress auto-launch while a CJK composition is in progress.
  */
-@Suppress("LongParameterList") // a callback bag; each entry is one distinct Fragment side effect
+@Suppress("LongParameterList") // a callback bag; each entry is one distinct screen side effect
 @Immutable
 data class DrawerCallbacks(
     val onAppClick: (AppModel) -> Unit,
@@ -66,7 +66,7 @@ data class DrawerCallbacks(
     val onRenameHomeSlot: (String) -> Boolean,
     val onPrivateSpaceToggle: () -> Unit,
     val onPrivateSpaceSettings: () -> Unit,
-    /** Pull-down-to-exit and non-launch selections; the Fragment guards double pops. */
+    /** Pull-down-to-exit and non-launch selections; DrawerEntry guards double pops. */
     val onExitDrawer: () -> Unit,
     val onBangSearch: (String) -> Unit,
     val onOpenSearch: (String?) -> Unit,

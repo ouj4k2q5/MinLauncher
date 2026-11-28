@@ -4,13 +4,13 @@ import androidx.compose.runtime.Composable
 import app.minlauncher.data.AppModel
 
 /**
- * The app drawer's host: adapts the drawer's fragment-held state and the
- * resolved colors/callbacks into [DrawerScreen]. Moved out of the Fragment
+ * The app drawer's host: adapts the drawer's entry-held state and the
+ * resolved colors/callbacks into [DrawerScreen]. Moved out of the old fragment
  * (Stage 1 of the fragment removal).
  *
  * State is deliberately not hoisted: the drawer is a transient screen that is
- * destroyed on back navigation and on drawer-to-settings navigation, so the
- * Fragment keeps `combinedList` / `keyboardShowSignal` and passes them in.
+ * destroyed on back navigation and on drawer-to-settings navigation, so
+ * DrawerEntry keeps `combinedList` / `keyboardShowSignal` and passes them in.
  */
 @Suppress("LongParameterList") // one flat slice of the host's inputs, mirroring DrawerUiState
 @Composable

@@ -76,7 +76,7 @@ fun AppRoot(
     @Suppress("UNCHECKED_CAST")
     val backStack = rememberNavBackStack(HomeKey) as NavBackStack<MinLauncherNavKey>
     // Animation scales are static for the activity's lifetime; e-ink and
-    // "remove animations" devices get instant transitions like the fragment
+    // "remove animations" devices get instant transitions like the old fragment
     // animator did.
     val instant = remember(context) { context.isEinkDisplay() || context.isSystemAnimationsDisabled() }
     val solidWallpaper by repository.solidWallpaper.collectAsStateWithLifecycle()

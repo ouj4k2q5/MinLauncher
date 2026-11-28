@@ -16,10 +16,10 @@ import app.minlauncher.data.LauncherRepository
  * drawer screens observe the same data.
  *
  * Settings is not torn down by opening the drawer on top of it, so its
- * renderable state lives here rather than in the Fragment. The properties are
+ * renderable state lives here rather than in the entry. The properties are
  * Compose state so the host composable recomposes when a collector writes them.
  *
- * Constructed only through the explicit factory in SettingsFragment, which
+ * Constructed only through the explicit factory in SettingsEntry, which
  * reads the current activity's application (under Robolectric the default
  * factory's Application fallback can be stale across tests).
  */
@@ -42,7 +42,7 @@ class SettingsViewModel(
     val updateSwipeApps get() = repository.updateSwipeApps
 
     // The renderable settings screen. Initial values match the old Fragment
-    // fields; the Fragment's view setup and collectors populate them.
+    // fields; the entry's setup and collectors populate them.
     var pendingTextSizeScale by mutableFloatStateOf(-1f)
     var appTheme by mutableIntStateOf(AppCompatDelegate.MODE_NIGHT_YES)
     var autoShowKeyboard by mutableStateOf(true)

@@ -12,8 +12,8 @@ import app.minlauncher.helper.showToast
  * in [LauncherRepository], which is app-scoped so the drawer and the home
  * screens observe the same data.
  *
- * Constructed only through the explicit factory in AppDrawerFragment, which
- * reads the current app's repository (under Robolectric the default factory's
+ * Constructed only through the explicit factory in DrawerEntry, which reads
+ * the current app's repository (under Robolectric the default factory's
  * Application fallback can be stale across tests).
  */
 class DrawerViewModel(

@@ -27,7 +27,7 @@ import org.junit.runner.RunWith
  *
  * The activity is the production [MainActivity] hosting the Nav3 `AppRoot`
  * compose tree; the tests drive the same tags the Robolectric suite uses and
- * assert the resulting screens, not fragment/View internals.
+ * assert the resulting screens, not View internals.
  */
 @RunWith(AndroidJUnit4::class)
 class MainActivitySmokeTest {

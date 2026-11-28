@@ -15,14 +15,14 @@ import app.minlauncher.helper.showToast
 import app.minlauncher.helper.uninstall
 
 /**
- * The app drawer's non-navigation actions, moved out of
- * [app.minlauncher.ui.AppDrawerFragment] (Stage 2 of the fragment removal) so the
+ * The app drawer's non-navigation actions, moved out of the old
+ * AppDrawerFragment (Stage 2 of the fragment removal) so the
  * drawer entry composable can run the same actions without a fragment.
  *
  * These are the fragment's originals with its `requireContext()`/`getString()`
  * calls and its `prefs`/`viewModel`/transient-state fields turned into explicit
  * parameters; the bodies are otherwise unchanged. Navigation (including the
- * `exitDrawer()` at the end of `renameHomeSlot`) stays in the fragment.
+ * `exitDrawer()` at the end of `renameHomeSlot`) lives in DrawerEntry.
  */
 
 internal fun onAppDeleted(
@@ -55,7 +55,7 @@ internal fun onAppDeleted(
 
 /**
  * Saves the typed name to the home slot being customized; false means the name
- * was empty. The fragment runs `exitDrawer()` when this returns true.
+ * was empty. DrawerEntry runs `exitDrawer()` when this returns true.
  */
 internal fun renameHomeSlot(
     context: Context,
@@ -97,7 +97,7 @@ internal fun isCjkKeyboard(context: Context): Boolean {
     return result
 }
 
-// The fragment keeps the transient snapshots (`currentAppList` and the private
+// DrawerEntry keeps the transient snapshots (`currentAppList` and the private
 // space state); they are parameters here. A null app list returns null, mirroring
 // the original's early return so the caller leaves its combined list untouched.
 internal fun updateCombinedAppList(

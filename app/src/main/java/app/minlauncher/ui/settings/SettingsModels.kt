@@ -14,7 +14,7 @@ enum class SettingsPicker {
 }
 
 /**
- * Theme attributes resolved once by the Fragment from the activity theme (so the
+ * Theme attributes resolved once by SettingsEntry from the activity theme (so the
  * day/night variant is the one the activity is currently using). Compose must
  * not hardcode the palette or extend MinLauncherTheme's M3 color scheme with it.
  */
@@ -31,7 +31,7 @@ data class SettingsColors(
     val textShadow: Int,
 )
 
-/** Everything the settings screen renders. Derived in the Fragment, not imperative populate calls. */
+/** Everything the settings screen renders. Derived in SettingsEntry, not imperative populate calls. */
 @Suppress("LongParameterList") // one flat snapshot of the screen's inputs
 @Immutable
 data class SettingsUiState(
@@ -58,10 +58,10 @@ data class SettingsUiState(
 )
 
 /**
- * Side effects stay in the Fragment: recreations, dialogs, navigation, toasts,
+ * Side effects live in SettingsEntry: recreations, dialogs, navigation, toasts,
  * status-bar insets, the lock-mode SharedPreferences write and app-info intents.
  */
-@Suppress("LongParameterList") // a callback bag; each entry is one distinct Fragment side effect
+@Suppress("LongParameterList") // a callback bag; each entry is one distinct screen side effect
 @Immutable
 data class SettingsCallbacks(
     val onOpenHiddenApps: () -> Unit,

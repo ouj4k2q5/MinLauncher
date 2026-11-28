@@ -5,12 +5,13 @@ Olauncher). Single Gradle module `:app`, Kotlin sources under
 `app/src/main/java/app/minlauncher/`, JVM tests under `app/src/test/`, on-device
 smoke tests under `app/src/androidTest/`.
 
-The UI is Jetpack Compose (Material 3 Expressive via `ui/theme/`): all three
-screens — home (`ui/home/`), app drawer (`ui/drawer/`), settings
-(`ui/settings/`) — are Compose content hosted by their fragments. Only
-`HomeFragment` still inflates a ViewBinding layout as its shell. The Robolectric
-suite drives the debug-only `TestMainActivity`
-(`app/src/debug/java/app/minlauncher/testing/`), and the smoke tests ship a
+The UI is Jetpack Compose (Material 3 Expressive via `ui/theme/`) on
+Navigation 3: `ui/AppRoot.kt` hosts a `NavDisplay` whose entries are
+`ui/home/HomeEntry.kt`, `ui/drawer/DrawerEntry.kt`, and
+`ui/settings/SettingsEntry.kt`. No fragments or ViewBinding remain. Both
+`MainActivity` (production) and the debug-only `TestMainActivity`
+(`app/src/debug/java/app/minlauncher/testing/`) run the same `AppRoot`. The
+Robolectric suite drives `TestMainActivity`, and the smoke tests ship a
 launchable `DummyLauncherActivity` in the test APK so the drawer has exactly one
 entry on the bare aosp-atd image.
 

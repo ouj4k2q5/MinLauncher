@@ -22,8 +22,8 @@ import java.util.Date
 import java.util.Locale
 
 /**
- * The instant the home screen renders from: [clock] (the fragment's test
- * seam, the wall clock in production), refreshed on the same system
+ * The instant the home screen renders from: [clock] (the test seam, the wall
+ * clock in production), refreshed on the same system
  * broadcasts TextClock listened to — minute ticks, manual time changes and
  * timezone changes. A fixed test clock stays fixed across those broadcasts,
  * so screenshot baselines are day-independent.

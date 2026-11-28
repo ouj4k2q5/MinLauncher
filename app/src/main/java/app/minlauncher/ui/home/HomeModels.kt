@@ -4,7 +4,7 @@ import androidx.compose.runtime.Immutable
 import androidx.compose.ui.text.font.FontFamily
 
 /**
- * Theme attributes resolved once by HomeFragment from the activity theme, so
+ * Theme attributes resolved once by HomeEntry from the activity theme, so
  * the day/night variant is the one the displayed screen uses, and the
  * bold-font overlay MainActivity applies on top of AppTheme is included via
  * [fontFamily] (the old TextLarge style read the same attribute).
@@ -52,12 +52,12 @@ data class HomeUiState(
 )
 
 /**
- * Side effects stay in the Fragment: app launching, navigation, drawer and
+ * Side effects live in HomeEntry: app launching, navigation, drawer and
  * settings opening, notification drawer expansion and sending the lock-mode
  * broadcast. Slot and background gestures share the swipe callbacks, like
  * OnSwipeTouchListener and ViewSwipeTouchListener did.
  */
-@Suppress("LongParameterList") // a callback bag; each entry is one distinct Fragment side effect
+@Suppress("LongParameterList") // a callback bag; each entry is one distinct screen side effect
 @Immutable
 data class HomeCallbacks(
     val onSwipeLeft: () -> Unit,
