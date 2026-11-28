@@ -31,8 +31,9 @@ import app.minlauncher.ui.nav.MinLauncherNavKey
  * The settings screen's Navigation 3 entry. Rebuilds the fragment's setup: the
  * entry-scoped [SettingsViewModel] (retained while settings stays on the stack,
  * which is what keeps the text-size preview across a drawer visit), the
- * onCreateView initialization and onViewCreated work as effects, and the
- * navigation callbacks as back-stack lambdas.
+ * onCreateView state initialization synchronously at composition time, the
+ * onViewCreated window/dialog work as an effect, and the navigation callbacks
+ * as back-stack lambdas.
  *
  * The host is wrapped in the old `ComposeView`'s [resolveSettingsColors]
  * `shadeDark` background: [SettingsScreen] has no background of its own, and
@@ -56,8 +57,19 @@ internal fun SettingsEntry(
         )
     val colors = remember(activity) { activity.resolveSettingsColors() }
 
+    // Composition-time initialization is deliberately synchronous: the old
+    // fragment set these values in onCreateView, before the first draw. A
+    // LaunchedEffect runs after the first frame is applied, so the screen
+    // would flash the ViewModel defaults (lock toggle OFF, empty swipe-app
+    // labels) on every open — the entry is disposed on pop and recomposed
+    // fresh. Same remember-returns-Unit pattern as HomeEntry.
+    @Suppress("RememberReturnType")
+    remember(viewModel) {
+        initializeSettingsState(context, prefs, viewModel)
+    }
     LaunchedEffect(viewModel) {
-        initializeSettings(context, activity, prefs, viewModel)
+        // Window-level and prefs-writing work stays post-frame.
+        applySettingsSideEffects(activity, prefs, viewModel)
         viewModel.updateSwipeApps.collect {
             refreshSwipeApps(context, prefs, viewModel)
         }
@@ -76,9 +88,15 @@ internal fun SettingsEntry(
     }
 }
 
-private fun initializeSettings(
+/**
+ * The pre-first-frame half of the old fragment's onCreateView: pure reads that
+ * feed the first composed frame. Runs once per ViewModel, so returning from
+ * the drawer (same retained ViewModel) keeps the already-populated state —
+ * the swipe-app labels refresh through the [SettingsViewModel.updateSwipeApps]
+ * collector instead.
+ */
+private fun initializeSettingsState(
     context: Context,
-    activity: Activity,
     prefs: Prefs,
     viewModel: SettingsViewModel,
 ) {
@@ -90,6 +108,14 @@ private fun initializeSettings(
     populateLockSettings(context, prefs, viewModel)
     refreshSwipeApps(context, prefs, viewModel)
     viewModel.isMinLauncherDefault()
+}
+
+/** The post-frame half: window insets and the first-open ABOUT dialog. */
+private fun applySettingsSideEffects(
+    activity: Activity,
+    prefs: Prefs,
+    viewModel: SettingsViewModel,
+) {
     applyStatusBarInsets(activity, prefs.showStatusBar)
     if (prefs.firstSettingsOpen) {
         viewModel.postDialog(Constants.Dialog.ABOUT)
