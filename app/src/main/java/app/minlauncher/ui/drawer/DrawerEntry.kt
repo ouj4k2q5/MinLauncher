@@ -20,6 +20,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
@@ -81,15 +84,7 @@ internal fun DrawerEntry(
             )
         }
 
-    // The old onStart: drop the cached CJK result and re-run the screen's
-    // keyboard show (the fragment bumped this on every start).
-    LaunchedEffect(state) {
-        state.cachedIsCjkKeyboard = null
-        state.keyboardShowSignal++
-    }
-    DisposableEffect(state) {
-        onDispose { deps.hideKeyboard() }
-    }
+    DrawerStartStopParity(activity, deps)
     drawerObservers(deps)
 
     val callbacks = remember(deps) { createDrawerCallbacks(deps) }
@@ -133,6 +128,45 @@ private class DrawerEntryDeps(
     val state: DrawerEntryState,
     val hideKeyboard: () -> Unit,
 )
+
+/**
+ * The old fragment's onStart/onStop. The entry composition covers the drawer's
+ * own opening, but it survives an activity stop/start, and a drawer can still
+ * be on top across that cycle (the private-space settings round trip skips
+ * backToHomeScreen). So the CJK cache reset and keyboard-show bump also ride the
+ * activity lifecycle: START resets them, STOP hides the keyboard.
+ */
+@Composable
+private fun DrawerStartStopParity(
+    activity: Activity,
+    deps: DrawerEntryDeps,
+) {
+    val state = deps.state
+    LaunchedEffect(state) {
+        state.cachedIsCjkKeyboard = null
+        state.keyboardShowSignal++
+    }
+    DisposableEffect(activity, deps) {
+        val activityLifecycle = (activity as LifecycleOwner).lifecycle
+        val observer =
+            LifecycleEventObserver { _, event ->
+                when (event) {
+                    Lifecycle.Event.ON_START -> {
+                        state.cachedIsCjkKeyboard = null
+                        state.keyboardShowSignal++
+                    }
+
+                    Lifecycle.Event.ON_STOP -> deps.hideKeyboard()
+                    else -> Unit
+                }
+            }
+        activityLifecycle.addObserver(observer)
+        onDispose {
+            activityLifecycle.removeObserver(observer)
+            deps.hideKeyboard()
+        }
+    }
+}
 
 @Composable
 private fun drawerObservers(deps: DrawerEntryDeps) {
