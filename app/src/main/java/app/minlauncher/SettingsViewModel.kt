@@ -1,6 +1,12 @@
 package app.minlauncher
 
 import android.app.Application
+import androidx.appcompat.app.AppCompatDelegate
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.lifecycle.AndroidViewModel
 import app.minlauncher.data.LauncherRepository
 
@@ -8,6 +14,10 @@ import app.minlauncher.data.LauncherRepository
  * Screen adapter for the settings screen; all shared state and selection logic
  * live in [LauncherRepository], which is app-scoped so the settings, home and
  * drawer screens observe the same data.
+ *
+ * Settings is not torn down by opening the drawer on top of it, so its
+ * renderable state lives here rather than in the Fragment. The properties are
+ * Compose state so the host composable recomposes when a collector writes them.
  *
  * Constructed only through the explicit factory in SettingsFragment, which
  * reads the current activity's application (under Robolectric the default
@@ -30,6 +40,19 @@ class SettingsViewModel(
     val swipeLeftEnabled get() = repository.swipeLeftEnabled
     val swipeRightEnabled get() = repository.swipeRightEnabled
     val updateSwipeApps get() = repository.updateSwipeApps
+
+    // The renderable settings screen. Initial values match the old Fragment
+    // fields; the Fragment's view setup and collectors populate them.
+    var pendingTextSizeScale by mutableFloatStateOf(-1f)
+    var appTheme by mutableIntStateOf(AppCompatDelegate.MODE_NIGHT_YES)
+    var autoShowKeyboard by mutableStateOf(true)
+    var usagePermissionGranted by mutableStateOf(false)
+    var accessibilityOverlayVisible by mutableStateOf(false)
+    var accessibilityServiceEnabled by mutableStateOf(false)
+    var lockModeOn by mutableStateOf(false)
+    var swipeLeftAppName by mutableStateOf("")
+    var swipeRightAppName by mutableStateOf("")
+    var einkDisplay by mutableStateOf(false)
 
     fun isMinLauncherDefault() = repository.isMinLauncherDefault()
 

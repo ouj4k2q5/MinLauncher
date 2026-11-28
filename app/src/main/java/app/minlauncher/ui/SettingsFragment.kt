@@ -10,16 +10,9 @@ import android.view.ViewGroup
 import android.view.WindowInsets
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatDelegate
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableFloatStateOf
-import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.platform.ViewCompositionStrategy
 import androidx.fragment.app.viewModels
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import androidx.navigation.fragment.findNavController
@@ -36,11 +29,8 @@ import app.minlauncher.helper.isTablet
 import app.minlauncher.helper.openAppInfo
 import app.minlauncher.helper.showToast
 import app.minlauncher.ui.settings.SettingsCallbacks
-import app.minlauncher.ui.settings.SettingsColors
-import app.minlauncher.ui.settings.SettingsScreen
-import app.minlauncher.ui.settings.SettingsUiState
+import app.minlauncher.ui.settings.SettingsScreenHost
 import app.minlauncher.ui.settings.resolveSettingsColors
-import app.minlauncher.ui.theme.MinLauncherTheme
 import kotlin.math.roundToInt
 
 // One small method per settings action (the same layout as the old onClick
@@ -63,19 +53,9 @@ class SettingsFragment : BaseFragment() {
         }
     }
 
-    // Compose state hoisted here: the pending text-size preview, the theme
-    // (only changes through Activity.recreate), and the values that have no
-    // repository mirror (auto-show keyboard, lock mode, swipe app labels).
-    private var pendingTextSizeScale by mutableFloatStateOf(-1f)
-    private var appTheme by mutableIntStateOf(AppCompatDelegate.MODE_NIGHT_YES)
-    private var autoShowKeyboard by mutableStateOf(true)
-    private var usagePermissionGranted by mutableStateOf(false)
-    private var accessibilityOverlayVisible by mutableStateOf(false)
-    private var accessibilityServiceEnabled by mutableStateOf(false)
-    private var lockModeOn by mutableStateOf(false)
-    private var swipeLeftAppName by mutableStateOf("")
-    private var swipeRightAppName by mutableStateOf("")
-    private var einkDisplay by mutableStateOf(false)
+    // Compose state lives in the view model: the pending text-size preview, the
+    // theme (only changes through Activity.recreate), and the values that have
+    // no repository mirror (auto-show keyboard, lock mode, swipe app labels).
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -83,12 +63,11 @@ class SettingsFragment : BaseFragment() {
         savedInstanceState: Bundle?,
     ): View {
         prefs = Prefs(requireContext())
-        appTheme = prefs.appTheme
-        autoShowKeyboard = prefs.autoShowKeyboard
-        pendingTextSizeScale = -1f
-        accessibilityOverlayVisible = false
-        usagePermissionGranted = requireContext().appUsagePermissionGranted()
-        einkDisplay = requireContext().isEinkDisplay()
+        viewModel.appTheme = prefs.appTheme
+        viewModel.autoShowKeyboard = prefs.autoShowKeyboard
+        viewModel.accessibilityOverlayVisible = false
+        viewModel.usagePermissionGranted = requireContext().appUsagePermissionGranted()
+        viewModel.einkDisplay = requireContext().isEinkDisplay()
         populateLockSettings()
         refreshSwipeApps()
 
@@ -99,57 +78,7 @@ class SettingsFragment : BaseFragment() {
             id = R.id.mainActivityLayout
             setBackgroundColor(colors.shadeDark)
             setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
-            setContent { SettingsScreenHost(colors, callbacks) }
-        }
-    }
-
-    @Composable
-    private fun SettingsScreenHost(
-        colors: SettingsColors,
-        callbacks: SettingsCallbacks,
-    ) {
-        val homeAppsNum by viewModel.homeAppsNum.collectAsStateWithLifecycle()
-        val dateTimeVisibility by viewModel.dateTimeVisibility.collectAsStateWithLifecycle()
-        val homeAlignment by viewModel.homeAppAlignment.collectAsStateWithLifecycle()
-        val homeBottomAlignment by viewModel.homeBottomAlignment.collectAsStateWithLifecycle()
-        val statusBarOn by viewModel.showStatusBar.collectAsStateWithLifecycle()
-        val screenTimeEnabled by viewModel.screenTimeEnabled.collectAsStateWithLifecycle()
-        val textSizeScale by viewModel.textSizeScale.collectAsStateWithLifecycle()
-        val boldFont by viewModel.boldFont.collectAsStateWithLifecycle()
-        val solidWallpaper by viewModel.solidWallpaper.collectAsStateWithLifecycle()
-        val swipeLeftEnabled by viewModel.swipeLeftEnabled.collectAsStateWithLifecycle()
-        val swipeRightEnabled by viewModel.swipeRightEnabled.collectAsStateWithLifecycle()
-        val isDefaultLauncher by viewModel.isMinLauncherDefault.collectAsStateWithLifecycle()
-        val displayedTextSize = if (pendingTextSizeScale > 0f) pendingTextSizeScale else textSizeScale
-
-        MinLauncherTheme(appTheme = appTheme) {
-            SettingsScreen(
-                state =
-                    SettingsUiState(
-                        homeAppsNum = homeAppsNum,
-                        dateTimeVisibility = dateTimeVisibility,
-                        homeAlignment = homeAlignment,
-                        homeBottomAlignment = homeBottomAlignment,
-                        statusBarOn = statusBarOn,
-                        screenTimeOn = usagePermissionGranted && screenTimeEnabled,
-                        isDefaultLauncher = isDefaultLauncher == true,
-                        autoShowKeyboard = autoShowKeyboard,
-                        solidWallpaper = solidWallpaper,
-                        showThemeRow = !einkDisplay,
-                        appTheme = appTheme,
-                        boldFont = boldFont,
-                        textSizeLabel = "%.1f".format(displayedTextSize),
-                        swipeLeftAppName = swipeLeftAppName,
-                        swipeRightAppName = swipeRightAppName,
-                        swipeLeftEnabled = swipeLeftEnabled,
-                        swipeRightEnabled = swipeRightEnabled,
-                        lockModeOn = lockModeOn,
-                        accessibilityServiceEnabled = accessibilityServiceEnabled,
-                        accessibilityOverlayVisible = accessibilityOverlayVisible,
-                    ),
-                colors = colors,
-                callbacks = callbacks,
-            )
+            setContent { SettingsScreenHost(viewModel, colors, callbacks) }
         }
     }
 
@@ -201,7 +130,7 @@ class SettingsFragment : BaseFragment() {
             onToggleLockMode = { toggleLockMode() },
             onLongPressLockMode = { openAccessibilitySettings() },
             onOpenAccessibilitySettings = { openAccessibilityService() },
-            onCloseAccessibility = { accessibilityOverlayVisible = false },
+            onCloseAccessibility = { viewModel.accessibilityOverlayVisible = false },
         )
 
     private fun handleAlignmentLongClick() {
@@ -259,7 +188,7 @@ class SettingsFragment : BaseFragment() {
     }
 
     private fun openAccessibilityService() {
-        accessibilityOverlayVisible = false
+        viewModel.accessibilityOverlayVisible = false
         populateLockSettings()
         startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
     }
@@ -270,9 +199,9 @@ class SettingsFragment : BaseFragment() {
     }
 
     private fun toggleLockMode() {
-        accessibilityServiceEnabled = isAccessServiceEnabled(requireContext())
-        if (!prefs.lockModeOn && !accessibilityServiceEnabled) {
-            accessibilityOverlayVisible = true
+        viewModel.accessibilityServiceEnabled = isAccessServiceEnabled(requireContext())
+        if (!prefs.lockModeOn && !viewModel.accessibilityServiceEnabled) {
+            viewModel.accessibilityOverlayVisible = true
             return
         }
         prefs.lockModeOn = !prefs.lockModeOn
@@ -287,7 +216,7 @@ class SettingsFragment : BaseFragment() {
      */
     private fun removeWallpaper() {
         prefs.appTheme =
-            if (einkDisplay) {
+            if (viewModel.einkDisplay) {
                 AppCompatDelegate.MODE_NIGHT_NO
             } else {
                 AppCompatDelegate.MODE_NIGHT_YES
@@ -307,20 +236,20 @@ class SettingsFragment : BaseFragment() {
 
     private fun adjustTextSizePreview(delta: Float) {
         val maxScale = if (isTablet(requireContext())) 2.0f else 1.5f
-        val current = if (pendingTextSizeScale > 0) pendingTextSizeScale else prefs.textSizeScale
+        val current = if (viewModel.pendingTextSizeScale > 0) viewModel.pendingTextSizeScale else prefs.textSizeScale
         val newScale = ((current + delta) * 10f).roundToInt() / 10f
         val clamped = newScale.coerceIn(0.5f, maxScale)
         if (clamped == current) return
-        pendingTextSizeScale = clamped
+        viewModel.pendingTextSizeScale = clamped
     }
 
     private fun applyTextSizeScale() {
-        if (pendingTextSizeScale < 0 || prefs.textSizeScale == pendingTextSizeScale) {
-            pendingTextSizeScale = -1f
+        if (viewModel.pendingTextSizeScale < 0 || prefs.textSizeScale == viewModel.pendingTextSizeScale) {
+            viewModel.pendingTextSizeScale = -1f
             return
         }
-        prefs.textSizeScale = pendingTextSizeScale
-        pendingTextSizeScale = -1f
+        prefs.textSizeScale = viewModel.pendingTextSizeScale
+        viewModel.pendingTextSizeScale = -1f
         val activity = activity ?: return
         if (activity.isChangingConfigurations.not()) {
             activity.recreate()
@@ -333,14 +262,14 @@ class SettingsFragment : BaseFragment() {
             prefs.keyboardMessageShown = true
         } else {
             prefs.autoShowKeyboard = !prefs.autoShowKeyboard
-            autoShowKeyboard = prefs.autoShowKeyboard
+            viewModel.autoShowKeyboard = prefs.autoShowKeyboard
         }
     }
 
     private fun updateTheme(theme: Int) {
         if (AppCompatDelegate.getDefaultNightMode() == theme) return
         prefs.appTheme = theme
-        appTheme = theme
+        viewModel.appTheme = theme
         requireActivity().recreate()
     }
 
@@ -350,8 +279,8 @@ class SettingsFragment : BaseFragment() {
     }
 
     private fun toggleScreenTime() {
-        usagePermissionGranted = requireContext().appUsagePermissionGranted()
-        if (!usagePermissionGranted) {
+        viewModel.usagePermissionGranted = requireContext().appUsagePermissionGranted()
+        if (!viewModel.usagePermissionGranted) {
             viewModel.postDialog(Constants.Dialog.DIGITAL_WELLBEING)
             return
         }
@@ -368,13 +297,13 @@ class SettingsFragment : BaseFragment() {
     }
 
     private fun populateLockSettings() {
-        accessibilityServiceEnabled = isAccessServiceEnabled(requireContext())
-        lockModeOn = prefs.lockModeOn && accessibilityServiceEnabled
+        viewModel.accessibilityServiceEnabled = isAccessServiceEnabled(requireContext())
+        viewModel.lockModeOn = prefs.lockModeOn && viewModel.accessibilityServiceEnabled
     }
 
     private fun refreshSwipeApps() {
-        swipeLeftAppName = prefs.appNameSwipeLeft.ifEmpty { getString(R.string.swipe_left_app_default) }
-        swipeRightAppName = prefs.appNameSwipeRight.ifEmpty { getString(R.string.swipe_right_app_default) }
+        viewModel.swipeLeftAppName = prefs.appNameSwipeLeft.ifEmpty { getString(R.string.swipe_left_app_default) }
+        viewModel.swipeRightAppName = prefs.appNameSwipeRight.ifEmpty { getString(R.string.swipe_right_app_default) }
     }
 
     private fun showAppListIfEnabled(flag: Int) {

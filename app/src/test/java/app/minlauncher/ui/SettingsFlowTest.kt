@@ -3,13 +3,19 @@ package app.minlauncher.ui
 import android.app.Application
 import android.provider.Settings
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertTextContains
+import androidx.compose.ui.test.assertTextEquals
 import androidx.compose.ui.test.junit4.createEmptyComposeRule
 import androidx.compose.ui.test.longClick
 import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTouchInput
+import androidx.navigation.fragment.NavHostFragment
 import androidx.test.core.app.ApplicationProvider
+import app.minlauncher.R
+import app.minlauncher.data.Constants
 import app.minlauncher.testing.TestMainActivity
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -74,6 +80,30 @@ class SettingsFlowTest {
             composeRule.onNodeWithTag("settings.alignment.center").performClick()
 
             assertEquals(android.view.Gravity.CENTER, testPrefs().homeAlignment)
+        }
+    }
+
+    @Test
+    fun `text size preview survives a round trip through the hidden apps screen`() {
+        launchLauncher(fakeApps("Browser")) { firstOpen = false }.use { scenario ->
+            openSettings()
+
+            composeRule.onNodeWithTag("settings.textSize").performScrollTo().performClick()
+            composeRule.onNodeWithTag("settings.textSize.plus").performClick()
+            composeRule.onNodeWithTag("settings.textSize.current").assertTextEquals("1.1")
+
+            scenario.openDrawer(flag = Constants.FLAG_HIDDEN_APPS)
+            composeRule.onNodeWithText("Hidden apps").assertIsDisplayed()
+
+            scenario.onActivity { activity ->
+                val navHost =
+                    activity.supportFragmentManager.findFragmentById(
+                        R.id.nav_host_fragment,
+                    ) as NavHostFragment
+                navHost.navController.popBackStack()
+            }
+
+            composeRule.onNodeWithTag("settings.textSize").performScrollTo().assertTextContains("1.1")
         }
     }
 
