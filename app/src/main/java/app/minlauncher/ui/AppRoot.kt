@@ -10,8 +10,11 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
@@ -80,6 +83,14 @@ fun AppRoot(
     val backgroundColor =
         if (solidWallpaper) Color(context.getColorFromAttr(R.attr.primaryInverseColor)) else Color.Transparent
 
+    // The dialog is root-scoped, like the old activity-wide message overlay: it
+    // stays up across entry changes (a hide in the drawer posts HIDDEN and then
+    // lands on settings) until the user dismisses it or back-to-home collapses.
+    var dialog by remember { mutableStateOf<String?>(null) }
+    LaunchedEffect(repository) {
+        repository.showDialog.collect { dialog = it }
+    }
+
     MinLauncherTheme(appTheme) {
         Box(
             Modifier
@@ -106,20 +117,29 @@ fun AppRoot(
                         entry<SettingsKey> { SettingsEntry(repository, backStack) }
                     },
             )
+            dialog?.let { posted -> AppDialog(posted) { dialog = null } }
             DisposableEffect(backStack) {
-                onHandleReady(AppRootHandle(backStack))
+                onHandleReady(AppRootHandle(backStack) { dialog = null })
                 onDispose { onHandleReady(null) }
             }
         }
     }
 }
 
-/** Back-stack access for the host activity; mutate on the main thread only. */
+/**
+ * Back-stack access for the host activity; mutate on the main thread only.
+ *
+ * [dismissDialog] closes the root-scoped message dialog, so collapsing to home
+ * is total: it clears both the navigation stack and any lingering dialog, like
+ * the old `backToHomeScreen` hiding the message overlay before popping.
+ */
 class AppRootHandle(
     val backStack: NavBackStack<MinLauncherNavKey>,
+    private val dismissDialog: () -> Unit = {},
 ) {
-    /** Pops everything above the home screen, collapsing to it. */
+    /** Closes any open dialog and pops everything above the home screen. */
     fun collapseToHome() {
+        dismissDialog()
         while (backStack.size > 1) {
             backStack.removeLastOrNull()
         }

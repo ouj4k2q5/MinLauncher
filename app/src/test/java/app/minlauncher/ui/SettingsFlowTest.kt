@@ -12,7 +12,6 @@ import androidx.compose.ui.test.junit4.createEmptyComposeRule
 import androidx.compose.ui.test.longClick
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
-import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTouchInput
@@ -60,8 +59,10 @@ class SettingsFlowTest {
                 TimeUnit.MILLISECONDS,
             )
             // Nav3 keeps one Compose root alive, so release the pointer before
-            // letting the navigation settle.
-            composeRule.onRoot().performTouchInput { up() }
+            // letting the navigation settle. Target the tagged app root rather
+            // than onRoot(): settings-first-open also composes the about dialog
+            // in its own window, so onRoot() matches two roots here.
+            composeRule.onNodeWithTag("root").performTouchInput { up() }
             composeRule.waitForIdle()
 
             composeRule.onNodeWithTag("settings.hiddenApps").assertIsDisplayed()
