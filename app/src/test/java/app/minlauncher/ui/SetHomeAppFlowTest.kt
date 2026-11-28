@@ -8,6 +8,7 @@ import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createEmptyComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performKeyInput
 import androidx.compose.ui.test.performTouchInput
@@ -79,8 +80,11 @@ class SetHomeAppFlowTest {
                 Constants.LONG_PRESS_DELAY_MS + ViewConfiguration.getLongPressTimeout() + 100,
                 TimeUnit.MILLISECONDS,
             )
-            // No up() needed: opening the drawer destroyed the home view, and
-            // with it the node that would receive it.
+            // Nav3 hosts every screen in one Compose root, so unlike the old
+            // fragment world the down is not dropped by the home view's
+            // destruction: release it against the still-live root before the
+            // next injection. The long press has already fired at this point.
+            composeRule.onRoot().performTouchInput { up() }
 
             // Selecting an app closes the drawer and updates the slot.
             composeRule.onNodeWithText("Camera").performClick()

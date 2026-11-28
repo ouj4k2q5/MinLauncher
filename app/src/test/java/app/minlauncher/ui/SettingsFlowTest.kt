@@ -12,9 +12,7 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTouchInput
-import androidx.navigation.fragment.NavHostFragment
 import androidx.test.core.app.ApplicationProvider
-import app.minlauncher.R
 import app.minlauncher.data.Constants
 import app.minlauncher.testing.TestMainActivity
 import org.junit.After
@@ -96,11 +94,7 @@ class SettingsFlowTest {
             composeRule.onNodeWithText("Hidden apps").assertIsDisplayed()
 
             scenario.onActivity { activity ->
-                val navHost =
-                    activity.supportFragmentManager.findFragmentById(
-                        R.id.nav_host_fragment,
-                    ) as NavHostFragment
-                navHost.navController.popBackStack()
+                activity.handle!!.backStack.removeLastOrNull()
             }
 
             composeRule.onNodeWithTag("settings.textSize").performScrollTo().assertTextContains("1.1")

@@ -7,6 +7,7 @@ import androidx.compose.ui.test.performTextInput
 import androidx.test.core.app.ActivityScenario
 import app.minlauncher.data.Prefs
 import app.minlauncher.testing.TestMainActivity
+import app.minlauncher.ui.home.HomeClockSource
 import com.github.takahirom.roborazzi.RobolectricDeviceQualifiers
 import com.github.takahirom.roborazzi.captureRoboImage
 import org.junit.After
@@ -36,7 +37,7 @@ class ScreenShotTest {
 
     private val homeApps = fakeApps("Browser", "Camera", "Mail", "Chat", "Maps", "Music", "Notes", "Files")
 
-    // Both the clock and the date line render from HomeFragment's injected
+    // Both the clock and the date line render from the home screen's injected
     // clock, so pin it (and the timezone it formats in), or baselines differ
     // between machines and recording days.
     private val fixedInstant = Instant.parse("2026-10-06T00:00:00Z") // Tue, Oct 6 in Asia/Tokyo
@@ -50,14 +51,14 @@ class ScreenShotTest {
         originalLocale = Locale.getDefault()
         TimeZone.setDefault(TimeZone.getTimeZone("Asia/Tokyo"))
         Locale.setDefault(Locale.US)
-        HomeFragment.clock = Clock.fixed(fixedInstant, ZoneId.of("Asia/Tokyo"))
+        HomeClockSource.clock = Clock.fixed(fixedInstant, ZoneId.of("Asia/Tokyo"))
     }
 
     @After
     fun restoreRenderingEnvironment() {
         TimeZone.setDefault(originalTimeZone)
         Locale.setDefault(originalLocale)
-        HomeFragment.clock = Clock.systemDefaultZone()
+        HomeClockSource.clock = Clock.systemDefaultZone()
         TestMainActivity.testAppListProvider = null
     }
 

@@ -3,7 +3,6 @@ package app.minlauncher.ui
 import android.content.Context
 import android.content.pm.ActivityInfo
 import android.content.pm.LauncherApps
-import android.os.Bundle
 import android.os.Process
 import android.os.SystemClock
 import android.os.UserHandle
@@ -13,19 +12,21 @@ import android.view.View
 import android.view.ViewConfiguration
 import androidx.test.core.app.ActivityScenario
 import androidx.test.core.app.ApplicationProvider
-import androidx.test.espresso.Espresso.onView
 import androidx.test.espresso.UiController
 import androidx.test.espresso.ViewAction
 import androidx.test.espresso.action.CoordinatesProvider
 import androidx.test.espresso.action.GeneralLocation
 import androidx.test.espresso.matcher.ViewMatchers.isDisplayed
-import androidx.test.espresso.matcher.ViewMatchers.withId
-import app.minlauncher.R
+import androidx.test.platform.app.InstrumentationRegistry
+import androidx.test.runner.lifecycle.ActivityLifecycleMonitorRegistry
+import androidx.test.runner.lifecycle.Stage
 import app.minlauncher.data.AppModel
 import app.minlauncher.data.Constants
 import app.minlauncher.data.Prefs
 import app.minlauncher.helper.FakeAppListProvider
 import app.minlauncher.testing.TestMainActivity
+import app.minlauncher.ui.nav.DrawerKey
+import app.minlauncher.ui.nav.SettingsKey
 import org.hamcrest.Matcher
 import org.robolectric.Shadows.shadowOf
 
@@ -79,32 +80,25 @@ fun ActivityScenario<TestMainActivity>.openDrawer(
     canRename: Boolean = false,
 ) {
     onActivity { activity ->
-        val navHost =
-            activity.supportFragmentManager.findFragmentById(R.id.nav_host_fragment)
-                as androidx.navigation.fragment.NavHostFragment
-        navHost.navController.navigate(
-            app.minlauncher.R.id.appListFragment,
-            Bundle().apply {
-                putInt(Constants.Key.FLAG, flag)
-                putBoolean(Constants.Key.RENAME, canRename)
-            },
-        )
+        activity.handle!!.backStack.add(DrawerKey(flag, canRename))
     }
 }
 
 /**
- * Opens Settings with the home-screen gesture: a long press on the left edge
- * of the home screen, clear of the home app slots, lands on the background
- * where a long press opens settings.
+ * Opens Settings by pushing it onto the Nav3 back stack. The signature stays
+ * scenario-free (twelve call sites) so the resumed test activity is found
+ * through the instrumentation's lifecycle monitor.
  */
 fun openSettings() {
-    onView(withId(R.id.mainLayout)).perform(
-        holdLongPress(
-            at = { view ->
-                floatArrayOf(view.width * 0.02f, view.height * 0.5f)
-            },
-        ),
-    )
+    InstrumentationRegistry.getInstrumentation().runOnMainSync {
+        val activity =
+            ActivityLifecycleMonitorRegistry
+                .getInstance()
+                .getActivitiesInStage(Stage.RESUMED)
+                .filterIsInstance<TestMainActivity>()
+                .single()
+        activity.handle!!.backStack.add(SettingsKey)
+    }
 }
 
 /** The app under test, for asserting persisted state from within a test. */
