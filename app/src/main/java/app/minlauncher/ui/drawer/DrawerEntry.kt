@@ -17,6 +17,7 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
@@ -74,7 +75,7 @@ internal fun DrawerEntry(
                 context = context,
                 prefs = prefs,
                 viewModel = viewModel,
-                flag = key.flag,
+                key = key,
                 backStack = backStack,
                 state = state,
                 hideKeyboard = {
@@ -84,7 +85,8 @@ internal fun DrawerEntry(
             )
         }
 
-    DrawerStartStopParity(activity, deps)
+    DrawerStartStopParity(activity as LifecycleOwner, deps)
+    hideKeyboardWhenNoLongerTop(deps)
     drawerObservers(deps)
 
     val callbacks = remember(deps) { createDrawerCallbacks(deps) }
@@ -101,7 +103,7 @@ internal fun DrawerEntry(
     )
 }
 
-private class DrawerEntryState {
+internal class DrawerEntryState {
     var currentAppList by mutableStateOf<List<AppModel>?>(null)
     var currentPrivateSpaceApps by mutableStateOf<List<AppModel>?>(null)
     var currentPrivateSpaceLocked by mutableStateOf(true)
@@ -119,11 +121,11 @@ private class DrawerEntryState {
 }
 
 @Suppress("LongParameterList") // one snapshot of the entry's immutable inputs plus its transient state
-private class DrawerEntryDeps(
+internal class DrawerEntryDeps(
     val context: Context,
     val prefs: Prefs,
     val viewModel: DrawerViewModel,
-    val flag: Int,
+    val key: DrawerKey,
     val backStack: NavBackStack<MinLauncherNavKey>,
     val state: DrawerEntryState,
     val hideKeyboard: () -> Unit,
@@ -143,37 +145,59 @@ private class DrawerEntryDeps(
  * keyboardShowSignal twice per drawer open.
  */
 @Composable
-private fun DrawerStartStopParity(
-    activity: Activity,
+internal fun DrawerStartStopParity(
+    lifecycleOwner: LifecycleOwner,
     deps: DrawerEntryDeps,
 ) {
     val state = deps.state
-    DisposableEffect(activity, deps) {
-        val activityLifecycle = (activity as LifecycleOwner).lifecycle
+    DisposableEffect(lifecycleOwner, deps) {
+        val lifecycle = lifecycleOwner.lifecycle
         val observer =
             LifecycleEventObserver { _, event ->
                 when (event) {
                     Lifecycle.Event.ON_START -> {
                         state.cachedIsCjkKeyboard = null
-                        state.keyboardShowSignal++
+                        // A popped drawer stays composed until its exit
+                        // transition ends, and an activity stopped
+                        // mid-transition keeps it composed across the stop;
+                        // ON_START in that state (waking the screen,
+                        // returning from an app) must not re-show the keyboard
+                        // over the screen that replaced the drawer.
+                        if (deps.backStack.lastOrNull() == deps.key) {
+                            state.keyboardShowSignal++
+                        }
                     }
 
                     Lifecycle.Event.ON_STOP -> deps.hideKeyboard()
                     else -> Unit
                 }
             }
-        activityLifecycle.addObserver(observer)
+        lifecycle.addObserver(observer)
         onDispose {
-            activityLifecycle.removeObserver(observer)
+            lifecycle.removeObserver(observer)
             deps.hideKeyboard()
         }
+    }
+}
+
+/**
+ * Hides the drawer's keyboard as soon as the drawer stops being the top of the
+ * back stack. Nav3 keeps a popped entry composed until its exit transition
+ * ends, so waiting for disposal would let the keyboard linger over the next
+ * screen for the whole transition.
+ */
+@Composable
+internal fun hideKeyboardWhenNoLongerTop(deps: DrawerEntryDeps) {
+    LaunchedEffect(deps) {
+        snapshotFlow { deps.backStack.lastOrNull() }
+            .collect { top -> if (top != deps.key) deps.hideKeyboard() }
     }
 }
 
 @Composable
 private fun drawerObservers(deps: DrawerEntryDeps) {
     val viewModel = deps.viewModel
-    val flag = deps.flag
+    val flag = deps.key.flag
     if (flag == Constants.FLAG_HIDDEN_APPS) {
         LaunchedEffect(viewModel, flag) {
             viewModel.hiddenApps.collect { hidden ->
@@ -212,7 +236,7 @@ private fun drawerObservers(deps: DrawerEntryDeps) {
 private fun updateCombinedAppList(deps: DrawerEntryDeps) {
     val state = deps.state
     updateCombinedAppList(
-        flag = deps.flag,
+        flag = deps.key.flag,
         currentAppList = state.currentAppList,
         privateSpaceAvailable = state.currentPrivateSpaceAvailable,
         privateSpaceLocked = state.currentPrivateSpaceLocked,
@@ -260,8 +284,8 @@ private fun onAppClicked(
     deps: DrawerEntryDeps,
     appModel: AppModel,
 ) {
-    deps.viewModel.selectedApp(appModel, deps.flag)
-    if (deps.flag == Constants.FLAG_LAUNCH_APP || deps.flag == Constants.FLAG_HIDDEN_APPS) {
+    deps.viewModel.selectedApp(appModel, deps.key.flag)
+    if (deps.key.flag == Constants.FLAG_LAUNCH_APP || deps.key.flag == Constants.FLAG_HIDDEN_APPS) {
         collapseToHome(deps)
     } else {
         exitDrawer(deps)
@@ -282,7 +306,7 @@ private fun onAppHidden(
 
     val newSet = mutableSetOf<String>()
     newSet.addAll(deps.prefs.hiddenApps)
-    if (deps.flag == Constants.FLAG_HIDDEN_APPS) {
+    if (deps.key.flag == Constants.FLAG_HIDDEN_APPS) {
         newSet.remove(appModel.appPackage + "|" + appModel.user.toString())
     } else {
         newSet.add(appModel.appPackage + "|" + appModel.user.toString())
@@ -335,7 +359,7 @@ private fun renameHomeSlot(
         renameHomeSlot(
             context = deps.context,
             prefs = deps.prefs,
-            flag = deps.flag,
+            flag = deps.key.flag,
             name = name,
         )
     if (renamed) exitDrawer(deps)
