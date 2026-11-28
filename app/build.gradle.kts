@@ -199,7 +199,7 @@ dependencies {
 // Robolectric loads app classes in a sandbox classloader without a code
 // location, so JaCoCo skips them unless they are included explicitly; without
 // this, coverage of the app's own classes reads 0%. jdk.internal.* cannot be
-// instrumented on JDK 17. AGP applies the JaCoCo plugin (which creates the
+// instrumented (strongly encapsulated since JDK 17). AGP applies the JaCoCo plugin (which creates the
 // jacoco extension on Test tasks) during its own afterEvaluate, so this must
 // be registered after that, or the findByType below is a silent no-op.
 afterEvaluate {

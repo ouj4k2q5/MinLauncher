@@ -68,7 +68,9 @@ JVM tests are JUnit 4 only.
 
 ## Toolchain quirks
 
-- JDK 17 required. AGP 9.5.3, Gradle 9.9.2 via the wrapper, Kotlin 2.2 via AGP's
+- JDK 21 required (pinned by `gradle/gradle-daemon-jvm.properties`;
+  Robolectric SDK 36+ needs Java 21 — see `docs/development.md`). AGP 9.5.3, Gradle
+  9.9.2 via the wrapper, Kotlin 2.2 via AGP's
   built-in Kotlin support (no `kotlin-android` plugin, no buildscript classpath);
   the Compose compiler comes from the `kotlin-compose` plugin alias
   (`org.jetbrains.kotlin.plugin.compose`, versioned with Kotlin).

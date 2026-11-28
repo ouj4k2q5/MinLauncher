@@ -4,7 +4,7 @@
 
 | Component | Version                    |
 |---|----------------------------|
-| JDK | 17                         |
+| JDK | 21                         |
 | Gradle | 9.9.2, through the wrapper |
 | Android Gradle Plugin | 9.5.3                      |
 | `compileSdk` | 37                         |
